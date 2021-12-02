@@ -214,16 +214,26 @@
 \usepackage{cancel}
 \newcommand{\lsemi}{\ltimes}
 \newcommand{\rsemi}{\rtimes}
-\newcommand{\lnsemi.}{\cancel\ltimes}
+\newcommand{\lnsemi}{\cancel\ltimes}
 \newcommand{\rnsemi}{\cancel\rtimes}
 
+\RequirePackage{float}
+\RequirePackage{caption}
 \RequirePackage[outputdir=./build/,newfloat,draft=false]{minted}
+\setminted{autogobble=true,breaklines=true}
 \RequirePackage{fontspec}
 \setmonofont{FiraCode}[Scale=0.8]
+\newminted{sql}{}
+\newminted{cpp}{}
+\newminted{haskell}{}
+\newminted{py}{}
+\newenvironment{code}{\captionsetup{type=listing}}{}
 
 \RequirePackage{tikz}
 
-\newenvironment{haskell}{\begin{minted}[]{haskell}}{\end{minted}}
-\newenvironment{sql}{\begin{minted}[]{sql}}{\end{minted}}
+\newcommand{\hask}[1]{\mintinline{haskell}{#1}}
+\newcommand{\py}[1]{\mintinline{python}{#1}}
+\newcommand{\cpp}[1]{\mintinline{cpp}{#1}}
+\newcommand{\sql}[1]{\mintinline{sql}{#1}}
 
 \message{Hello world thesis!}
