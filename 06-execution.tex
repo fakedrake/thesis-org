@@ -1,1 +1,1024 @@
-TODO
+The logical plan is translated into a physical plan that has the form
+of a c++ program. The motivation for using code generation relates to
+expression level optimizations so it’s less work on some fronts
+(although more work in others). Also gdb for debugging. Remember that
+compilation time is not pure overhead, we would have to duplicate at
+least some low level optimizations in the haskell.
+
+\section{Codegen introduction}
+
+Code generation is becoming a more and more common in RDBMSs. Used
+mainly in in-memory databases, where disk IO does not dominate the
+runtime, it aims to minimize the overhead of data access function
+calls, to optimize the operdicates and numerical expressions and to
+avoid indirection in tight loops. Approaches to code generation fall
+generally on a spectrum between two extremes:
+
+\begin{itemize}
+\item Transpilation of the physical plan to a low level programming
+  language like C or C++ for every query
+\item JIT compilation of small parts of the plan as the query
+  executes.
+\end{itemize}
+
+FluiDB follows the approach of
+\cite{krikellasGeneratingCodeHolistic2010} falling far to the former
+pole of the spectrum. We generate very specific, template-heavy C++
+code for every query and we call to an off-the-shelf compiler to
+generate highly optimized machine code.
+
+We opted for delegating the task to the OS and use use use the tmpfs
+as a storage layer to our database. The tmpfs filesystem depends on
+the the
+\href{https://elixir.bootlin.com/linux/latest/source/mm/shmem.c}{shmem}
+module (as of linux v5.13) for handling file operations. shmem is a
+resizable virtual memory filesystem for linux. Where a typical
+persistent filesystem stores files in a block device and caches pages
+in memory for efficiency, shmem keeps files exclusively as pages in
+the page cache. The OS tries to keep all pages in memory but when
+resources start running out it writes pages in swap.
+
+Assuming that the pages are not in swap, normal reads for shmemfs
+using \cpp{read()} are equivalent to copying pages from the page cache to
+the user space. \cpp{shmem} writes on the other hand operate directly to
+the pages. We can mitigate the copying overhead of reads using \cpp{mmap}
+which will remap the page to the address space of the application.
+
+The problem with this approach is that, while it allows us to minimize
+copying, we still need to run system calls in tight loops, which can
+be very computationally expensive. This can't be completely mitigated
+unless we move the "storage" layer to the userspace, re-implementing
+the memory management that we get for "free", in terms of engineering
+effort, from the shmem module. Another problem with the latter is
+that, as things stand in FluiDB, the code generated has the file names
+that correspond to materialized relations hardcoded. An approach
+completely dependent on malloc/free for memory management would
+complicate the access to the materialized relations significantly.
+
+On the other hand this approach allows FluiDB to easily be adapted to
+operate over any filesystem backed by different storage technologies
+like non-volatile memories.
+
+\section{Data layout}
+
+Before we get into the details of the actual physical plan (in the
+form of C++ code) we need to go into some assumptions about the layout
+of the code that is assumed by the primary data.
+
+FluiDB is a \emph{row store system} and it depends on the filesystem for
+itnermediate result lookup and page management. For code generation to
+make sense the file system is, in particular, a tmpfs filesistem that
+resides entirely in ram. This is not an ideal solution
+performance-wise and in the future we plan on using a less OS-reliant
+way of managing storage resources but it is good enough for now. In
+particular we use one file per table or intermediate result, and each
+file is simply a sequence of recods organized into pages. For now
+FluiDB does not support any kind of indexing or compression. FluiDB
+can, of course, be run over any filesystem but non-memory based file
+systems diminish benefit of code generation.
+
+With this in mind there are three parts to understanding the
+principles of FluiDB storage:
+
+\begin{itemize}
+\item The format in which primary data is inserted into the database.
+\item The layout of the data withing the database
+\item The transformation from the former to the latter.
+\end{itemize}
+
+\subsection{Initial data conversion}
+
+Starting with the initial data, as it stands, for FluiDB to be adapted
+to a particular dataset it requires the primary data in CSV format and
+some haskell code describing the shape of the data and the database
+configuration. Our experiments so far have been revolving around the
+SSB TPC-H benchmark so the format expected is the plaintext format
+that dbgen \cite{perivolaropoulosFakedrakeSsbdbgen2021} generates. This
+is comprized by two steps: first a haskell program parses the CSV
+records into standard-layout binary objects that can be directly cast
+to C/C++ standard-layout structs. These binary objects are stored one
+after the other in a flat binday file with the extension \texttt{.bama},
+refering th the \emph{BAMA} library that FluiDB generated calls into to
+execute operators. The end result of what we want to do to be able to
+execute code similar to the one presented in listing
+\ref{lst:bama_to_dat}.
+
+\begin{code}
+\begin{cppcode}
+template<typename R, size_t batch_size=2000>
+void bama_to_dat(const std::string& bama_file, const std::string& dat_file) {
+  int fd;
+  size_t read_bytes;
+  std::array<R, batch_size> batch;
+  // Open the file in binary mode
+  fd = ::open(bama_file.c_str(), O_RDONLY);
+  // The writer is the object used by all the libraries and it will
+  // write each record in pages.
+  Writer<R> w(dat_file);
+  do {
+    // Read a batch of data,
+    read_bytes = ::read(fd, batch.data(), sizeof(batch));
+    // Use the writer object to write each record.
+    for (size_t i = 0; i < read_bytes / sizeof(R); i++) {
+      w.write(batch[i]);
+    }
+    // Keep reading until a batch is cut short.
+  } while (read_bytes == sizeof(batch));
+  // Wrap up.
+  w.close();
+  close(fd);
+}
+\end{cppcode}
+  \caption{\label{lst:bama_to_dat}For standard FFI communication C++
+    structs that do not contain fancy constructors}
+\end{code}
+
+For this to work we refer to the C++ standard
+\cite{14:00-17:00ISOIEC14882}. The types that represent table rows must
+be standard layout. According to the standard:
+
+\begin{quote}
+A class S is a standard-layout class if it:
+\begin{itemize}
+\item has no non-static data members of type non-standard-layout class (or
+array of such types) or reference,
+\item has no virtual functions and no virtual base classes
+\item has the same access control for all non-static data members,
+\item has no non-standard-layout base classes,
+\item has at most one base class subobject of any given type,
+\item has all non-static data members and bit-fields in the class and its
+base classes first declared in the same class, and
+\item has no element of the set M(S) of types as a base class, where for
+any type X, M(X) is defined as follows. [Note: M(X) is the set of
+the types of all non-base-class subobjects that may be at a zero
+offset in X.]
+\begin{itemize}
+\item If X is a non-union class type with no (possibly inherited)
+non-static data members, the set M(X) is empty.
+\item If X is a non-union class type with a non-static data member of
+type X\textsubscript{0} that is either of zero size or is the first non-static
+data member of X (where said member may be an anonymous union),
+the set M(X) consists of X\textsubscript{0} and the elements of M(X\textsubscript{0}).
+\item If X is a union type, the set M(X) is the union of all M(Ui) and
+the set containing all U\textsubscript{i} , where each U\textsubscript{i} is the type of the i
+th non-static data member of X.
+\item If X is an array type with element type X\textsubscript{e}, the set M(X) consists
+of X\textsubscript{e} and the elements of M(Xe).
+\item If X is a non-class, non-array type, the set M(X) is empty.
+\end{itemize}
+\end{itemize}
+\end{quote}
+
+The records we generate certainly conform to these requirements. An
+example is the supplier row in \ref{lst:recodr_class}. Therefore the
+object is trivially copyable and occupies contiguous bytes of
+storage. This means that we can safely write each record \cpp{R} as
+\cpp{sizeof(R)} contiguous binary data to a file and expect to find the
+same value of \cpp{R} when we read it. Based on this we can safely copy
+binary record objects from memory to disc and visa versa.
+
+\begin{code}
+\begin{cppcode}
+class Record {
+public:
+  Record(unsigned __s__suppkey, fluidb_string<25> __s__name,
+         fluidb_string<40> __s__address, fluidb_string<16> __s__city,
+         fluidb_string<16> __s__nation, fluidb_string<13> __s__region,
+         fluidb_string<15> __s__phone)
+    : s__suppkey(__s__suppkey),
+      s__name(__s__name),
+      s__address(__s__address),
+      s__city(__s__city),
+      s__nation(__s__nation),
+      s__region(__s__region),
+      s__phone(__s__phone) {}
+  Record() {}
+  std::string show() const {
+    std::stringstream o;
+    o << s__suppkey << " | " << arrToString(s__name) << " | "
+      << arrToString(s__address) << " | " << arrToString(s__city) << " | "
+      << arrToString(s__nation) << " | " << arrToString(s__region) << " | "
+      << arrToString(s__phone);
+    return o.str();
+  }
+  bool operator==(const Record& otherRec) const {
+    // compare each field ...
+  }
+  bool operator!=(const Record& otherRec) const {
+    // compare each field ...
+  }
+  unsigned s__suppkey;
+  fluidb_string<25> s__name;
+  fluidb_string<40> s__address;
+  fluidb_string<16> s__city;
+  fluidb_string<16> s__nation;
+  fluidb_string<13> s__region;
+  fluidb_string<15> s__phone;
+};
+\end{cppcode}
+  \caption{\label{lst:recodr_class}The supplier row representation in
+    the generated C++ code. The \cpp{fluidb\_string} type is a
+    constant size arraw of characters.}
+\end{code}
+
+However, in the case of parsing we need to take great care with byte
+alignment which is compiler dependent. Fortunately Clang and GCC
+informally aggree on the algorithm for \cpp{alignof(<cls>, <member>)} for
+standard layout objects. The algorithm is presented in
+\ref{lst:record_byte_padding}
+
+TODO: translate the figure to python or sth more understandable.
+
+\begin{code}
+\begin{haskellcode}
+schemaPostPaddings :: [CppType] -> Maybe [Int]
+schemaPostPaddings [] = Just []
+schemaPostPaddings [_] = Just [0]
+schemaPostPaddings schema = do
+  elemSizes <- sequenceA [cppTypeSize t | t <- schema]
+  spaceAligns' <- sequenceA [cppTypeAlignment t | t <- schema]
+  let (_:spaceAligns) = spaceAligns' ++ [maximum spaceAligns']
+  let offsets = 0 : zipWith3 getOffset spaceAligns offsets elemSizes
+  return $ zipWith (-) (zipWith (-) (tail offsets) offsets) elemSizes
+  where
+    getOffset nextAlig off size =
+      (size + off)
+      + ((nextAlig - ((size + off) `mod` nextAlig)) `mod` nextAlig)
+\end{haskellcode}
+  \caption{\label{lst:record_byte_padding}Algorithm to infer the
+    padding of members according to the Itanium ABI.}
+\end{code}
+
+
+Once the bama files are generated C++ code is generated for parsing
+the file calls into the C++ function \cpp{bama\_to\_dat} that is parametric
+to the type of the object being and uses the BAMA library to write
+objects, thus making sure that the data is readable by the
+operators. \cpp{bama\_to\_dat} simply reads the input \texttt{.bama} file as a
+stram of records of size \cpp{sizeof(Record)} casting the bytes with
+\cpp{reinterpret\_cast<Record*>} into the record. It then use the bame
+record writing facility \cpp{Writer<R>::write} that takes care of
+organizing the record into pages. Thus the final \emph{data file} is
+created that is ready for use by the generated code.
+
+\begin{code}
+\begin{cppcode}
+#include <bamify.hh>
+class Record {
+  // ...
+};
+int main(int argc, char* argv[]) {
+  bama_to_dat<Record>("supplier.bama","supplier.dat");
+}
+\end{cppcode}
+  \caption{Convert a bama file to a paged data file.}
+\end{code}
+
+\subsection{Pages}
+
+The \texttt{.dat} files are not very complicated. The basic block of the file
+is the \cpp{Page}, and the file is simply a raw squence of pages. A page
+is constant-size data structure that contains up to
+\(\left\lfloor\frac{S_{rec}}{S_{pg}} \right\rfloor\) \emph{whole} records
+where \(S_{rec}\) is \cpp{sizeof(Record)} and \(S_{pg}\) is the size of
+the page. All pages must contain as many whole records as can fit
+except the last one.
+
+All transactions with the storage are made at the page level: we
+either read or write only entire pages. These operations are
+abstracted by the \cpp{Reader} and \cpp{Writer} classes. We use one more level
+of abstraction for convenience, the higher order \cpp{eachRecord}
+function. To demonstrate what the interface looks like we present the
+implementation of \cpp{eachRecord} \ref{lst:each_record}.
+
+\begin{code}
+\begin{cppcode}
+// Fn could be instantiated to std::function<void(const R&)> but that
+// will *always* forbid f from being inlined.
+template <typename R,typename Fn>
+inline void eachRecord(const std::string& inpFile,Fn f) {
+  Reader<R>' reader;
+  size_t i = 0;
+  reader.open(inpFile);
+  while (reader.hasNext()) {
+    i++;
+    f(reader.nextRecord());
+  }
+  reader.close();
+}
+\end{cppcode}
+\caption{\label{lst:each_record}}
+\end{code}
+
+As alluded to in the previous section both the \cpp{Writer} and \cpp{Reader}
+use \cpp{reinterpret\_cast} to "serialize" and "deserialize" the data
+respectively.
+
+\subsection{In-place sorting}
+
+It is important for the planner to have full control of the
+budget. For that reason we require that all operators' algorithms have
+constant space complexity. This may mean major compromizes for some
+algorithms with respect to the time complexity like join and
+aggregation. Fortunately we can mitigate that by taking advantage of
+the set semantics of FluiDB relational algebra and sorting input
+tables in-place before running joins or aggregations. Our particular
+implementation of in-place sorting hinges on the \cpp{RecordMap} type that
+provides C++ random access iterators iterators to the records of a
+file, abstracting the page reads and writes. We pass these iterators
+to \cpp{std::sort} (see listing \ref{lst:record_map_sort}) which runs insertion
+sort for small ranges to take advantage of the processors reorder
+buffer and quicksort for longer ones.
+
+\begin{code}
+\begin{cppcode}
+RecordMap<size_t> fs("/tmp/removeme.dat");
+std::sort(fs.begin(), fs.end());
+\end{cppcode}
+  \caption{\label{lst:record_map_sort}Using a \cpp{RecordMap} to sort
+    the records of a file.}
+\end{code}
+
+The operation of \cpp{RecordMap} is very simple. Each iterator is paired
+with the page that contains the record it points to, when an iterator
+is the only iterator pointing inside a page and is incremented or
+decremented and no longer points to the same page the old page is
+written back to the file and the new page is read. When the only
+iterator pointing to a page is deleted the page is written to the
+file. More than one iterators pointing to the same page do not
+maintain different copies of that page and the last one to be
+destroyed or to leave the page triggers the page to be written back to
+the file.
+\section{Physical planning}
+
+The fundamentall logic of the code generator is fairly simple: The
+input of the code generator is a logical plan generated by the FluiDB
+planner in the form of a sequence of transitions. The reader is
+reminded that each transition has one of three kinds:
+
+\begin{itemize}
+\item Trigger of a t-node. The input n-nodes at the time of the trigger
+are materialized and the trigger itself materializes a subset of the
+output n-nodes
+\item Reverse trigger of a t-node, which represents the
+materialization of a subset of the input n-nodes from materialized
+output nodes
+\item The deletion of an n-node.
+\end{itemize}
+
+Transitions are meant to be executed in the order they appear in the
+received sequence to preserve correctness. However there is no
+one-to-one correspondence between operators and transitions. Instead,
+as we saw in the discussion about the e , each
+operation corresponds to a cluster of connected t-nodes. The first
+step of the code generator, therefore, is to group the low level
+transitions received by the planner into higher level batches that
+correspond to exactly one operation. This process is driven by
+intermediate n-nodes, ie helper nodes that do correspond to
+materializable relations, but are rather part of the graph to reify
+the valid combinations that the planner is allowed to materialize. The
+constraint we are trying to preserve is batch the low level
+transitions in such a way that the high level transition does not
+materialize any intermediate nodes.
+
+Since intermediate nodes are always internal to clusters and no
+cluster shares a t-node with another cluster, each batch of
+transitions corresponds to exactly one cluster, except for deletion
+transitions which are standalone. Furthermore, each cluster
+corresponds to exactly one relational operator, which we also include
+in the higher order transition.
+
+
+The C++ AST is expressed as a tree of haskell algebraic data
+types. They do not capture the entire C++ language, only the following
+concepts concepts:
+
+\begin{itemize}
+\item Function declaration
+\item Function application and arguments
+\item Expressions
+\item Code symbols
+\item Assignment
+\item Includes
+\item Literals
+\item Classes
+\item Member clarations (for record printing)
+\item Algorithm selection
+\item Global declarations
+\end{itemize}
+
+The code generated version of each operator is parameterized by the
+record types of its inputs and outputs and highly specific code is
+generated by the Cq++ templating system. Operators are reified as C++
+code within the context of a state monad we call CodeBuilderT that
+generates C++ struct for each record type encountered and registers
+the types of the argument and return types for declaration.
+
+Therefore, an important aspect of code generation is bridging the gap
+emerging from the logical plan having a form fundamentally different
+to the form of a C++ program. In the case of C++, the logic and type
+declarations reside in distinct parts of the code. The logical plans
+emitted by the planner, however, are a sequence of operations on data
+where the types, which for our purposes correspond to the table and
+subexpression schemata, are implicit in the logical plan.
+
+\hask{CodeBuilderT} is then equipped with operations to insert unique
+declarations of functions and structs.
+
+\subsection{AST to literal code}
+
+In fludb the C++ AST is converted to a literal code string. This is
+done in two steps:
+
+\begin{itemize}
+\item Translation of the AST into fragments of soft literal code, that
+is code in a format similar to that of a string, which has the
+property to maintain the uniqueness of symbols under concatenation.
+\item Concatenation of soft code fragments and translation to a literal
+string representing the C++ code.
+\end{itemize}
+
+This is done by the \hask{Codegen} typeclass. Any type implementing
+Codegen can be transformed to an IsCode type. IsCode is any type that
+can be directly converted into a string of C++ code. For now consider
+that IsCode only refers to normal strings. In this section we will
+look at the transformation of a valid AST into code.
+
+\subsubsection{Code hygene}
+
+A major concern in any transpiler or code generation system generally
+is the generation of unique symbols. The problem is similar to the one
+regarding scheme’s hygienic macros, although the problems for those
+are much more complex than our particular case. This is mostly because
+our plans expand to a different language and expansion happens exactly
+once. Consider the following C++ AST that we want to transform into
+code.
+
+
+The most naive and straightforward way is to convert it directly into
+a C++ string.
+
+\begin{code}
+\begin{haskellcode}
+-- todo
+\end{haskellcode}
+\caption{No unique}
+\end{code}
+
+Here the symbols \hask{a}, \hask{x}, and possibly even \hask{f} would
+need to be unique. A naive solution would directly attempt to attach
+an index to each symbol
+
+\begin{code}
+\begin{haskellcode}
+-- todo
+\end{haskellcode}
+\caption{No unique}
+\end{code}
+
+The obvious problem with this approach however changes the meaning of
+the program, so we match the various instances of a symbol.
+
+\begin{code}
+\begin{haskellcode}
+-- todo
+\end{haskellcode}
+\caption{Consistently unique symbols}
+\end{code}
+
+New problems arise if we want to concatenate different code
+snippets. Consider the case that the following lines generated have
+the semantics:
+
+
+\begin{code}
+\begin{haskellcode}
+-- todo
+\end{haskellcode}
+\caption{Variable reuse}
+\end{code}
+
+If these generated code snippets uniquify their variables separately
+the variable name a will be re-declared making the compiler
+unhappy. We resolved this issue by introducing the SoftUNameCode
+functor. SoftUNameCode a implements the IsCode interface as long as a
+implements it as well.
+
+\begin{code}
+\begin{haskellcode}
+data SoftUNameCode a = SoftUNameCode {
+  uCodeTail :: Maybe (UniqueSymbol,SoftUNameCode a),
+  uCodeHead :: a,
+  uCodeMaxId :: UId
+  }
+
+data UniueSymbol a = UniqueSymbol {
+  symbolUId :: UId,
+  symbolMkName :: UId -> a
+  }
+\end{haskellcode}
+\caption{Variable reuse}
+\end{code}
+
+What this amounts to is a list of code objects interleaved with unique
+symbol names. Each unique symbol name is a combination of an unique id
+and a function that would generate a unique string of code based on
+that id. This unique id must be incrementable.
+
+
+When two \hask{SoftUNameCode} objects are concatenated, in the simple case
+we aim for the variable names to be completely disjoint. This is
+achieved by simply incrementing all symbolUIds in the right hand side
+of the concatenation operator by the left hand side uCodeMaxId.
+
+In the slightly more complex case where we know that the same unique
+symbol is both on the left and the right hand side of the
+concatenation operator we use co-join \hask{SoftUNameCode} a into
+\hask{SoftUNameCode (SoftUNameCode a)} pushing the shared symbol in the
+internal layer. When concatenating SoftUNameCode, only the top layer
+of the right hand side is changed. After concatenation the functor is
+flattened:
+
+With this method we can flexibly concatenate code keeping certain
+variables hygienic while maintaining reference to others.
+
+\section{Operator implementations}
+
+Now that we have an idea of how the code is actually generated. All
+operator implementations live in the BAMA library which branched out
+from \cite{krikellasGeneratingCodeHolistic2010}. The BAMA library makes
+heavy use of templates and constexpr to generate very query-specific
+assembly.
+
+\subsection{Generated code structure}
+
+The FluiDB code generator generates a couple of different kinds of C++
+components to construct the final file. In this section we will
+discuss the kinds of C++ structs that FluiDB generates in order to
+parameterize the BAMA operators at compile time, leveraging the C++
+template system.
+
+In the following subsections when we say \emph{compile time} we refer ti
+the compile time of the generated code, not compile time of FluiDB.
+
+\subsubsection{Maybe types}
+
+Maybe types are used to indicate optional outputs of operators. For
+example an operator \(\sigma_p\) may yield \(\sigma_p A\) or
+\(\sigma_{\neg p} A\) or both. On one hand the precise outputs that
+are required are important for performance and memory budget
+management, and on the other any combination of these outputs can and
+should be generated through one pass over the input. Furthermore
+information about which outputs are required is know at compile time
+so the generated code should be specific to the combination of outputs
+that are required.
+
+To address this, instead of passing in simple \cpp{std::string} as
+paths, we pass one of two types \cpp{Nothing} or \cpp{Jusr} (listing
+\ref{lst:maybe_type_cpp}) that wrap the file path. Both these types
+contain an \cpp{isNothing} static constexpr type that can be used by
+\cpp{if constexpr (...)} expressions in the selection operator to help
+the compiler generate highly specialized machine code.
+
+\begin{code}
+\begin{cppcode}
+template <typename T>
+struct Just {
+  Just(T t) : value(t) {}
+  T value;
+  constexpr bool operator==(Just<T> const& j) const {
+    return this->value == j.value;
+  }
+  static constexpr bool isNothing = false;
+};
+template <typename T=std::string>
+struct Nothing {
+  Nothing(T s) {}
+  Nothing() {}
+  static constexpr bool isNothing = true;
+};
+\end{cppcode}
+\caption{\label{lst:maybe_type_cpp}The type level maybe}
+\end{code}
+
+\subsubsection{Record types}
+
+FluiDB is a row store engine and handles table rows by generating
+record types specific to each table, where objects of that type are
+rows of the corresponding table. We went over some aspects of the the
+genrated record types when discussing the conversion of primary data
+to FluiDB specific binary data. Records types directly or indirectly
+parameterize all operators. A selection operator \(\sigma_p\) instance
+must be parameterized by the record type of its input which will be
+the same as the output. A projection \(\pi\) is parameterized by the
+records of both the input and the output type. A generated record type
+must must have some structural properties to function properly with
+BAMA and the rest of the generated types:
+
+\begin{itemize}
+\item First and foremost it must be standard-layout type provide so it can
+be trivially copied from and to binary blob files. This means that
+there should be no virtual members, the destructor must be trivial
+and no static members. We further impose the constraint that they
+must not have a base class to avoid some more intricate constraints
+imposed by the C++ standard on standard-layout classes.
+\item it must provide non-uniquified names for each field of the row it
+represents so other generated types (like predicates and subtuple
+extraction types) have direct access to the underlying data.
+\item They should be comparable by equality (\cpp{==}), inequality (\cpp{!=}) and
+they should be orderable \cpp{<}. The actual semantics of the ordering
+are not important as long as there is a deterministic way of
+ordering records of the same type.
+\item They should be hashable. We get that for free since they are
+standard layout objects but it is an important property that is
+useful for equijoins as we will see in the section about equi-joins.
+\item Finally every record type must implement an \cpp{std::string show()\textasciitilde{}}
+function that serialized the contents into a human readable string.
+\end{itemize}
+
+\subsubsection{Predicate types}
+
+Predicate types have the function of n-ary boolean functions \(A_1
+\times ... \times A_k \to \{T,F\}\) useful for selections and
+\(\theta\)-joins so in practice they are unary or binary. They are
+passed as template arguments to the operators so the compiler has the
+chance to inline them to avoid a function call. To avoid too much code
+clutter they are expected to provide the types of the function domain
+(demonstrated in listing \ref{lst:pred_type_cpp}) in order to minimize
+the number of template parameters and keep the generated code
+relatively human readable.
+
+\begin{code}
+\begin{cppcode}
+class Predicate3421 {
+  typedef Record123 Domain0;
+  typedef Record32 Domain1;
+  bool operator() (const Domain0& rl, const Domain1& rr) {
+    return rl.__field1 < rr.__field2;
+  }
+}
+\end{cppcode}
+\caption{\label{lst:pred_type_cpp}The shape of a generated predicate type.}
+\end{code}
+
+\subsubsection{Record transformation types}
+
+Record transformations, much like predicates are callables
+representing pure functions, only the codomain is a record type,
+instead of a boolean. They are used by joins to combine the matching
+records, by projections and aggregations to produce new records from
+the inputs, by equi-joins to extract the subtuples to be checked for
+equality, etc. Much like predicates they can be queried for their
+domain and codomain to reduce the number of template arguments in
+operators (see listing \ref{ref:transform_type})
+
+\begin{code}
+\begin{cppcode}
+class Transform {
+  typedef Record123 Domain0;
+  typedef Record32 Domain1;
+  typedef Record10 Codomain;
+  Codomain operator() (const Domain0& l, const Domain1& r) {
+    return Record10(l.__key,l.__field1, r.__key, r.__field2);
+  }
+};
+\end{cppcode}
+  \caption{\label{ref:transform_type}A record transformation type
+    defines objects with no internal state that are callable.}
+\end{code}
+
+
+\subsubsection{Operators}
+
+Operators are not generated but they are parameterlized by all the
+kinds of gernerated code we mentioned. They are clases that are
+constructed using maybe-filenames, record transformers, record types,
+and predicates and implement the \cpp{run()} method which actually runs
+the internal code. A simple operator is selection. An abbreviated
+version of it, which highlingts the shape of an operator class is
+presented in listing \ref{lst:sel_operator_cpp}.
+
+\begin{code}
+\begin{cppcode}
+template <typename Predicate,
+          typename PrimaryOutType,   // Maybe(std::string)
+          typename SecondaryOutType  // Maybe(std::string)
+          >
+class Select {
+  typedef typename Predicate::Domain0 Record;
+
+public:
+  Select(PrimaryOutType prim, SecondaryOutType sec, std::string in)
+    : primary_file(prim), secondary_file(sec), infile(in) {
+    static_assert(!PrimaryOutType::isNothing || !SecondaryOutType::isNothing,
+                  "Both primary and secondary output files are Nothing.");
+  }
+
+  ~Select() {}
+
+  void run() {
+    // ...
+  }
+
+  void print_output(size_t x) {
+    // ...
+  }
+
+private:
+  PrimaryOutType primary_file;
+  SecondaryOutType secondary_file;
+  std::string infile;
+  static Predicate predicate;
+};
+\end{cppcode}
+  \caption{\label{lst:sel_operator_cpp}The selection operator. It is
+    parameterized by the predicate and the primary and secondary
+    output types. Enough information about these values is known at
+    compile time such that the compiler can generate highly
+    speclalized code.}
+\end{code}
+
+Unfortunately, even recent iterations of the C++ standard do not
+include template type inference for classes and structs, therefore, to
+make the generated code simpler we wrap the constructor into a
+function like shown in listing \ref{lst:sel_function_cpp}. This allows the
+generated code for selection to look like the one presented in listing
+\ref{lst:gen_out_code}.
+
+\begin{code}
+\begin{cppcode}
+// C++17 can only infer typenames (primaryout secondaryout) in
+// function templates.
+template<typename Predicate,
+         typename PrimaryOutType,   // Maybe(std::string)
+         typename SecondaryOutType  // Maybe(std::string)
+         >
+auto mkSelect (const PrimaryOutType prim,
+               const SecondaryOutType sec,
+               const std::string& in) {
+  return Select<Predicate,
+                PrimaryOutType,   // Maybe(std::string)
+                SecondaryOutType> // Maybe(std::string)
+    (prim, sec, in);
+}
+\end{cppcode}
+\caption{\label{lst:sel_function_cpp}The C++ declaration of the select.}
+\end{code}
+
+
+\begin{code}
+\begin{cppcode}
+int main() {
+  // ...
+  {
+    auto op = mkSelect<Predicate32>(Just("data123.dat"), Just("data53.dat"),
+                                    "lineitem.dat");
+    op.run();
+    op.print_output();
+  }
+  // ...
+  return 0;
+}
+\end{cppcode}
+  \caption{\label{lst:gen_out_code}A block representing a particular
+    operator.}
+\end{code}
+
+
+\subsection{Select algorithm}
+
+The selection algorithm is likely the simplest of the implemented ones
+because FluiDB has implements no intexes and makes no assumptions
+about the ordering of the data. In the forward variety it is
+implemented as either a partition or a selection depending on which of
+the outputs it is materializing. In its backward variety it is
+essentially a union \(A \equiv \sigma_p A \cup \sigma_{\neg p} A\). As
+we discussed already (listing \ref{lst:sel_function_cpp}) bama expects
+only a predicate class as a template parameter and three filnames as
+its arguments.
+
+It is important to remind the reader that no order is expected to be
+preserved by union, which is to say that the transition \(A
+\Rightarrow \{\sigma_p A, \sigma_{\neg p} A\} \Rightarrow A\) does not
+preserve the order of the nodes. The reader is also reminded that
+FluiDB does not support \hask{NULL} values to preserve the correctness of
+the reverse select operation.
+
+
+\subsection{Projection algorithm}
+
+The implementation of the projection algorithm is parameterized by two
+template arguments that extract complementary subtuples from an input
+relation, affording each one with a common unique subtuple to
+facilitate the inverse operation. The inverse of a projection then is
+simply an equijoin between the two produced slices based in that
+shared unique subtuple.
+
+While the BAMA side of the calculation is fairly straigtforward, on
+the haskell side it is slightly more complex. The first piece of the
+puzzle is the representation of the projection. When the query is
+initially processed so that projections are augmented to expose unique
+subtuple we actually change the represetation of projections from
+\hask{QProj [(e,Expr e)]} to \hask{QProjI [e] [e] [(e,Expr e)]}. The
+two extra parameters typed \hask{[e]} represent the complement of the
+projection (the columns from the input not exported by the projection)
+and a unique subtuple that the complement and the projection must have
+in common. \hask{[(e,Expr e)]} is the normal projection. We make this
+transformation because the easiest and cheapest place to calculate the
+first and second parameters (complement and correspondence) is during
+the projection augmentation phase that happens immediately after
+parsing. Therefore we have all projections carry information about the
+complement at the level of the operator.
+
+In particular this process is combined with remapping of uniuque
+subtuples into the projection. For example a projection. During the
+unique column exposure process the query \sql{select p_color from
+  part} is not valid because \sql{p\_color} is not unique. For that
+reason, during preprocessing we remap the \sql{p\_partkey} column
+since \sql{p\_partkey} is the only unique column of \sql{part}
+in order to satisfy the constraint that every valid relation in FluiDB
+needs to have at least one subtuple that is unique within that
+relation.
+
+\begin{sqlcode}
+select p_partkey,p_color from part
+\end{sqlcode}
+
+In order to be able to reconstruct the input we require that at least
+one unique subtuple is shared between the primary projection relation
+and the complement. In the example demonstrated this means the
+\sql{p\_partkey} column is duplicated in both output tables of the
+operator. The particular valid projection operator that would be
+generated the \hask{QProj} is presented in listing
+\ref{lst:real_proj_operator}.
+
+\begin{code}
+\begin{haskellcode}
+op =
+  QProjI
+    -- All keys except p_color
+    [p_partkey,p_name,p_mfgr,p_category,p_brand1,p_type,p_size,p_container]
+    -- The unique subtuple (just one column)
+    [p_partkey]
+    -- The the actual projection
+    [(p_partkey,E0 p_partkey),(p_color,E0 p_color)]
+\end{haskellcode}
+  \caption{\label{lst:real_proj_operator}The projection operator
+    produced from the SQL query \sql{select p\_partkey,p\_color from
+      part}.}
+\end{code}
+
+The algorithm for reverse projection is almost a standard join. The
+only difference is that in our semantics of join, the relation \(A
+\Join_{a = b} B\) contains both the column \(a\) and the column \(b\),
+while when joining a projection with it's complement we only create a
+single copy of the shared subtuple. We will see more details about
+join in the next section.
+
+
+\subsection{The join operator}
+
+We distinguish between two kinds of join operators: the equijoin and
+the general \(\theta\)-join. The former is specific to cases where
+subtuples from each table are compared and the implementation is
+simply a hash join, while the latter is used for general predicates
+and is essentially a piplelined \(\sigma(A \times B)\). The important
+detail worth noting about join algorithm implementations in FluiDB is
+that they must be able to produce antijoin relations \(A \lnsemi B\),
+\(A \rnsemi B\) simultaneously with the join relation \(A \Join B\).
+
+It is important for join to be space efficient, and particularly
+constant-space, due to the assumption made by the planner that it has
+control over memory. For general \(\theta\)-joins we use nested loop
+joins. For equijoins we take advantage of the assumption that the
+tables are unordered and use merge join after sorting the input tables
+in-place. A sketch of the algorithm is presented in listing
+\ref{lst:join_algorithm}
+
+\begin{code}
+\begin{pycode}
+# This is a pythonic way of detecting which input stream finished is.
+class LeftFinished:
+    pass
+class RightFinished:
+    pass
+
+
+def lnext(it):
+    """If iteration finishes throw LeftFinished"""
+    try:
+        return next(x)
+    except:
+        raise LeftFinished
+
+def rnext(it):
+    """If iteration finishes throw RightFinished"""
+    try:
+        return next(x)
+    except:
+        raise RightFinished
+
+@template(extractl,extractr,combine)
+def merge_equijoin(in_l,in_r,anti_l,out,anti_r):
+    # In place sort each of the inputs
+    sort(in_l,key=extractl)
+    sort(out_l,key=extractr)
+    # Define iterators and current values for each of the inputs.
+    it_l = iter(in_l)
+    val_l = next(it_l)
+    it_r = iter(in_r)
+    val_r = next(it_r)
+
+    try:
+        # The actual merge join algorithm
+        while True:
+            # Gather blocks of equal records from left and right and write
+            # out their product.
+            if extractl(val_l) == extractr(val_r):
+                # Gather a sequence of equal-key values from the left
+                val_ls = []
+                tmp = val_l
+
+                while extractl(val_l) == extractl(tmp):
+                    val_ls.append(val_l)
+                    val_l = lnext(it_l,None)
+
+                # Gather a sequence of equal-key values from the right
+                tmp = val_r
+                val_rs = []
+                while extractl(val_r) == extractl(tmp):
+                    val_rs.append(val_r)
+                    val_r = rnext(it_r)
+
+                # Write out their product.
+                for l,r in product(val_ls,val_rs):
+                    out.write(combine(l,r))
+
+            # Push the non-equal records to the antijoins
+            while extractl(val_l) < extractr(val_r):
+                anti_l.write(val_r)
+                val_r = rnext(it_r)
+            while extractl(val_r) < extractr(val_l):
+                anti_r.write(val_l)
+                val_l = lnext(it_l)
+    except LeftFinished:
+        for l in it_l:
+            left_anti.write(r)
+    except RightFinished:
+        for r in it_r:
+            right_anti.write(r)
+\end{pycode}
+\caption{\label{lst:join_algorithm}The equi-join algorithm first sorts
+  in place the inputs w.r.t. the equal subtuples and then merges
+  them.}
+\end{code}
+
+
+The type of the join operator is defined in terms of a template such
+that it can be specialized at compile time (see listing
+\ref{lst:join_decl}). The template arguments are the following:
+
+\begin{itemize}
+\item Three file paths are provided, \cpp{OutFile}, \cpp{LeftAnti} and
+  \cpp{RightAnti} are each either of type \cpp{Nothing} indicating to
+  the compiler not to generate any code that relates to the particular
+  output or of type \cpp{Just<std::string>} indicating to the compiler
+  the opposite.
+\item The subtuple extraction functions \cpp{LeftExtract} and
+  \cpp{RightExtract}. These are record transformation functions that
+  extract the subtuple that needs to
+\end{itemize}
+
+\begin{code}
+\begin{cppcode}
+template <typename LeftExtract, typename RightExtract, typename Combine,
+          typename OutFile,    // Maybe(std::string)
+          typename LeftAnti,   // Maybe(std::string)
+          typename RightAnti>  // Maybe(std::string)
+class Join;
+\end{cppcode}
+\caption{\label{lst:join_decl}Class declaration of the join operator}
+\end{code}
+
+The reverse join operator is composed of two pipelined steps:
+
+\begin{itemize}
+\item A projection on the join output to get a semijoin
+\item A union of the semijoin with the antijoin to get the input table.
+\end{itemize}
+
+As with the selection operator, the correctness of this reverse
+operation is predicated on the fact that FluiDB has no notion of
+\sql{NULL} values.
+
+
+\subsection{Aggregation and sort algorithms}
+
+The main challenge with implementing aggregations in the context of
+FluiDB is maintaining constant space during its evaluation, as the
+planner tries to use as much of the memory budget as possible to
+maintain intermediate results. Therefore we opted against using an
+auxiliary hash map used to group records. Like we did to implement
+joins we perform aggregation in two steps: first we sort the records
+in place based on the grouping columns and then aggregate in a single
+pass.
