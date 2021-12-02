@@ -1,0 +1,32 @@
+% digraph G {
+%   atb[label="A \laj B", shape=circle];
+%   ajb[label="A \Join B", shape=circle];
+%   bta[label="B \laj A", shape=circle];
+%   a[label="A", shape=circle];
+%   b[label="B", shape=circle];
+%   nt[shape=square, label="\J"];
+%   edge[dir=none];
+%   atb -> nt[weight=4];
+%   ajb -> nt;
+%   bta -> nt[weight=4];
+%   nt -> a;
+%   nt -> b;
+% }
+
+  \begin{tikzpicture}[node distance=2cm]
+    \tikzset{nnode/.style={ellipse,draw}}
+    \tikzset{tnode/.style={square,draw}}
+
+    \node[tnode] (t) {\(\Join\)};
+    \node[nnode] (o) [above of=t] {\(A \Join B\)};
+    \node[nnode] (i_l) [below right of=t] {\(A\)};
+    \node[nnode] (a_l) [above left of=t] {\(A \triangleleft B\)};
+    \node[nnode] (a_r) [above right of=t] {\(A \triangleright B\)};
+    \node[nnode] (i_r) [below left of=t] {\(B\)};
+
+    \path (t) edge (o);
+    \path (t) edge (a_l);
+    \path (t) edge (i_l);
+    \path (t) edge (a_r);
+    \path (t) edge (i_r);
+  \end{tikzpicture}

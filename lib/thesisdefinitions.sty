@@ -1,0 +1,229 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{thesisdefinitions}[2021/12/01 package thesis defintions]
+
+\RequirePackage{graphicx}
+\RequirePackage{tcolorbox}
+\RequirePackage{color}
+\RequirePackage{xcolor}
+\RequirePackage[T1]{fontenc}                    % T1 encoding stops some errors
+% for unknown fonts
+\RequirePackage{scrlayer-scrpage}
+
+
+%% Provide the font options to packages for the sans serif fonts
+%% This loads caption and subcaption. Caption does caption formatting and
+%% subcaption allows subfigures.
+\RequirePackage[labelfont={sf,bf}, textfont=sf]{caption, subcaption}%
+
+% SANS font
+\newcommand{\defaultfont}{\sffamily}
+\renewcommand{\familydefault}{\sfdefault}
+%% Make at symbol an internal command
+{
+  \makeatletter%
+  %% Because of the font change, the page number becomes too large for the
+  %% horizontal space LaTeX reserves for it by default. Without the following
+  %% redefines to fix it, this would cause the Chapter entry page numbers
+  %% to extend a few points into the right margin. The horror!
+  \renewcommand{\@pnumwidth}{1.75em}%
+  \renewcommand{\@tocrmarg}{2.75em}%
+  %%
+  %% Make at symbol safe again.
+  \makeatother%
+  %%
+  %% Switch all list fonts to sans serif.
+  % \renewcommand{\cftpartfont}{\bfseries\sffamily}
+  % \renewcommand{\cftchapfont}{\bfseries\sffamily}%
+  % \renewcommand{\cftsecfont}{\sffamily}%
+  % \renewcommand{\cftsubsecfont}{\sffamily}%
+  % \renewcommand{\cftfigfont}{\sffamily}%
+  % \renewcommand{\cfttabfont}{\sffamily}%
+  % %%
+  % \renewcommand{\cftpartpagefont}{\bfseries\sffamily}%
+  % \renewcommand{\cftchappagefont}{\bfseries\sffamily}%
+  % \renewcommand{\cftsecpagefont}{\sffamily}%
+  % \renewcommand{\cftsubsecpagefont}{\sffamily}%
+  % \renewcommand{\cftfigpagefont}{\sffamily}%
+  % \renewcommand{\cfttabpagefont}{\sffamily}}%
+}
+
+%% Make a box and a height to record the height of the title
+\newsavebox{\titlebox}
+\newlength{\titleboxheight}
+
+%% Allow internal use of @ symbol
+\makeatletter
+
+\renewcommand{\maketitle}{%
+  %% Make the dummy title box to check the height
+  \thispagestyle{empty}%
+  \savebox{\titlebox}{%
+    \parbox{0.9\linewidth}{%
+      {\Huge\defaultfont\bfseries%
+        \begin{onehalfspace}%
+          \centering%
+          \@title%
+        \end{onehalfspace}%
+      }%
+    }%
+  }%
+  %% Get the height and if it's < 4cm set it to 4cm.
+  \setlength{\titleboxheight}{\ht\titlebox + \dp\titlebox}%
+  \null\vfil%
+  \begin{center}%
+    {%\parskip=0pt
+      %% Title in a parbox. Set its height to \titleboxheight
+      \hrule%
+      \vskip 1em%
+      {\Huge \sffamily\defaultfont\bfseries%
+        \parbox[c][\titleboxheight][c]{0.9\linewidth}{%
+          \begin{onehalfspace}%
+            \centering%
+            \@title%
+          \end{onehalfspace}%
+        }%
+      }%
+      \vskip 1em%
+      \hrule%
+      \vskip 1.5em%
+      %% Author
+      {\fontfamily{\rmdefault}\selectfont%
+        {\LARGE\itshape%
+          \parbox[c]{0.9\linewidth}{%
+            \centering%
+            \@author%
+          }}}%
+      \vskip 10mm%
+      \centering%
+      \includegraphics[width=2in]{imgs/EdUniCrest.pdf}\par%
+      \vskip 10mm%
+      %% Qualification
+      {\fontfamily{\rmdefault}\selectfont%
+        {\LARGE%
+          \parbox[c]{10cm}{%
+            \begin{onehalfspace}%
+              \centering%
+              \textit{Doctor of Philosophy}%
+            \end{onehalfspace}%
+          }\\%
+          %% University
+          [2mm] {\textsc{The University of Edinburgh}} \\%
+          %% Date
+          [10mm]\@date
+        }}}%
+  \end{center}\par%
+  \vfil\null}
+
+
+%% This is not a chapter
+\newenvironment{precontent}
+{%% No chapter number, but still TOC entry.
+  \setcounter{secnumdepth}{-1}%
+  \renewcommand{\chaptermark}[1]{}%
+  \pagestyle{plain}%
+  %\titlespacing*{\chapter}{0pt}{0pt}{30pt}%
+}%
+{
+  %% Restart numbering
+  \pagestyle{headings}%
+  \setcounter{secnumdepth}{2}%
+  \cleardoublepage
+}
+
+
+\newcommand{\standarddeclaration}[1]{%
+  % Set up a box for the author name
+  \newsavebox{\mybox}%
+  \sbox{\mybox}{\bfseries{#1}}%
+  %
+  % Now measure its length
+  \newlength{\myboxlen}%
+  \settowidth{\myboxlen}{\usebox{\mybox}}%
+  %
+  \chapter{Declaration}%
+  %
+  I declare that this thesis was composed by myself, that the work contained herein is %
+  my own except where explicitly stated otherwise in the text, and that this work has not %
+  been submitted for any other degree or professional qualification except as specified.%
+  %
+  \vfill
+  %
+  % Add a line with the authors name underneath.
+  % The line should not be less than 0.4/textwidth
+  \noindent%
+  \ifthenelse{\lengthtest{ \myboxlen < 0.4\textwidth }}{%
+    \rule{0.4\textwidth}{.01in}\\}{%
+    \rule{\myboxlen}{.01in}\\%
+  }%
+  %
+  \usebox{\mybox}\\%
+  %
+  \vspace*{5cm}%
+}
+
+
+% an environment for todos
+\newenvironment{inprogress}
+{\vspace{.5em} \color{red} \noindent \textbf{TODO}}
+{\vspace{.5em}}
+
+% a command to indicate current editing progress
+\newcommand{\resume}{
+  \begin{center}
+    \color{set2}
+    \hrule
+    \vspace{1pt}
+    \hrule
+    \hrule
+    \vspace{10pt}
+    \textbf{This section is not yet complete.}
+    \vspace{10pt}
+    \hrule
+    \hrule
+    \vspace{1pt}
+    \hrule
+  \end{center}
+}
+
+% do not reset page numbers at \mainmatter
+\let\mainmatterorig\mainmatter
+\renewcommand\mainmatter
+{\edef\p{\arabic{page}}%
+  \mainmatterorig
+  % we need to compute the actual current page number. we know the page number
+  % from _before_ we called \mainmatter. but what is it now? well, it is
+  % certainly that +1. but we also need to account for the next chapter starting
+  % on a "right" (odd) page. we do this by adding the page number modulo two.
+  % TODO: double check before final version
+  \setcounter{page}{\p+1+(\p-\p/2*2)}%
+}
+
+
+\newcommand{\eddedication}[1]{%%
+  \thispagestyle{empty}
+  \begin{center}%
+    \vspace*{2cm}%
+    {\fontfamily{\rmdefault}\selectfont%
+      \textit{\Large {#1}}%
+    }%
+  \end{center}%
+}
+
+\RequirePackage{amsmath}
+\RequirePackage{cancel}
+\usepackage{cancel}
+\newcommand{\lsemi}{\ltimes}
+\newcommand{\rsemi}{\rtimes}
+\newcommand{\lnsemi.}{\cancel\ltimes}
+\newcommand{\rnsemi}{\cancel\rtimes}
+
+\RequirePackage[outputdir=./build/,newfloat,draft=false]{minted}
+\RequirePackage{fontspec}
+\setmonofont{FiraCode}[Scale=0.8]
+
+\RequirePackage{tikz}
+
+\newenvironment{haskell}{\begin{minted}[]{haskell}}{\end{minted}}
+\newenvironment{sql}{\begin{minted}[]{sql}}{\end{minted}}
+
+\message{Hello world thesis!}

@@ -1,0 +1,5 @@
+build/
+auto/
+\#*
+_minted*/
+lib/auto/

@@ -1,0 +1,99 @@
+\documentclass[fontsize=12pt,paper=letter,twosided,cleardoublepage=plain,final]{scrbook}
+
+\usepackage{thesisformat}
+\setthesisgeomery
+
+\usepackage{thesisdefinitions}
+
+% set up bibliography
+\usepackage[
+  backend=bibtex,
+  sortcites=true,
+  sorting=ynt,
+  abbreviate=false,
+  style=numeric,
+  citestyle=numeric,
+  isbn=false,
+  url=false,
+  doi=false]{biblatex}
+\addbibresource{bibliography.bib}
+
+% enumerate* and itemize*
+\usepackage[inline]{enumitem}
+
+% for \begin{comment}
+\usepackage{verbatim}
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+% for formulas
+\usepackage{mathtools}
+
+% to split lists into multiple columns
+\usepackage{multicol}
+
+% for "on page NN" reference
+\usepackage[nospace]{varioref}
+
+% for \sfrac
+\usepackage{xfrac}
+
+% for \ifoptionfinal
+\usepackage{ifdraft}
+
+% for \phantomsection
+\usepackage{bookmark}
+\usepackage{hyperref}
+
+% in thesis: titlehead, subject, title, subtitle
+\title{FluiDB: Adaptive storage layout with reversible relational operators}
+
+\author{Christos Perivolaropoulos}
+
+\begin{document}
+
+\frontmatter
+\input{00-frontmatter.tex}
+
+\mainmatter
+
+\chapter{Introduction}
+\label{chapter:background}
+\input{01-introduction.tex}
+
+\chapter{Background}
+\label{chapter:background}
+\input{02-background.tex}
+
+\chapter{Logical planning}
+\label{chapter:fluidb_logical_planning}
+\input{03-logical-planning.tex}
+
+\chapter{Physical planning}
+\label{chapter:physical_planning}
+\input{04-physical-planning.tex}
+
+\chapter{Antisthenis}
+\label{chapter:antisthenis}
+\input{05-antisthenis.tex}
+
+\chapter{Execution engine}
+\label{chapter:execution_engine}
+\input{06-execution.tex}
+
+\chapter{Evaluation}
+\label{chapter:evaluation}
+\input{07-evaluation.tex}
+
+\chapter{Conclusion}
+\label{chapter:conclusion}
+\input{08-conclusion.tex}
+
+\backmatter
+
+% single spacing for bibliography
+\begin{spacing}{1}
+\printbibliography
+\end{spacing}
+
+\end{document}

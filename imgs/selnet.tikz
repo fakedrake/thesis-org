@@ -1,0 +1,13 @@
+\begin{tikzpicture}
+  \tikzset{nnode/.style={circle,draw}}
+  \tikzset{tnode/.style={square,draw}}
+
+  \node[tnode] (t) {\(\sigma_p\)};
+  \node[nnode] (o2) [above left of=t] {\(sigma_{\neg p}A\)};
+  \node[nnode] (o1) [above right of=t] {\(o_pA\)};
+  \node[nnode] (i) [below of=t] {\(A\)};
+
+  \path (t) edge (i);
+  \path (t) edge (o1);
+  \path (t) edge (o2);
+\end{tikzpicture}

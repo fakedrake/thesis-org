@@ -1,0 +1,82 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{thesisformat}[2021/12/01 package thesis format]
+
+\RequirePackage{setspace}%
+\RequirePackage{geometry}%
+% \RequirePackage[nobottomtitles*,pagestyles,clearempty]{titlesec}%
+
+\KOMAoptions{twoside=true}
+
+% %% If the twoside option is set, the even pages can have different styles.
+% %% These are defined in the sqaure brackets [left][centre][right]{}{}{}
+% %% The headers are now controlled by the twomain pagstyle.
+% \newpagestyle{twomain}[\defaultfont\bfseries]{%
+%   \headrule%
+%   \sethead%
+%   [\thepage]%
+%   []%
+%   [\ifthechapter{\chaptertitle}{\MakeUppercase{\chaptertitle}}]%
+%   {\ifthesection{\toptitlemarks\thesection{.}\space}%
+%     {\ifthechapter{\thechapter{.}\space}{}}%
+%     \ifthesection{\toptitlemarks\sectiontitle}%
+%     {\ifthechapter{\chaptertitle}{\MakeUppercase{\chaptertitle}}}}%
+%   {}%
+%   {\thepage}%
+%   \setfoot%
+%   []%
+%   []%
+%   []%
+%   {}%
+%   {}%
+%   {}%
+% }
+
+% %% Redefine the plain page style to use the defaultfont for the
+% %% numbering.
+% \renewpagestyle{plain}[\defaultfont]{%
+%   \sethead%
+%   {}%
+%   {}%
+%   {}%
+%   \setfoot%
+%   {}%
+%   {\thepage}%
+%   {}%
+% }
+
+\newcommand\setthesisgeomery{%
+  %%%% SET THE MARGINS
+
+  %% Note, the margins here are University of Edinburgh, School of Engineering
+  %% regulation. You may wish to borrow a millimetre here or there and change
+  %% the header, for example, and thus the setting of the margins has been made
+  %% available here. It's not recommended you change these too much!
+  %% Note: Margins are controlled by the 'geometry' package.
+  \geometry{top=20mm, inner=40mm, outer=25mm, bottom=40mm}
+
+  %% Control the header height and separation for fancyhdr
+  \geometry{headheight=18pt, headsep=4mm}
+
+  %% Set the space between the main text and the start of the footnone
+  \geometry{footnotesep=5mm}
+
+  %% Set the space to the footer. We need to define a new length before applying
+  %% it in order to use the minus rubber length to aid flexibility.
+  \newlength\myfootskip
+  \setlength\myfootskip{20mm minus 1em}
+
+  \geometry{footskip=\myfootskip}
+
+
+  %%%% HYPHENATION
+
+  %% The university regs say ``hyphenation should be avoided if possible''.
+  %% Latex looks rubbish with no hypenation but you can discourage it until
+  %% you start to get lots of bad boxs. Try to set this number as high as
+  %% possible (0-10000). You can also set a separate value for the
+  %% bibliography using \bibhyphenpenalty.
+  % \hyphenpenalty=4000
+  % \bibhyphenpenalty=1000
+
+  \onehalfspacing                        % One and a half spaced
+}

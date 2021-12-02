@@ -1,0 +1,55 @@
+% digraph G {
+% ajb[label="A \J B"];
+% atb[label="A \laj B"];
+% bta[label="B \laj A"];
+% attb[label="A \lsj B"];
+% btta[label="B \lsj A"];
+% a[label="A"];
+% b[label="B"];
+% nt[shape=square, label="\J"];
+% nl[shape=square, label="\laj"];
+% nr[shape=square, label="\laj"];
+% edge[dir=none];
+% ajb -> nt;
+% nt -> btta -> nl;
+% nt -> attb -> nr;
+% atb -> a[style=invis]
+% bta -> b[style=invis]
+% bta -> nl;
+% atb -> nr;
+% nl -> a;
+% nl -> b;
+% nr -> a;
+% nr -> b;
+% }
+
+\begin{tikzpicture}[node distance=2cm]
+  \tikzset{nnode/.style={ellipse,draw}}
+  \tikzset{tnode/.style={square,draw}}
+
+  \node[tnode] (to) {\(t_o\)};
+  \node[nnode] (o) [above of=t] {\(o\)};
+  \node[nnode] (int_l) [below left of=to,densely dotted] {\(int_l\)};
+  \node[nnode] (int_r) [below right of=to,densely dotted] {\(int_r\)};
+  \node[tnode] (tl) [below left of=int_l] {\(t_l\)};
+  \node[tnode] (tr) [below right of=int_r] {\(t_r\)};
+  \node[nnode] (i_l) [below right of=tl] {\(i_l\)};
+  \node[nnode] (a_l) [above left of=tl] {\(a_l\)};
+  \node[nnode] (i_r) [below left of=tr] {\(i_r\)};
+  \node[nnode] (a_r) [above right of=tr] {\(a_r\)};
+
+  \path (to) edge (o);
+  \path (to) edge (int_l);
+  \path (to) edge (int_r);
+
+  \path (tl) edge (int_l);
+  \path (tl) edge (a_l);
+  \path (tl) edge (i_l);
+  \path (tl) edge [densely dotted] (i_r);
+
+  \path (tr) edge (int_r);
+  \path (tr) edge (a_r);
+  \path (tr) edge (i_r);
+  \path (tr) edge [densely dotted] (i_l);
+
+\end{tikzpicture}
