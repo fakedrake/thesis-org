@@ -2,7 +2,6 @@
 \ProvidesPackage{thesisdefinitions}[2021/12/01 package thesis defintions]
 
 \RequirePackage{graphicx}
-\RequirePackage{tcolorbox}
 \RequirePackage{color}
 \RequirePackage{xcolor}
 \RequirePackage[T1]{fontenc}                    % T1 encoding stops some errors
@@ -235,5 +234,8 @@
 \newcommand{\py}[1]{\mintinline{python}{#1}}
 \newcommand{\cpp}[1]{\mintinline{cpp}{#1}}
 \newcommand{\sql}[1]{\mintinline{sql}{#1}}
+
+
+\RequirePackage[colorinlistoftodos,prependcaption,textsize=tiny]{todonotes}
 
 \message{Hello world thesis!}

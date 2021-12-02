@@ -13,7 +13,7 @@ intermediate result recycling and how they solve the problem of
 automatically selecting and maintaining intermediate results for
 workloads.
 
-\section{Background: relational databases}
+\section{Relational databases}
 \label{sec:org5af5e27}
 Databases are more than just a method of accessing data. In their
 essence they are machines for question answering. The typical database
@@ -81,8 +81,9 @@ evaluates the physical plan on top of the data, making use of the
 correct algorithms, auxiliary structures like indexes managing memory,
 handling page-level caching, etc.
 
-\section{Background: query processing}
+\section{Query processing}
 \label{sec:org1ddf14b}
+
 Query optimization and more generally query processing and planning
 refer to the processes that take place between reading a query and
 computing a physical plan. The concerns of query processing are
@@ -286,7 +287,7 @@ variables to weigh IO with CPU evaluation time, while DB2 runs
 microbenchmarks on the production system to make these estimations.
 
 
-\section{Background: in-memory relational databases}
+\section{in-memory relational databases}
 \label{sec:org96af629}
 In-memory databases are databases where all the data lives in main
 memory. The design of in-memory databases is different from the desgn
@@ -401,7 +402,7 @@ code generation. Volcano/EXODUS
 engine that is specific to the database schema but not to the queries.
 
 
-\section{Background: intermediate result recycling}
+\section{Intermediate result recycling}
 \label{sec:org1a32ec6}
 A materialized view is a relation defined by a query that is
 persistently stored. A view that is not stored is said to be

@@ -9,7 +9,7 @@ let
   tex = with pkgs; (texlive.combine {
     inherit (texlive)
       scheme-small
-      tcolorbox
+      todonotes
       biblatex
       xcolor
       titlesec
