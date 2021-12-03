@@ -225,6 +225,23 @@
   file = {/Users/cperivol/Zotero/storage/SRZQ6985/Bian et al. - 2017 - Wide table layout optimization based on column ord.pdf;/Users/cperivol/Zotero/storage/N6PTX95Q/3035918.html}
 }
 
+@article{bibtexa,
+  title = {Sealing Pointer-Based Optimizations behind Pure Functions},
+  author = {Selsam, Daniel and Hudon, Simon and {deMoura}, Leonardo},
+  date = {2020-08-02},
+  journaltitle = {Proceedings of the ACM on Programming Languages},
+  shortjournal = {Proc. ACM Program. Lang.},
+  volume = {4},
+  pages = {115:1--115:20},
+  doi = {10.1145/3408997},
+  url = {https://doi.org/10.1145/3408997},
+  urldate = {2021-10-17},
+  abstract = {Functional programming languages are particularly well-suited for building automated reasoning systems, since (among other reasons) a logical term is well modeled by an inductive type, traversing a term can be implemented generically as a higher-order combinator, and backtracking search is dramatically simplified by persistent datastructures. However, existing pure functional programming languages all suffer a major limitation in these domains: traversing a term requires time proportional to the tree size of the term as opposed to its graph size. This limitation would be particularly devastating when building automation for interactive theorem provers such as Lean and Coq, for which the exponential blowup of term-tree sizes has proved to be both common and difficult to prevent. All that is needed to recover the optimal scaling is the ability to perform simple operations on the memory addresses of terms, and yet allowing these operations to be used freely would clearly violate the basic premise of referential transparency. We show how to use dependent types to seal the necessary pointer-address manipulations behind pure functional interfaces while requiring only a negligible amount of additional trust. We have implemented our approach for the upcoming version (v4) of Lean, and our approach could be adopted by other languages based on dependent type theory as well.},
+  issue = {ICFP},
+  keywords = {functional programming,interactive theorem proving,Lean},
+  file = {/Users/cperivol/Zotero/storage/D7A3SRYT/Selsam et al. - 2020 - Sealing pointer-based optimizations behind pure fu.pdf}
+}
+
 @inproceedings{boukorcaHYPADHypergraphdrivenApproach2015,
   title = {{{HYPAD}}: Hyper-Graph-Driven Approach for Parallel Data Warehouse Design},
   shorttitle = {{{HYPAD}}},
@@ -2306,16 +2323,6 @@
   file = {/Users/cperivol/Zotero/storage/JY53N55K/Raasveldt and Mühleisen - 2019 - DuckDB an Embeddable Analytical Database.pdf}
 }
 
-@inproceedings{raasveldtDuckdbEmbeddableAnalytical2019,
-  title = {Duckdb: An Embeddable Analytical Database},
-  shorttitle = {Duckdb},
-  booktitle = {Proceedings of the 2019 {{International Conference}} on {{Management}} of {{Data}}},
-  author = {Raasveldt, Mark and Mühleisen, Hannes},
-  date = {2019},
-  pages = {1981--1984},
-  file = {/Users/cperivol/Zotero/storage/TQJTUQVK/Raasveldt and Mühleisen - 2019 - Duckdb an embeddable analytical database.pdf;/Users/cperivol/Zotero/storage/9DF6XYQR/3299869.html}
-}
-
 @article{radulPropagationNetworksFlexible2009,
   title = {Propagation {{Networks}}: A {{Flexible}} and {{Expressive Substrate}} for {{Computation}}},
   shorttitle = {Propagation {{Networks}}},
@@ -2460,23 +2467,6 @@
   langid = {american},
   annotation = {00000  Accepted: 2007-05-23T09:36:49Z},
   file = {/Users/cperivol/Zotero/storage/DYNK8T5R/Sellis - 1987 - Multiple-Query Optimization..pdf;/Users/cperivol/Zotero/storage/JEUU8L5K/4543.html}
-}
-
-@article{selsamSealingPointerbasedOptimizations2020,
-  title = {Sealing Pointer-Based Optimizations behind Pure Functions},
-  author = {Selsam, Daniel and Hudon, Simon and family=Moura, given=Leonardo, prefix=de, useprefix=true},
-  date = {2020-08-02},
-  journaltitle = {Proceedings of the ACM on Programming Languages},
-  shortjournal = {Proc. ACM Program. Lang.},
-  volume = {4},
-  pages = {115:1--115:20},
-  doi = {10.1145/3408997},
-  url = {https://doi.org/10.1145/3408997},
-  urldate = {2021-10-17},
-  abstract = {Functional programming languages are particularly well-suited for building automated reasoning systems, since (among other reasons) a logical term is well modeled by an inductive type, traversing a term can be implemented generically as a higher-order combinator, and backtracking search is dramatically simplified by persistent datastructures. However, existing pure functional programming languages all suffer a major limitation in these domains: traversing a term requires time proportional to the tree size of the term as opposed to its graph size. This limitation would be particularly devastating when building automation for interactive theorem provers such as Lean and Coq, for which the exponential blowup of term-tree sizes has proved to be both common and difficult to prevent. All that is needed to recover the optimal scaling is the ability to perform simple operations on the memory addresses of terms, and yet allowing these operations to be used freely would clearly violate the basic premise of referential transparency. We show how to use dependent types to seal the necessary pointer-address manipulations behind pure functional interfaces while requiring only a negligible amount of additional trust. We have implemented our approach for the upcoming version (v4) of Lean, and our approach could be adopted by other languages based on dependent type theory as well.},
-  issue = {ICFP},
-  keywords = {functional programming,interactive theorem proving,Lean},
-  file = {/Users/cperivol/Zotero/storage/D7A3SRYT/Selsam et al. - 2020 - Sealing pointer-based optimizations behind pure fu.pdf}
 }
 
 @article{shaikhhaBuildingEfficientQuery2018,

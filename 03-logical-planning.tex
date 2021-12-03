@@ -917,24 +917,22 @@ The algorithm is also described in listing \ref{lst:possible_joins}.
 \end{code}
 
 It is worth mentioning that as many of the subtrees generated this way
-will be equivalent. As analyzed in
-\cite{selsamSealingPointerbasedOptimizations2020} and discussed in
-section g in pure functional settings like ours DAGs can
-have explosive complexity during traversal. Even worse in this case
-even the space complexity can indeed be needlessly exponential. For
-that reason we maintain a hash map matching hashes with the
-corresponding matching subtrees. Before inserting a newly created
-forest into our tree we perform a lookup in the hash map. If we find
-something we throw away the newly created forest for the garbage
-collector to recycle and use the one in the hash map
-instead. Otherwise we insert our forest both in the hashmap and in the
-tree. This way we deduplicate our data structure. Furthermore, in the
-same vain as \cite{selsamSealingPointerbasedOptimizations2020} we
-earmark all our forests with their hash so we don't have to traverse
-them again to compute it. The result of this is that in total we
-completely traverse the forest once to compute the hashes of each
-sub-forest and then we use those hashes to test sub-forests for
-equality.
+will be equivalent. As analyzed in \cite{bibtexa} and discussed in
+section g in pure functional settings like ours DAGs can have
+explosive complexity during traversal. Even worse in this case even
+the space complexity can indeed be needlessly exponential. For that
+reason we maintain a hash map matching hashes with the corresponding
+matching subtrees. Before inserting a newly created forest into our
+tree we perform a lookup in the hash map. If we find something we
+throw away the newly created forest for the garbage collector to
+recycle and use the one in the hash map instead. Otherwise we insert
+our forest both in the hashmap and in the tree. This way we
+deduplicate our data structure. Furthermore, in the same vain as
+\cite{bibtexa} we earmark all our forests with their hash so we don't
+have to traverse them again to compute it. The result of this is that
+in total we completely traverse the forest once to compute the hashes
+of each sub-forest and then we use those hashes to test sub-forests
+for equality.
 
 \section{Section: Query Normal forms (QNF)}
 \label{sec:qnf}
