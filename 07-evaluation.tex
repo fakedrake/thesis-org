@@ -1,1 +1,156 @@
-TODO
+We based our evaluation on the Star Schema Benchmarkx (SSB)
+\cite{barataOverviewDecisionSupport2015} which is a variation of
+TPC-H. Like TPC-H it models the data warehouse of a wholesale
+supplier. It is organized in four "flights" (groups):
+
+\begin{itemize}
+\item The first flight performs a single join between the Lineorder table
+and the small Date dimension table.
+\item Queries in Flight 2 join the Lineorder, Date, Part and Supplier
+tables. They aggregate and sort data on Year and Brand.
+\item Starting from a specific customer, supplier, region and date, flight
+3 selects into specific cities and years.
+\item Flight 4 is the most complex one, as it joins all tables.
+\end{itemize}
+
+Each flight contains 3 queries making a total of 12 distinct queries.
+
+As the name suggests these queries query a star schama. The star
+schema is derived from the TPC-H schema (figure \ref{fig:tpch_schema})
+by merging the \texttt{linenumber}, \texttt{orders} and
+\texttt{partsupp} and completely dropped tables \texttt{nation} and
+\texttt{region} tables as shown in figure \ref{fig:ssb_tpch_schame}.
+
+\todo{translate to tikz}
+\begin{figure}[p]
+\centering
+\includegraphics[width=.9\linewidth]{./imgs/2021-11-15_23-36-57_screenshot.png}
+\caption{The traditional SSB-TPC-H schema}
+\label{fig:ssb_tpch_schema}
+\end{figure}
+
+
+\todo{translate to tikz}
+\begin{figure}[p]
+\centering
+\includegraphics[width=.9\linewidth]{./imgs/2021-12-03_16-54-56_screenshot.png}
+\label{fig:tpch_schema}
+\caption{The traditional TPC-H schema}
+\end{figure}
+
+
+The particular queries contained in the workload are presented in
+listing [ref] in the appendix (\ref{chapter:appendix}).
+
+To construct queries were compiled and solved one by one in a loop for
+total of 30 times and run them over a database of data generated with
+a modified version of the TPC-H dbgen
+\cite{perivolaropoulosFakedrakeSsbdbgen2021a} with scaling of size
+1. The size of the data generated after formatting them to the format
+required by FluiDB (described in chapter \ref{chapter:execution}) are
+
+\begin{minted}[]{sh}
+$ du -sh *.dat
+4.1M    customer.dat
+256K    date.dat
+757M    lineorder.dat
+31M     part.dat
+268K    supplier.dat
+\end{minted}
+
+Which makes a total of approximately 200k pages.
+
+Since the scaling factor provided to \texttt{dbgen} scales all the tables in
+the database, applying the same scaling factor to the available budget
+will cause FluiDB to produce approximately the same query plans
+(barring rounding "errors" due to integer page size).
+
+The lowset budget within which FluiDB was able to solve all 12 queries
+of SSB-TPC-H was 2050k pages.
+
+In our expriment we use page IO as a proxy for performance, despite
+the fact that FluiDB is an in-memory database. We think that this is a
+reasonable experimental approach because, as FluiDB leans heavily on
+code generation, it is unlikely that the actual intruction retiring
+will have a major impact on the perofrmance. Instead the perfomance
+cost is dominated by page IO that will certainly cause cache misses at
+the LLC. Another thing to note is that FluiDB generates code that
+focuses on performance and not on compilation time, making heavy use
+of \cpp{constexpr} and temlpates.  This makes for fairly slow compilation
+times (approximately 1 sec to 2 sec with \texttt{-O2}). There are ways to
+speed up compilation time like using pre-compiling header files
+\cite{PrecompiledHeadersPCH} and fine-tuning the compiler optimization
+passes. These techniques are beyond the scope of this work, FluiDB is
+focused on analytics workloads that do not include sub-second queries.
+
+\begin{figure}[p]
+\centering
+\includegraphics[width=.9\linewidth]{./imgs/2021-12-03_18-36-27_screenshot.png}
+\label{fig:min_budget_plot}
+\caption{The total page read/writes for each query a sequence of
+  queries. The SSB query number is \(mod(\text{query
+    sequence},12\). The baseline is the query being run by FluiDB
+  directly without any materialized nodes. The workload bars represent
+  the cost of each query in a workload built within the same QDAG. The
+  budget for this is the minimum budget within which FluiDB can run
+  each individual query.}
+\end{figure}
+
+It is clear from figure \ref{fig:min_budget_plot} that even at the minimum budget
+FluiDB is able to come up with an efficient plan at every case. In
+some cases, however the garbage collector is forced to delete tables
+that need to be recreated causing FluiDB to be sporadically less
+performant than the base case.
+
+For a larger budget the FluiDB is able to store more useful
+intermediate results as demonstrated in figure \ref{fig:large_budget_plot}
+
+\begin{figure}[p]
+\centering
+\includegraphics[width=.9\linewidth]{./imgs/2021-12-03_20-12-36_screenshot.png}
+\label{fig:large_budget_plot}
+\caption{The total page read/writes for each query a sequence of
+  queries. The SSB query number is \(mod(\text{query
+    sequence},12)\). The baseline is the query being run by FluiDB
+  directly without any materialized nodes. The workload bars represent
+  the cost of each query in a workload built within the same QDAG. The
+  budget for this is triple the minimum budget within which FluiDB can
+  run each individual query.}
+\end{figure}
+
+\section{A note on size estimation}
+
+The size of the budget may feen fairly excessive for the size required
+for the primary tables. To understand why that is we need to look at
+the largest nodes in the QDAG:
+
+\begin{center}
+\begin{tabular}{rl}
+Pages & Expr\\
+\hline
+188000 & \(lineorder\)\\
+547100 & \(customer \Join (date \Join lineorder)\)\\
+376200 & \(\sigma ((customer \Join (date \Join lineorder)) \Join supplier)\)\\
+376200 & \(\sigma ((date \Join lineorder)) \Join supplier)\)\\
+273600 & \(\sigma (customer \Join (date \Join lineorder))\)\\
+188100 & \(\sigma ((\sigma (customer \Join (date \Join lineorder))) \Join supplier)\)\\
+\end{tabular}
+\end{center}
+
+From looking at those nodes it seems that a sufficiently advanced
+garbage collector should be able to solve the nodes in about half the
+budget as fluidb should have been able to solve the query needing
+around double the pages of the largest equijoin which for us is
+customer date lineorder.
+
+The main issue however, as it is with many query prolcessing systems
+\cite{leisHowGoodAre2015}, is the cardinality estimator. With a more
+sophisticated cardinality estimator the required pages.
+
+The main issue with the cardinality estimator is that it assumes that
+a natural join there are no foreign key lookup failures, that is, that
+all natural joins are extension joins. Therefore
+
+\[
+\lvert \sigma _{p(customer)} (customer \Join (date \Join lineorder)) \rvert = \lvert (\sigma _{p(customer)} customer \Join (date \Join lineorder)) \rvert
+\]
