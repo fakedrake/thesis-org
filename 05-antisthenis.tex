@@ -1330,18 +1330,18 @@ next subrpocess to be evaluated. The internal structure of the zipper
 helps antisthenis decide on the next subprocess to be evaluated.
 
 With this in mind we define the zipper data structure keeps track of
-the state of the node.
+the state of the node (see figure \ref{fig:zipper}).
 
 \begin{itemize}
 \item A set of \hask{initial} processes that have not been evaluated
-  yet or that have yielded \hyperref[sec:epochs_coepochs]{deprecate}
-  values (see section on epochs and coepochs).
+  yet or that have yielded deprecate values (see section
+  \ref{sec:epochs_coepochs} on epochs and coepochs).
 \item A set of \hask{iteration} processes, processes whose latest
   evaluation has yielded a result bound is represented by a data
   strucutre that associates the iteration processes with
   \hask{initial} processes the bounds returned. Since these processes
-  that have yielded a e and need to be rerun with a different
-  \hyperref[sec:caps_and_bounds]{cap}. It should be stressed that this
+  that have yielded a e and need to be rerun with a different cap (see
+  section \ref{sec:caps_and_bounds}). It should be stressed that this
   still acts like a heap of subprocesses where the internal properties
   of the data structure decide the top element that is to be
   popped. Since we have some information about the final result of
@@ -1357,9 +1357,9 @@ the state of the node.
   \ref{sec:basic_cost_ops}).
 \item Coiteration processes are processes that have been evaluated and
   yielded a concrete e (error or result), ie a value that is
-  predicated on the \hyperref[sec:epochs_coepochs]{epoch} but can not
-  be refined by re-evaluating the process with a different
-  \hyperref[sec:caps_and_bounds]{cap}. Upon reset the coiteration
+  predicated on the epoch (see section \ref{sec:epochs_coepochs}) but
+  can not be refined by re-evaluating the process with a different cap
+  . Upon reset the coiteration
   stack is ordered in an operator specific way and moved to the init
   stack.
 \item A cursor that is the next machine to be triggered along with a
@@ -1368,10 +1368,6 @@ the state of the node.
   partial value does \emph{not} include the value stored in the
   cursor.
 \end{itemize}
-
-\begin{center}
-  \includegraphics[width=.9\linewidth]{./imgs/2021-10-08_17-08-40_screenshot.png}
-\end{center}
 
 During computation, the subprocesses owned by the parent process are
 evaluated, and their iteration are then moved from the \hask{initials}
@@ -1396,6 +1392,51 @@ fairly straightforward:
 \item The the partial result is precisely the bound of the final
   value.
 \end{itemize}
+
+\begin{figure}[p]
+\begin{tikzdiagram}
+  \tikzset{b/.style={circle,draw,minimum size=1cm}};
+  \tikzset{m/.style={circle,draw,minimum size=1cm, fill=gray!10}};
+  \tikzset{node/.style={rectangle}};
+  \tikzstyle{background}=[rectangle, fill=gray!10, inner sep=0.2cm]
+
+  \node[node] (sep) {};
+
+
+  \newcommand{\mkmat}[4]{
+    \matrix (#1) [#2,background,nodes={align=center,minimum height=2em},label=above:#3]{
+      \node[node] {#4}; \\
+      \node[node] {#4}; \\
+      \node[node] {#4}; \\
+      \node[node] {#4}; \\
+      \node[node] {...}; \\
+      \node[node] {}; \\
+    };
+  }
+  \mkmat{its}{above=of sep}{Iterations}{\((b,p_{reset},p_{it})\)}
+  \mkmat{init}{left=of its}{Inits}{\(p_{init}\)}
+  \mkmat{coit}{right=of its}{Coiterations}{\((p_{coit},r)\)}
+
+  \node[below=of sep,background,label=below:Cursor] (curs) {\((Maybe[b],p_{reset},p_{rg})\)};
+
+  \path[-stealth,bend right=20] (init.south) edge node[midway,fill=white] {cmd init} (curs.west) ;
+  \path[-stealth,bend right=20] (its) edge node[midway,fill=white] {cmd it} (curs) ;
+  \path[-stealth,bend right=20] (curs) edge node[midway,fill=white,text width=1cm] {Bounded\\result} (its) ;
+  \path[-stealth,bend right=20] (curs.east) edge node[midway,fill=white,text width=1cm] {Final\\result} (coit) ;
+\end{tikzdiagram}
+\label{fig:zipper}
+\caption{The zipper splits the sub-processes that cooperate to compute
+  values for the owning process in four categories a) initials that
+  have not yielded a currently valid value b) iterations that have not
+  yielded a valid partial value c) coiterations that have yielded a
+  full valid value d) the cursor that is the next sub-process to be
+  evaluated.  Depending on the evaluation strategy of the operator
+  once the cursor process evaluates it is replaced with an init
+  process or an iteration process, and depending on the value the
+  cursor process yields it is pushed to the iterations or the
+  coiterations of the zipper.}
+\end{figure}
+
 
 At the other end of the spectrum, a process evaluating a magma (a set
 with a closed binary operation), where the binary operator has no
@@ -2251,18 +2292,16 @@ force their value be taken into account via the epoch's copredicates.
 \subsection{Calculating historical query costs}
 \label{sec:historical_cost}
 
-\todo{THE CAP COMPARISON IS WRONG}
-
-As we saw in the section about the r depends on the cost of past nodes
-to make decisions about the overall usefulness of a plan. A naive
-approach to this would be to just use the normal min/sum operation set
-to calculate historical costs. As explained in more detail in that
-chapter this approach is problematic. We need a way of convincing
-Antisthenis to "look behind" those materialized nodes a) without
-completely ignoring the materialized nodes and b) by handling
-referential cycles more gracefully than declaring nodes
-non-computable. For this reason we develop the \emph{stochastic costs
-  model}.
+As we saw in section  on the query planner, the planner depends
+on the cost of past nodes to make decisions about the overall
+usefulness of a plan. A naive approach to this would be to just use
+the normal min/sum operation set to calculate historical costs. As
+explained in more detail in that chapter this approach is
+problematic. We need a way of convincing Antisthenis to "look behind"
+those materialized nodes a) without completely ignoring the
+materialized nodes and b) by handling referential cycles more
+gracefully than declaring nodes non-computable. For this reason we
+develop the \emph{stochastic costs model}.
 
 The correct way of calculating the expected cost of a node in the
 future, which we very informally and heuristically attempt to
@@ -2413,3 +2452,8 @@ operations like \hask{min} rely on the operands being evaluated
 serially to take advantage of early stopping but addition is much more
 flexible with the order of evaluation. It is clear that parallelism
 would also be implemented in an operator specific way.
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "thesis"
+%%% End:
