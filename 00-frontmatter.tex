@@ -11,10 +11,10 @@ Roxy%
 }
 
 \chapter{Abstract}%
-It is popular practice to use materialized intermediate results to
-improve performance of RDBMSs. Work in this area has focused either on
+It is a popular practice to use materialized intermediate results to
+improve performance of RDBMSes. Work in this area has focused either on
 optimizers matching existing results or selecting useful intermediate
-results from a plan but few attempts have been made to create plans
+results from a plan, but few attempts have been made to create plans
 with intermediate results in mind, and none that make any deduplicate
 the stored data to alleviate the storage cost of maintaining possibly
 large queries.
@@ -22,10 +22,10 @@ large queries.
 We built \emph{FluiDB} to explore a novel approach to integrating the
 selection of materialized results with the planner in order to
 optimize the logical representation of data in memory. FluiDB
-materializes hot intermediate results and deduplicates data to
+materializes hot intermediate results and deduplucates data to
 alleviate the cost of maintaining them. This is achieved by
-introducing \emph{reversible operations}, versions of normal retional
-operatiors that optionally pass enough data to the output to make the
+introducing \emph{reversible operations}, versions of normal relational
+operators that optionally pass enough data to the output to make the
 input relations reconstructable. A planner aware of such operations
 can build query plans that dynamically adapt the data layout to the
 plan under constrained memory budget. This thesis revolves around four
@@ -36,18 +36,18 @@ The first chapter focuses on query processing and the relational
 algebra semantics that FluiDB operates under. FluiDB parses queries
 into graphs of sub-queries connected by reversible operators. Each
 such graph of the workload is merged into a global query graph that is
-used to infer properties of each relation like the cardinality and
+used to infer properties of each relation like cardinality and
 extent.
 
 The next chapter is dedicated to the planner and a novel monad for
 weighted backtracking that the planer is based on. The planner
 attempts to generate a plan based on the query graph that besides
 solving the query at hand, leaves in memory an optimal set of queries
-for the workload being run. In this chapter the garbage collector is
+for the workload being run. In this chapter, the garbage collector is
 also discussed, that creates deletion operators as part of the plan
 such that the available budget is respected.
 
-After that we go into \emph{Antisthenis}, a novel incremental computation
+After that, we go into \emph{Antisthenis}, a novel incremental computation
 system used by the query planner to determine, given a particular set
 of materialized relations, whether a relation materializable and the
 expected cost of materializing a relation. Antisthenis, besides
@@ -79,6 +79,7 @@ Thank some people.
 %% name for the signature line.
 
 \standarddeclaration{Christos Perivolaropoulos}
+
 \end{precontent}
 
 
