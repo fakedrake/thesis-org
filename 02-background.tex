@@ -2,13 +2,13 @@
 FluiDB is a system that focuses on relational query processing. This
 chapter aims to give the reader some idea about where FluiDB fits in
 the design space and the historical context in which it was developed.
-First we outline a very high level overview of the query language and
+First, we outline a very high level overview of the query language and
 operators involved in database management, as well as the the overall
 architecture of such systems. Following that we will focus on the
 query processing subsystems of relational query databases and some
 traditional approaches to query evaluation. Afterwards we will focus
 particularly on in-memory relational databases and the tradeoffs that
-govern their design. Finally we look into systems that utilize
+govern their design. Finally, we look into systems that utilize
 intermediate result recycling and how they solve the problem of
 automatically selecting and maintaining intermediate results for
 workloads.
@@ -18,7 +18,7 @@ workloads.
 Databases are more than just a method of accessing data. In their
 essence they are machines for question answering. The typical database
 works in a prepetual loop of reading queries and coming up with
-answers based on a set of datapoints. There are two important aspects
+answers based on a set of data points. There are two important aspects
 that every database needs to define in order to delineate its
 operational semantics:
 
@@ -45,14 +45,14 @@ aggregations \(\gamma\), semijoins \(\lsemi\), sorting, limiting, etc.
 A typical relational database processes operates in a cascading
 fashion. It initially receives a query in textual form. While
 relational algebra is the language that underpins the operation of a
-relational database it is raraly the language in which users interact
+relational database, it is rarely the language in which users interact
 with it. Instead, most relational databases expect queries writen in a
 variant of SQL, a query language that is parsed and immediately
 translated to a tree of relational algebra operators.
 
 This tree is processed by the query optimizer which rewrites it into a
 representation that is efficitent to be executed by taking advantage
-of the mathematical properties of RA and often gathered statistics
+of the mathematical properties of RA and often gathering statistics
 about the underlying data itself. This process leads to the formation
 of a relational algebra expression called the \emph{logical plan}. It is a
 high level recipe of what logical operators would produce the
@@ -61,15 +61,15 @@ requested result.
 
 Each RA operator is typically implemented by several different
 algorithms, each being efficient and even possible in some situations
-but not in others. For example a join can be implemented by nested
+but not in others. For example, a join can be implemented by nested
 loops or with merge join.  While the former algorithm is general and
 can implement any join, it is very inefficient. On the other hand a
 merge join is much more efficient but can only implement joins of the
-form \(\Join_{a=b}\) (equijoins). Furhtermore a logical plan typically
+form \(\Join_{a=b}\) (equijoins). Furthermore, a logical plan typically
 contains only implied information about the scheduling of the
-operators, for example the logical plan \((\pi A) \Join (\sigma B)\)
+operators, for example, the logical plan \((\pi A) \Join (\sigma B)\)
 implies that the join can not begin being evaluated before the
-projection and the selection but the latter can be evaluated in any
+projection and selection but the latter can be evaluated in any
 order. All these details about the execution of the query are resolved
 by the \emph{physical planner}. The physical planner accepts a logical
 plan and emits an unambiguous sequence of steps that will produce the
@@ -85,7 +85,7 @@ handling page-level caching, etc.
 \label{sec:org1ddf14b}
 
 Query optimization and more generally query processing and planning
-refer to the processes that take place between reading a query and
+refer to the processes that occur between reading a query and
 computing a physical plan. The concerns of query processing are
 correcness of the final result and the efficiency of the plan
 generated, usually in terms of time, but also in terms of space.
@@ -95,7 +95,7 @@ Finding an optimal plan is in the general case NP-complete
 do a good job at finding good plans using heuristics. The selection
 and organization of these heuristics as well as query cost estimation
 are the main problems that make a query optimizer non-trivial. In
-particular there one could separate the the tasks of a query optimizer
+particular one could separate the the tasks of a query optimizer
 into three broad categories:
 
 \begin{itemize}
@@ -104,7 +104,7 @@ into three broad categories:
 \item Size and cost estimation (cost model)
 \end{itemize}
 
-At a very high level the architecture of a query optimizer is
+At a very high level, the architecture of a query optimizer is
 demonstrated in figure \ref{fig:org171f336} and is broadly
 comprised of the following components:
 
@@ -118,7 +118,7 @@ comprised of the following components:
 \item The \emph{parser} which receives the query in textual form and produces a
 logical plan in the form of an abstract syntax tree.
 \item The \emph{deterministic optimizer} or \emph{logical planner} that rewrites the
-logical plan applying optimization that are based solely on the
+logical plan applying optimizations that are based solely on the
 general properties of the relational algebra.
 \item The \emph{physical planner} that transforms a logical plan into a
 physical plan that can be unambiguously executed by the execution
@@ -128,13 +128,13 @@ operate on like estimations about the statistics of the values or
 the cardinalities of the relations.
 \item The information about the data being manipulated by the plan is
 inferred by the \emph{cost estimator}. It uses a cost model to predict
-the cost of plans and cardinality of relations by taking into
-account the provenance of relations as well as physical properties
+the cost of plans and the cardinality of relations by taking into
+account the provenance of relations as well as the physical properties
 of the data like presence of indexes, the data layout, etc.
 \end{itemize}
 
 These subsystems are presented here as separate for simplicity and
-because in many database systems they are clearly delineated but it is
+because in many database systems they are clearly delineated, but it is
 also common that they blur into each other. For example in some RDBMSs
 the physical and logical planner are merged into one
 \cite{graefeCascadesFrameworkQuery1995,shankarQueryOptimizationMicrosoft2012,solimanOrcaModularQuery2014}. In
