@@ -3,7 +3,9 @@
 
 \RequirePackage{setspace}%
 \RequirePackage{geometry}%
-% \RequirePackage[nobottomtitles*,pagestyles,clearempty]{titlesec}%
+% \RequirePackage{titlesec}%
+% \titleclass{\chapter}{page}
+% \assignpagestyle{\chapter}{empty}
 
 \KOMAoptions{twoside=true}
 
@@ -52,7 +54,7 @@
   %% the header, for example, and thus the setting of the margins has been made
   %% available here. It's not recommended you change these too much!
   %% Note: Margins are controlled by the 'geometry' package.
-  \geometry{top=20mm, inner=40mm, outer=25mm, bottom=40mm}
+  \geometry{top=22mm, inner=40mm, outer=25mm, bottom=40mm}
 
   %% Control the header height and separation for fancyhdr
   \geometry{headheight=18pt, headsep=4mm}

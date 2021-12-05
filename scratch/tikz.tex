@@ -1,0 +1,69 @@
+\documentclass{article}
+
+
+\usepackage{environ}
+\usepackage{float}
+\usepackage{tikz}
+\makeatletter
+\usetikzlibrary{
+  decorations.pathreplacing,
+  backgrounds,
+  positioning,
+  matrix,
+  arrows.meta,
+  graphs,
+  shapes.misc,
+  shapes.geometric,
+  fit}
+
+\NewEnviron{tikzdiagram1}{%
+}
+\newsavebox{\measure@tikzpicture}
+\NewEnviron{tikzdiagram}{%
+  \def\tikz@width{}%
+  \begin{lrbox}{\measure@tikzpicture}%
+    \begin{tikzpicture}[ampersand replacement=\&]
+      \BODY
+    \end{tikzpicture}
+  \end{lrbox}%
+  \pgfmathparse{\textwidth/\wd\measure@tikzpicture}%
+  \begin{tikzpicture}[ampersand replacement=\&,scale=\pgfmathresult]
+    \BODY
+  \end{tikzpicture}
+}
+\makeatother
+
+\begin{document}
+
+\begin{tikzdiagram}
+  \tikzset{b/.style={circle,draw,minimum size=1cm}};
+  \tikzset{m/.style={circle,draw,minimum size=1cm, fill=gray!10}};
+  \tikzset{node/.style={rectangle}};
+  \tikzstyle{background}=[rectangle, fill=gray!10, inner sep=0.2cm]
+
+  \node[node] (sep) {};
+
+
+  \newcommand{\mkmat}[4]{
+    \matrix (#1) [#2,background,nodes={align=center,minimum height=2em},label=above:#3]{
+      \node[node] {#4}; \\
+      \node[node] {#4}; \\
+      \node[node] {#4}; \\
+      \node[node] {#4}; \\
+      \node[node] {...}; \\
+      \node[node] {}; \\
+    };
+  }
+  \mkmat{its}{above=of sep}{Iterations}{\((b,p_{reset},p_{it})\)}
+  \mkmat{init}{left=of its}{Inits}{\(p_{init}\)}
+  \mkmat{coit}{right=of its}{Coiterations}{\((p_{coit},r)\)}
+
+  \node[below=of sep,background,label=below:Cursor] (curs) {\((Maybe[b],p_{reset},p_{rg})\)};
+
+  \path[-stealth,bend right=20] (init.south) edge node[midway,fill=white] {cmd init} (curs.west) ;
+  \path[-stealth,bend right=20] (its) edge node[midway,fill=white] {cmd it} (curs) ;
+  \path[-stealth,bend right=20] (curs) edge node[midway,fill=white,text width=1cm] {Bounded\\result} (its) ;
+  \path[-stealth,bend right=20] (curs.east) edge node[midway,fill=white,text width=1cm] {Final\\result} (coit) ;
+\end{tikzdiagram}
+
+\end{document}

@@ -1,17 +1,17 @@
 
-FluiDB is a system that focuses on relational query processing. This
-chapter aims to give the reader some idea about where FluiDB fits in
-the design space and the historical context in which it was developed.
-First, we outline a very high level overview of the query language and
-operators involved in database management, as well as the the overall
-architecture of such systems. Following that we will focus on the
-query processing subsystems of relational query databases and some
-traditional approaches to query evaluation. Afterwards we will focus
-particularly on in-memory relational databases and the tradeoffs that
-govern their design. Finally, we look into systems that utilize
-intermediate result recycling and how they solve the problem of
-automatically selecting and maintaining intermediate results for
-workloads.
+FluiDB is a system that focuses on relational query optimization and
+planning. This chapter aims to give the reader some idea about where
+FluiDB fits in the design space, and the historical context in which
+it was developed.  First we outline a very high level overview of the
+query language and operators involved in database management, as well
+as the the overall architecture of such systems. Following that we
+will focus on the query planning subsystems of relational query
+databases and some traditional approaches to query
+evaluation. Afterwards we will focus particularly on in-memory
+relational databases and the tradeoffs that govern their
+design. Finally we look into systems that utilize intermediate result
+recycling and how they solve the problem of automatically selecting
+and maintaining intermediate results for workloads.
 
 \section{Relational databases}
 \label{sec:org5af5e27}
@@ -25,7 +25,7 @@ operational semantics:
 \begin{itemize}
 \item The language in which the queries are expressed in
 \item The representation of data in terms of which the queries are
-expressed and the results are presented.
+  expressed and the results are presented.
 \end{itemize}
 
 The oldest, most studied and most common model is the relational model
@@ -35,7 +35,7 @@ data in \emph{tables} or relations.
 A relation is typically an unordered set of tuples
 \((d_1,d_2,...,d_k)\) where each element \(d_i\) represents an
 attribute. The core relational algebra is an extension of the algabra
-of set (that defines operators of set union \(\cup\), intersection
+of sets (that defines operators of set union \(\cup\), intersection
 \(\cap\), product \(\times\), and difference \(-\)) that includes the
 operators of joins \(\Join\), projection \(\pi\) and selection
 \(\sigma\). Upon this foundation relational databases typically define
@@ -47,17 +47,18 @@ fashion. It initially receives a query in textual form. While
 relational algebra is the language that underpins the operation of a
 relational database, it is rarely the language in which users interact
 with it. Instead, most relational databases expect queries writen in a
-variant of SQL, a query language that is parsed and immediately
-translated to a tree of relational algebra operators.
+variant of SQL, a query language that is parsed into a tree of
+relational algebra operators.
 
 This tree is processed by the query optimizer which rewrites it into a
 representation that is efficitent to be executed by taking advantage
 of the mathematical properties of RA and often gathering statistics
 about the underlying data itself. This process leads to the formation
-of a relational algebra expression called the \emph{logical plan}. It is a
-high level recipe of what logical operators would produce the
-requested result.
-
+of a relational algebra expression called the \emph{logical plan}. It
+is a high level description of a sequence of operations required to
+produce a result. A logical plan only includes the denotational
+semantics of these operations making no assumptions about their
+implementation.
 
 Each RA operator is typically implemented by several different
 algorithms, each being efficient and even possible in some situations
@@ -69,26 +70,28 @@ form \(\Join_{a=b}\) (equijoins). Furthermore, a logical plan typically
 contains only implied information about the scheduling of the
 operators, for example, the logical plan \((\pi A) \Join (\sigma B)\)
 implies that the join can not begin being evaluated before the
-projection and selection but the latter can be evaluated in any
-order. All these details about the execution of the query are resolved
-by the \emph{physical planner}. The physical planner accepts a logical
-plan and emits an unambiguous sequence of steps that will produce the
-result of the query.
+projection and the selection but the latter can be evaluated in any
+order, or even simultaneously via pipelining. All these details about
+the execution of the query are resolved by the \emph{physical
+  planner}. The physical planner accepts a logical plan and emits an
+unambiguous algorithm that will produce the result of the query.
+
 
 The final step is actually executing the physical plan which is
-handled by the \emph{query execution engine}. The execution engine simply
-evaluates the physical plan on top of the data, making use of the
-correct algorithms, auxiliary structures like indexes managing memory,
-handling page-level caching, etc.
+handled by the \emph{query execution engine}. The execution engine
+simply evaluates the physical plan on top of the data, making use of
+the correct algorithms, auxiliary structures like indexes managing
+memory, handling page-level caching, etc.
 
-\section{Query processing}
-\label{sec:org1ddf14b}
+\todo{RDBMS diagram}
 
-Query optimization and more generally query processing and planning
-refer to the processes that occur between reading a query and
-computing a physical plan. The concerns of query processing are
-correcness of the final result and the efficiency of the plan
-generated, usually in terms of time, but also in terms of space.
+\section{Query optmization and planning}
+
+Query optimization and planning generally refers to the processes that
+take place between reading a query and executing a physical plan. The
+concerns of query optmization are correcness of the final result and
+the efficiency of the plan generated, usually in terms of time, but
+also in terms of space.
 
 Finding an optimal plan is in the general case NP-complete
 \cite{ullmanInformationIntegrationUsing1997}, but query optimizers can
@@ -104,33 +107,37 @@ into three broad categories:
 \item Size and cost estimation (cost model)
 \end{itemize}
 
-At a very high level, the architecture of a query optimizer is
-demonstrated in figure \ref{fig:org171f336} and is broadly
+
+At a very high level the architecture of a query optimizer is
+demonstrated in figure \ref{fig:optimizer_arch} and is broadly
 comprised of the following components:
 
 \begin{figure}[p]
 \centering
 \includegraphics[width=\textwidth]{./imgs/optimizer_architecture.pdf}
-\caption{\label{fig:org171f336}Common architecture of a query optimizer.}
+\caption{\label{fig:optimizer_arch}Common architecture of a query
+  optimizer.}
 \end{figure}
 
 \begin{itemize}
-\item The \emph{parser} which receives the query in textual form and produces a
-logical plan in the form of an abstract syntax tree.
-\item The \emph{deterministic optimizer} or \emph{logical planner} that rewrites the
-logical plan applying optimizations that are based solely on the
-general properties of the relational algebra.
-\item The \emph{physical planner} that transforms a logical plan into a
-physical plan that can be unambiguously executed by the execution
-engine to produce a result. The physical planner typically has at
-least some information about the underlying data that the plan will
-operate on like estimations about the statistics of the values or
-the cardinalities of the relations.
+
+\item The \emph{parser} which receives the query in textual form and
+  produces a logical plan in the form of an abstract syntax tree.
+\item The \emph{deterministic optimizer} or \emph{logical planner}
+  that rewrites the logical plan applying optimization that are based
+  solely on the general properties of the relational algebra.
+\item The \emph{physical planner} that transforms a logical plan into
+  a physical plan that can be unambiguously executed by the execution
+  engine to produce a result. The physical planner typically has at
+  least some information about the underlying data that the plan will
+  operate on like estimations about the statistics of the values or
+  the cardinalities of the relations.
 \item The information about the data being manipulated by the plan is
-inferred by the \emph{cost estimator}. It uses a cost model to predict
-the cost of plans and the cardinality of relations by taking into
-account the provenance of relations as well as the physical properties
-of the data like presence of indexes, the data layout, etc.
+  inferred by the \emph{cost estimator}. It uses a cost model to
+  predict the cost of plans and cardinality of relations by taking
+  into account the provenance of relations as well as physical
+  properties of the data like presence of indexes, the data layout,
+  etc.
 \end{itemize}
 
 These subsystems are presented here as separate for simplicity and
@@ -147,37 +154,39 @@ estimations and predictions
 degree to which these subsystems are separate is a major concern in
 the desgin space of query optimizers.
 
-Another important concern to be considered, and which is indeed is
+Another important concern to be considered, and which is indeed
 important in the design of FluiDB, is the number of queries considered
 at a time during optimization and the way in which they are
 considered. The optimizer usually considers one query at a time and
-maintains little or no state between executions. For a very long time,
-however muti-query optimization has been researched
-\cite{michiardiCachebasedMultiqueryOptimization2021,wangMultiqueryOptimizationMapreduce2013,royEfficientExtensibleAlgorithms2000,rogersMultiqueryOptimization2017}
-although no mainstream databases. What is more common in recent years
-is recycling intermediate results. These RDBMSs materialize and cache
-intermediate relations in the hopes that they will be useful for reuse
-in later queries
+maintains little or no state between executions. Although it has found
+little adoption in main stream databases, muti-query optimization has
+been researched extensicely
+\cite{michiardiCachebasedMultiqueryOptimization2021,wangMultiqueryOptimizationMapreduce2013,royEfficientExtensibleAlgorithms2000,rogersMultiqueryOptimization2017}. What
+is more common in recent years is recycling intermediate
+results. RDBMSs that incorporate this thechnique materialize and cache
+intermediate relations reusuing them when they appear as subqueries in
+later queries
 \cite{perezHistoryawareQueryOptimization2014,nagelRecyclingPipelinedQuery2013,ivanovaArchitectureRecyclingIntermediates2010}.
 
-The final concern that is relevant to the design of FluiDB regards the
-traversal and pruning of the search space. As mentioned, query
-optimization is generally NP-complete, so the viable options DBMS
-designers are left with are randomized algorithms, ML approaches, and
-heuristics. Virtually all systems implement heuristics entirely or to
-some degree, while more and more incorporate randomized algorithms
-\cite{chandeGeneticOptimizationJoin2011} and machine learning
+The final query processing concern that is relevant to the design of
+FluiDB regards the traversal and pruning of the search space. As
+mentioned, query optimization is generally NP-complete, so the viable
+options DBMS designers are left with are randomized algorithms, ML
+approaches, and heuristics. Virtually all systems implement heuristics
+entirely or to some degree, while more and more also incorporate
+randomized algorithms \cite{chandeGeneticOptimizationJoin2011} and
+machine learning
 \cite{liMachineLearningDatabases2021,marcusNeoLearnedQuery2019}.
 
 \subsection{Logical and physical query optimization}
-\label{sec:org86152ae}
 
 The logical planner accepts a syntax tree in the form of relational
-algebra where the operators only contain information about the
-semantic meaning of operations and none relating to the algorithms
-that will eventually be executed or the input data. It is for all
-intents and purposes a rewrite engine for relational algebra. Typical
-transformations performed by the logical query optimizer are
+algebraic expressions where the operators only contain information
+about the semantic meaning of operations and none relating to the
+algorithms that will eventually be executed or the input data. It is
+for all intents and purposes a rewrite engine for relational
+algebra. Typical transformations performed by the logical query
+optimizer are
 
 \begin{itemize}
 \item Predicate normalization to conjunctive normal form, e.g. \((a_0 = 1
@@ -190,44 +199,44 @@ transformations performed by the logical query optimizer are
 \item Searching the join ordering space.
 \end{itemize}
 
-Physical query planner, on the other hand, will specialize the logical
-operators deciding on the particular algorithm that should be used. A
-physical query planner therefore requires low level information about
-the query that relates to indexes available, possible ordering of the
-data, materialized views, etc.
+The physical query planner, on the other hand, will specialize the
+logical operators deciding on the particular algorithm that should be
+used. A physical query planner therefore requires low level
+information about the query that relates to indexes available,
+possible ordering of the data, materialized views, etc.
 
 Either of the planners needs to enumerate the plans under
 consideration while traversing the search space. There are two major
 approaches to this:
 
 \begin{itemize}
-\item The \emph{top-down} approach, where the planner establishes the top level
-operator and branches searching the children, backtracking as
-necessary. This was the approach of the decendants of the volcano
-\cite{graefeVolcanoOptimizerGenerator1993a} where they implement a
-"seach engine" that uses a branch and bound approach to optimization
-with caching.
-\item The \emph{bottom-up} approach where the builds and connects fragments of
-a plan
-\cite{raasveldtDuckdbEmbeddableAnalytical2019,kemperHyPerHybridOLTP2011}
+\item The \emph{top-down} approach, where the planner establishes the
+  top level operator and branches searching the children, backtracking
+  as necessary. This was the approach of the decendants of the
+  \emph{volcano optimzer} \cite{graefeVolcanoOptimizerGenerator1993a}
+  where they implement a "seach engine" that uses a branch and bound
+  approach to optimization with caching.
+\item The \emph{bottom-up} approach where the builds and connects
+  fragments of a plan
+  \cite{raasveldtDuckdbEmbeddableAnalytical2019,kemperHyPerHybridOLTP2011}
 \end{itemize}
 
 An important optimizer, on which most modern optimizers are still
-being based, is the cascades optimizer
-\cite{graefeCascadesFrameworkQuery1995}. In short, cascades keeps track
-of \emph{groups} of equivalent expressions of queries and uses those as the
-fundamental atom that it manipulates. For example instead of keeping
-track of \(A \Join (B \Join C)\) and \((A \Join B) \Join C\)
-separately they would be part of the same query group. It then uses a
-global hash table (the "memo" structure) to match the best plan that
-corresponds to each group.
+being based, is the \emph{cascades optimizer}
+\cite{graefeCascadesFrameworkQuery1995}. In short, cascades keeps
+track of \emph{groups} of equivalent expressions of queries and uses
+those as the fundamental atom that it manipulates. For example instead
+of keeping track of \(A \Join (B \Join C)\) and
+\((A \Join B) \Join C\) separately they would be part of the same
+query group. It then uses a global hash table (the "memo" structure)
+to match the best plan that corresponds to each group.
 
 Many database systems use optimizers similar to cascades (like the
 Microsoft SQL server, postgres, and
 MemSQL\cite{chenMemSQLQueryOptimizer2016}, and greenplum -- now orca
 \cite{solimanOrcaModularQuery2014a} to name a few). Notable among them
 is apacha calcite \cite{begoliApacheCalciteFoundational2018}, a
-framework for implementing query processing used by a number of
+framework for implementing query planning used by a number of
 commercial and research databases
 \cite{nunesalonsoBuildingPolyglotData2020}.
 
@@ -235,31 +244,31 @@ commercial and research databases
 \label{sec:org4f8e111}
 
 Probably the hardest aspect of the planner design is the cost
-estimation algorithms. These are required in order to select plans a
-and to navigate the search space. A good cost model can help basic
+estimation algorithms. These are required in order to select plans and
+to navigate the search space. A good cost model can help basic
 planners make decent plans and sophisticated planners make horrible
-plans \cite{leisHowGoodAre2015} . As cost estimation we refer to a
+plans \cite{leisHowGoodAre2015}. As cost estimation we refer to a
 number of different related procedures that are broadly the estimation
 of the cost of an arbitrary plan and include the prediction of the
 cardinality of not yet materialized relations.
 
 It seems that the most important challenges involved in the design of
-a cost model is that we are fundamentally operating with scares with
-scarce and highly uncertain information. Especially relating to
+a cost model relate to the fact that we are fundamentally operating
+with scarce and highly uncertain information. Especially relating to
 cardinality estimation, the most important of the tasks involved,
 uncertainty and bad predictions propagate and make make it extremely
 hard for the planers to make correct decisions. Consider for example a
 join. Some joins are similar to cartesian products, producing large
 output tables, and some joins are more similar to lookups producing
 only a few rows. A cost model that confuses the kind of join will make
-very bad predictions w.r.t. the cost of any relational algebra
+very bad predictions w.r.t.\ the cost of any relational algebra
 expression that uses said join. Therefore join order estimation, that
 is a critical aspect of planning.
 
 Cost estimation is beyond the scope of FluiDB and we only implement
 the most naive cardinality estimation but it is worth mentioning how
 more mature systems approach the issue. Cardinality estimation most
-commonly takes the form of selectivity estimation, i.e. what
+commonly takes the form of selectivity estimation, i.e.\  what
 percentage of tuples from the input make it to the output of a
 selection or a join. This is sensitive to the statistical
 properties of the values and the selection/join predicates.

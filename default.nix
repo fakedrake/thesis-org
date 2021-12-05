@@ -9,6 +9,7 @@ let
   tex = with pkgs; (texlive.combine {
     inherit (texlive)
       scheme-small
+      enumitem
       todonotes
       biblatex
       xcolor
@@ -17,7 +18,6 @@ let
       abstract
       cancel
       latexmk
-      enumitem
       minted
       fvextra
       catchfile

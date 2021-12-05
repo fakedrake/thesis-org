@@ -9,7 +9,7 @@ collection that generates plan fragments that allow the plan to free
 up space in the underlying storage. Finally we talk about the cost
 model that guides the evolution of the plan.
 \section{HCntT logic monad}
-\label{sec:org670bd3e}
+
 The FluiDB planner is designed in terms of a backtracking search
 algorithm that searches in the space of subplans for an optimal (or
 good-enough) plan. Because the algorithm involves a lot of complicated
@@ -20,13 +20,13 @@ search and soft cuts. Because none of the solutions we dound in the
 literature support both we we developed the \hask{HCntT} backtracking monad
 that is described in this section.
 
-\subsection{background}
-\label{sec:org5cbe9b8}
+\subsection{Background}
+
 Monads for backtracking in a functional context have been proposed in
-various incarnateions.  The most common monad that encapsulates \hask{ListT
-m a = forall b . (a -> m b -> m b) -> m b -> m b}, also dubbed the
-Church encoding of lists or an application of the Cayley theorem on
-list, first proposed (in an untyped format in scheme) by
+various incarnateions.  The most common monad that encapsulates
+\hask{ListT m a = forall b . (a -> m b -> m b) -> m b -> m b}, also
+dubbed the Church encoding of lists or an application of the Cayley
+theorem on list, first proposed (in an untyped format in scheme) by
 \cite{haynesLogicContinuations1987}, but most authors cite
 \cite{hinzeDerivingBacktrackingMonad2000a} which seems to have
 redescovered an application of the concpetsin 2000, and also
@@ -44,8 +44,8 @@ newtype ListT m a = ListT (Maybe (a,ListT m a))
 
 Which mirrors precisely the idea behid MonadLogic from
 \cite{kiselyovBacktrackingInterleavingTerminating}. As demonstrated in
-listing \ref{org74ea06b} the MonadLogic able to cons(\hask{reflect}) and
-uncons(\hask{msplut}).
+listing \ref{lst:monad_logic} the MonadLogic able to cons(\hask{reflect})
+and uncons(\hask{msplut}).
 
 \begin{code}
 \begin{haskellcode}
@@ -59,7 +59,7 @@ reflect Just (a,as) = pure a <|> as
 
 -- msplit >=> reflect == return
 \end{haskellcode}
-\caption{\label{org74ea06b}The logic monad typeclass}
+  \caption{\label{lst:monad_logic}The logic monad typeclass}
 \end{code}
 
 In \cite{kiselyovBacktrackingInterleavingTerminating}, on top of this
@@ -72,8 +72,8 @@ that is left, half (\(1/4\) of the total) goes to the second, out of the
 powerseries that describes the way the way resources are allocated to
 branches may seem arbitrary, in practice it may mean the difference
 between terminating and non-terminating computations. For example the
-code in listing \ref{org4f519db} can be translated to something like the
-code in listing \ref{orgf4b45fd} which does terminates due to the fact that
+code in listing \ref{lst:list_logic_example} can be translated to something like the
+code in listing \ref{lst:interl_logic_example} which does terminates due to the fact that
 while it does not give the same change to all the branches it does not
 completely starve any of them.
 
@@ -85,7 +85,9 @@ nonTerm = do
   guard $ a + b - c == 10
   return (a,b,c)
 \end{haskellcode}
-\caption{\label{org4f519db}Using a simple list to drive non-determinism is implicitly equivalent to a DFS algorithm which in many useful cases does not terminate.}
+  \caption{\label{lst:list_logic_example}Using a simple list to drive
+    non-determinism is implicitly equivalent to a DFS algorithm which
+    in many useful cases does not terminate.}
 \end{code}
 
 \begin{code}
@@ -96,27 +98,49 @@ interleaveTest = runLogic @[] $ do
   guard $ a + b - c == 10
   return (a,b,c)
 \end{haskellcode}
-\caption{\label{orgf4b45fd}Interleaving (in this example \hask{>*<}) is not \emph{actually} fair in the sense that it does not give all the processes}
+  \caption{\label{lst:interl_logic_example}Interleaving (in this
+    example \hask{>*<}) is not \emph{actually} fair in the sense that
+    it does not give all the processes}
 \end{code}
 
 So can we do better than terminating? Sometimes we can with weighted
 search. Weighted search refers to the backtracking search where we
 apply weights, or priority, to the branches. Branches with higher
 priority are scheduled before branches with lower priority. A sketch
-of the API is demonstrated in listing \ref{org77c790c}. The
-backtracking monad implements the \hask{halt} operation (called \hask{tell} in
-\cite{kidneyAlgebrasWeightedSearch2021}, presumably to echo the
-\hask{MonadWriter} interface) which accepts a value indicating the priority
-of the current branch and yields control to the scheduler. The
-scheduler then passes control to the highest priority branch. The
-value passed to \hask{halt} must implement a monoid such that the priority
-of a branch is the concatenation of all values passed to halt up to
-that point.
+of the API is demonstrated in listing \ref{lst:halt_example}. The
+backtracking monad implements the \hask{halt} operation (called
+\hask{tell} in \cite{kidneyAlgebrasWeightedSearch2021}, presumably to
+echo the \hask{MonadWriter} interface) which accepts a value
+indicating the priority of the current branch and yields control to
+the scheduler. The scheduler then passes control to the highest
+priority branch. The value passed to \hask{halt} must implement a
+monoid such that the priority of a branch is the concatenation of all
+values passed to halt up to that point.
+
 \begin{code}
 \begin{haskellcode}
--- Todo
+  -- | Non-deterministically return an integer but before that pass
+  -- control to the scheduler which prioritizes branches based on a
+  -- total sum which it tries to minimize.
+  stream :: (HeapKey h ~ Sum Int,IsHeap h,Monad m) => HCntT h r m Int
+  stream = go 0 where
+    go i = do
+      halt $ Sum i
+      return i <|> go (i+1)
+
+  -- | Non-deterministically choose three numbers and only keep the
+  -- branches that satisfy a + b - c == 10. Avoid diverging by prefering
+  -- branches for which the sum of the numbers is minimum.
+  test2 :: IO [(Int,Int,Int)]
+  test2 = takeListT 5 $ dissolve @(CHeap (NonNeg Int)) $ once $ do
+    (a,b,c) <- (,,) <$> stream <*> stream <*> stream
+    guard $ a + b - c == 10
+    return (a,b,c,x)
+  -- > test
+  -- [(5,5,0),(6,4,0),(5,6,1),(6,5,1),(6,6,2)]
 \end{haskellcode}
-\caption{\label{org77c790c}Prioritise branches that we want to be executed first.}
+  \caption{\label{lst:halt_example}Prioritise branches that we want to
+    be executed first.}
 \end{code}
 
 With that in mind, for the FluiDB planner we require that our logic
@@ -154,10 +178,10 @@ another backtracking monad transformer, \hask{HCntT}.
 
 
 \subsection{The HCntT monad}
-\label{sec:org43bf21e}
+
 The \hask{HCntT} monad combines the powers of delimited continuations and
 much like \cite{kidneyAlgebrasWeightedSearch2021} it rsearches the
-result in layers (see listing \ref{org7491a12}).
+result in layers (see listing \ref{lst:hcntt_def}).
 
 \begin{code}
 \begin{haskellcode}
@@ -169,7 +193,9 @@ newtype HRes h m r = HRes (Tup2 (h (Brnch h r m)),[r])
 type Brnch h r m = ReaderT (HeapKey v)
   (StateT (CompState h r m) m) (HRes h m r)
 \end{haskellcode}
-\caption{\label{org7491a12}}
+\label{lst:hcntt_def}
+\caption{The \hask{HCntT} monad transformer allows continuation based
+  non-determinism that allows switching between branches.}
 \end{code}
 
 Here we use the continuation monad to capture the rest of the
@@ -179,7 +205,7 @@ intermediate layer of the continuation. Returning empty results should
 be passing. It contains a heap of halted branches and a list of
 concrete evaluated valies. The heap type is parametric to allow
 flexibility with respect to how to best handle the particular key
-types (see listing \ref{orgf965607}). The heap is required to be stable,
+types (see listing \ref{lst:heap_def}). The heap is required to be stable,
 i.e. items with the same key are returned in the order they were
 inserted. The HeapKey \hask{mempty} must be less than (higher priority) all
 other \hask{HeapKey} s.
@@ -194,7 +220,9 @@ class (forall v . Monoid (h v),Functor h,Monoid (HeapKey h),Ord (HeapKey h))
   singletonHeap :: HeapKey h -> v -> h v
   maxKeyHeap :: h v -> Maybe (HeapKey h)
 \end{haskellcode}
-\caption{\label{orgf965607}We parameterize over heaps to allow the user to decide an efficient priority queue for the branches.}
+\label{lst:heap_def}
+  \caption{We parameterize over heaps to allow the
+    user to decide an efficient priority queue for the branches.}
 \end{code}
 
 A halted computation branch, denoted as \hask{Brnch} is simply a
@@ -202,27 +230,29 @@ computation that evalautes to HRes. The computation must be able to
 interact with CompState as required by the infrastructure supporting
 \hask{<//>}.
 
-The \hask{HCntT} on its own is not a very useful object, it needs to be
-\emph{dissolved} so the values can be used. Disolution (listing
-\ref{org2a763c9}) is the process of turning an HCntT value to a \hask{ListT}
-value. The \hask{ListT} will lazily produce just as many results as are
-required, and of course just as many effects as required, and not
-more. This indicates that the process of building comptuatins is
-composable but not incremental. The price of the \hask{<//>} combinator
-that we described is that, unlike in other non-continuation based
-monad, once we start drawing results from the computation we can not
-apply further constraints on the resulting objects. Contrast that with
-the case of \hask{ListT} where we can draw the first couple of results and
-then use the rest in a different computation.
+The \hask{HCntT} on its own is not a very useful object, it needs to
+be \emph{dissolved} so the values can be used. Disolution (listing
+\ref{lst:dissolve_func}) is the process of turning an HCntT value to a
+\hask{ListT} value. The \hask{ListT} will lazily produce just as many
+results as are required, and of course just as many effects as
+required, and not more. This indicates that the process of building
+comptuatins is composable but not incremental. The price of the
+\hask{<//>} combinator that we described is that, unlike in other
+non-continuation based monad, once we start drawing results from the
+computation we can not apply further constraints on the resulting
+objects. Contrast that with the case of \hask{ListT} where we can draw
+the first couple of results and then use the rest in a different
+computation.
 
 \begin{code}
 \begin{haskellcode}
 dissolve :: (IsHeap h,Monad m) => HCntT h r m r -> ListT m r
 \end{haskellcode}
-\caption{\label{org2a763c9}Disolution is the process of turning an \hask{HCntT} computation into a \hask{ListT}.}
+  \caption{\label{lst:dissolve_func}Disolution is the process of
+    turning an \hask{HCntT} computation into a \hask{ListT}.}
 \end{code}
 
-The way disolution works then (listing \ref{orgd9e01bb}) is to first
+The way disolution works then (listing \ref{lst:dissovle_algo}) is to first
 commit to the computation constructed by applying the continuation and
 obtaining an \hask{HRes}. If \hask{HRes} provides concrete results they are
 yielded one by one into \hask{ListT}. Then, if the heap is not empty, the
@@ -233,20 +263,20 @@ running the reader layer of the monad transformer using its pervious
 value. As we will see, halting the branch will update that value
 incrementally.
 
-We use \hask{Tup2} (a functor that is simply \hask{data Tup2 = Tup2 a a}) in the
-type of \hask{HRes} to allow us to be flexible on whether we use BFS or DFS
-search among the same-priority branches. As mentioned when describing
-the heap, a valid heap for \hask{HCntT} must be stable. While this is a
-weighted search, it remains a question of how the options that have
-the same priority should be ordered. If we had just one heap,
-appending the newly produced heaps to the left would make for a depth
-first traversal of the same-priority search space while appending on
-the right would result in a breath first traversal. We want the
-operators to have the flexibility to decide on which side each branch
-should be appended and for that reson the \hask{HRes} actually contains two
-heaps: one appended to the left (DFS), and one to the right
-(BFS). This is of particular importance to the correct implementtion
-of \hask{<//>} as we will see shortly.
+We use \hask{Tup2} (a functor that is simply \hask{data Tup2 = Tup2 a
+  a}) in the type of \hask{HRes} to allow us to be flexible on whether
+we use BFS or DFS search among the same-priority branches. As
+mentioned when describing the heap, a valid heap for \hask{HCntT} must
+be stable. While this is a weighted search, it remains a question of
+how the options that have the same priority should be ordered. If we
+had just one heap, appending the newly produced heaps to the left
+would make for a depth first traversal of the same-priority search
+space while appending on the right would result in a breath first
+traversal. We want the operators to have the flexibility to decide on
+which side each branch should be appended and for that reson the
+\hask{HRes} actually contains two heaps: one appended to the left
+(DFS), and one to the right (BFS). This is of particular importance to
+the correct implementtion of \hask{<//>} as we will see shortly.
 
 \begin{code}
 \begin{pycode}
@@ -258,19 +288,20 @@ def dissolve(branches):
         for r in results:
             yield r
 \end{pycode}
-\caption{\label{orgd9e01bb}The dissolution algorithm in pseudo-python}
+  \caption{\label{lst:dissovle_algo}The dissolution algorithm in
+    pseudo-python}
 \end{code}
 
 
 In the following we will briefly describe the implementations of
 various combinators of \hask{HCntT}.
 
-\subsubsection{HCntT Alternative/MonadPlus}
-\label{sec:orgdfb6e7c}
+\subsubsection{Alternative/MonadPlus}
+
 The most fundamental combinator for any backtracking monad is the one
 splitting branches, the implementation of \hask{Alternative} or,
 equvalently in our case, \hask{MonadPlus}. The implementation for \hask{HCntT}
-is fairly straightforward (listing \ref{org5991d89} ) is fairly
+is fairly straightforward (listing \ref{lst:alternative_impl} ) is fairly
 straightforward: for \hask{empty} or \hask{mzero}, which indicates failure of a
 branch, simply disregards the continuation and returns an empty
 \hask{HRes}. The \hask{mplus} or \hask{<|>} simply returns an \hask{HRes} with only the
@@ -288,18 +319,21 @@ instance (IsHeap h,Monad m) => Alternative (HCntT h r m) where
       h = singletonHeap mempty
   empty = ContT $ const $ return emptyHRes
 \end{haskellcode}
-\caption{\label{org5991d89}The implementation for \hask{Alternative} is the same as the implementation for \hask{MonadPlus}.}
+  \caption{\label{lst:alternative_impl}The implementation for
+    \hask{Alternative} is the same as the implementation for
+    \hask{MonadPlus}.}
 \end{code}
 
 
-\subsubsection{HCntT halt}
-\label{sec:org16bc12a}
-We mentioned the \hask{halt} \hask{HCntT} process. Because we want to be able to
-transform the \hask{HCntT} monad we define the class of \hask{MonadHalt} that
-can support this operation. Most common monad transformers of \hask{HCntT}
-can trivially support halt. The implementation of \hask{halt} for \hask{HCntT}
-itself is demonstrated in listing \ref{orge4516d6}. The provided
-priority is offset by the previous priority of the branch.
+\subsubsection{halt: passing control to the scheduler}
+
+We mentioned the \hask{halt} \hask{HCntT} process. Because we want to
+be able to transform the \hask{HCntT} monad we define the class of
+\hask{MonadHalt} that can support this operation. Most common monad
+transformers of \hask{HCntT} can trivially support halt. The
+implementation of \hask{halt} for \hask{HCntT} itself is demonstrated
+in listing \ref{lst:halt_class}. The provided priority is offset by the
+previous priority of the branch.
 
 \begin{code}
 \begin{haskellcode}
@@ -313,37 +347,38 @@ instance (Monad m,IsHeap h) => MonadHalt (HCntT h r m) where
     v' <- asks (v <>)
     return $ HRes (Tup2 (singletonHeap v $ nxt ()) mempty,[])
 \end{haskellcode}
-\caption{\label{orge4516d6}The halt process yields updates the priority of the branch and yields execution to the scheduler.}
+  \caption{\label{lst:halt_class}The halt process yields updates the
+    priority of the branch and yields execution to the scheduler.}
 \end{code}
 
 
 \subsubsection{Soft-cut/eitherl}
-\label{sec:orgba03e8f}
-The \hask{<//>} (pronounced eitherl), \hask{left <//> right} runs the left hand
-side operand (primary) and if no values are produced in the \emph{entire}
-computation based on that, only then does it try to evaluate the right
-hand side (fallback). \hask{HCntT} does not guarante that the right hand
-side will be scheduled immediately after it realizes that there are no
-solutions, but it does guarantee that it will be scheduled before it
-moves on to a new priority. In other words it is only guarantted that
-the priority of the fallback branch will tie the last failing branch
-of the left hand side in terms of priority, but if there are other
-branches that tie, there is no guarantee of how those will be
-scheduled.
+
+The \hask{<//>} (pronounced eitherl), \hask{left <//> right} runs the
+left hand side operand (primary) and if no values are produced in the
+\emph{entire} computation based on that, only then does it try to
+evaluate the right hand side (fallback). \hask{HCntT} does not
+guarante that the right hand side will be scheduled immediately after
+it realizes that there are no solutions, but it does guarantee that it
+will be scheduled before it moves on to a new priority. In other words
+it is only guarantted that the priority of the fallback branch will
+tie the last failing branch of the left hand side in terms of
+priority, but if there are other branches that tie, there is no
+guarantee of how those will be scheduled.
 
 There are two challenges that our particular feature set imposes to
 implementing this:
 
 \begin{itemize}
 \item We want \hask{<//>} to operate on the entire operation, unlike
-\cite{kiselyovBacktrackingInterleavingTerminating} that makes the
-decision o whether to run the fallback solely based on whther the
-left hand side returns a value.
+  \cite{kiselyovBacktrackingInterleavingTerminating} that makes the
+  decision o whether to run the fallback solely based on whther the
+  left hand side returns a value.
 \item In the context of a weightedx search control needs to be able to
-escape a branch that passes through the left hand side operand
-before it is exhausted. Therefore we can not simply dissolve the
-left hand side and reconstruct it. But then how would the operator
-know when the branches are exhausted?
+  escape a branch that passes through the left hand side operand
+  before it is exhausted. Therefore we can not simply dissolve the
+  left hand side and reconstruct it. But then how would the operator
+  know when the branches are exhausted?
 \end{itemize}
 
 We solve these problems with the use of a special kind of branch we
@@ -377,50 +412,85 @@ this point:
 
 \begin{itemize}
 \item The fallback entry in the table has been invalidated by a branch
-that yielded a result. In this case the marker is invalid and just
-returns.
-\item The fallback entry is valid but does not correspond to the scheduled
-marker. This means due to the left hand side branch spawning low
-priority sub-branches, another marker has been inserted to
-(possibly) trigger the fallback at some time in the future. The
-current marker is invalid
+  that yielded a result. In this case the marker is invalid and just
+  returns.
+\item The fallback entry is valid but does not correspond to the
+  scheduled marker. This means due to the left hand side branch
+  spawning low priority sub-branches, another marker has been inserted
+  to (possibly) trigger the fallback at some time in the future. The
+  current marker is invalid
 \item The fallback location is valid and corresponds to the scheduled
-marker. This means that it is time fallback process needs to be run
-and removed from the table.
+  marker. This means that it is time fallback process needs to be run
+  and removed from the table.
 \end{itemize}
 
 But what is the lifecycle of the fallback entries? When an exprssion
-\hask{A <//> B} appears we create a new fallback entry in the lookup table
-containing \hask{B} and recursively "infect" all spawned sub-branches of
-\hask{A} to perform the following actions immediately after they generate
-new branches and results:
+\hask{A <//> B} appears we create a new fallback entry in the lookup
+table containing \hask{B} and recursively "infect" all spawned
+sub-branches of \hask{A} to perform the following actions immediately
+after they generate new branches and results:
 
 \begin{itemize}
-\item If there is at least one valid result invalidate the fallback in the
-lookup table and stop infecting child branches with the currently
-described hook.
-\item If the fallback is invalid it means there have already been valid
-results that rendered the fallback obsolete. Stop infecting
-sub-branches.
+\item If there is at least one valid result invalidate the fallback in
+  the lookup table and stop infecting child branches with the
+  currently described hook.
+\item If the fallback is invalid it means there have already been
+  valid results that rendered the fallback obsolete. Stop infecting
+  sub-branches.
 \item If none of above happened check the priority of the last marker
-corresponding to the fallback (registerd in the lookup table
-entry). If it is strictly lower than the lowest priority
-subbranch do nothing because there is a well placed marker to
-handle it. Otherwise create a new marker of the same priority as
-the lowest priority subbranch and put it in the right-append
-heap. This way we know it will be scheduled AFTER the last branch
-relating to the fallback.
+  corresponding to the fallback (registerd in the lookup table
+  entry). If it is strictly lower than the lowest priority subbranch
+  do nothing because there is a well placed marker to handle
+  it. Otherwise create a new marker of the same priority as the lowest
+  priority subbranch and put it in the right-append heap. This way we
+  know it will be scheduled AFTER the last branch relating to the
+  fallback.
 \end{itemize}
 
 
-It is demonstrated in figure \ref{fig:org90c1788}
-
+It is demonstrated in figure \ref{fig:marker_branches}
 
 \begin{figure}[p]
-\centering
-\includegraphics[width=.9\linewidth]{./imgs/2021-10-28_13-20-45_screenshot.png}
-\caption{\label{fig:org90c1788}Marker "branches" are injected in the
-  heap of prioritized branches to possibly trigger the fallback
+  \begin{tikzdiagram}
+    \tikzset{b/.style={circle,draw,minimum size=1cm}};
+    \tikzset{m/.style={circle,draw,minimum size=1cm, fill=gray!10}};
+    \tikzset{node/.style={rectangle}};
+    \tikzstyle{background}=[rectangle, fill=gray!10, inner sep=0.2cm]
+
+    \node[node] (sep) {};
+
+    \newcommand{\s}{\node[node] {};}
+    \matrix (tbl) [above of = sep,background, nodes={align=center,minimum height=2em}]{
+      \s \& \node {...}; \& \s \\
+      \node[node] (rec_data){\(b_{fallback}\)}; \&
+      \node[node] (rec_id) {\(id\)}; \&
+      \node[node] (rec_br) {\(m_3\)}; \\
+      \s \& \node {...}; \& \s \\
+    };
+    \node[node] (tbl_label) [left=of tbl] {Fallback branch table:};
+
+    \node[node] () [fit=(rec_data) (rec_br),draw] {};
+
+    \matrix [column sep = 0.3cm, below = 1cm of sep] {
+
+      \node[node] (heap_lbl) {Branch heap:}; \&
+      \node[b] (b1)  {\(b_{1}\)}; \&
+      \node[b] (b2)  {\(b_{2}\)}; \&
+      \node[m] (m1)  {\(m_{1}\)}; \&
+      \node[b] (b4)  {\(b_{4}\)}; \&
+      \node[m] (m2)  {\(m_{2}\)}; \&
+      \node[b] (b6)  {\(b_{6}\)}; \&
+      \node[m] (m3)  {\(m_{3}\)}; \&
+      \node[b] (b8)  {\(b_{8}\)}; \&nppppnnn
+      \node[b] (b9)  {\(b_{9}\)}; \\
+    };
+    \draw [dotted,-stealth] (m1) to (rec_id);
+    \draw [dotted,-stealth] (m2) to (rec_id);
+    \draw [-stealth] (m3) to [bend left =10] (rec_id);
+    \draw  [-stealth] (rec_br)  to [bend left = 10] (m3);
+  \end{tikzdiagram}
+\caption{\label{fig:marker_branches}Marker "branches" are injected in
+  the heap of prioritized branches to possibly trigger the fallback
   branch. Each marker gives the scheduler the opportunity to run a
   particular fallback branch. The entry of the fallback branch entry
   references the last marker so that only that one actually trigger
@@ -428,8 +498,6 @@ It is demonstrated in figure \ref{fig:org90c1788}
   fallback entry so the final marker also fails to tigger the
   fallback.}
 \end{figure}
-
-
 
 There are some optimizations that can be implemented to avoid too many
 lookups in the fallback table in the case of deep eitherl nesting that
@@ -440,25 +508,26 @@ performance bottleneck so we leave it for future work.
 
 
 \subsubsection{Once}
-\label{sec:orgf87066e}
+
 The \hask{once} operator runs the argument computation and stops once it
 returns the first result. FluiDB uses \hask{once} to run the garbage
 collector without exploding the search space. Generally the different
 combinations of nodes that can be deleted is huge. We prune that by
 space by settling for the first result the solver can find.
 
-The way \hask{Once} is built on top of a concept we call a \emph{nested
-scheduler}. It takse a computation (the \emph{nested computation}) and
-needs to know what to do in case of a success and in case of complete
-failure (no more branches to run). The nested scheduler is a process
-that \emph{always} returns a single case subbranch. This subbranch has the
-priority of the highest priority subbranch of the nested computation
-and when scheduled it internally schedules the next branch of the
-nested process. When the process yields results or fails completely
-the corresponding hook is run. \hask{once} implements these hooks as
-"return the result and stop" and as "propagate the failure"
-respecively. Since the implementation of \hask{once} is fairly small it is
-provided along with the types in listing \ref{org246cc16}.
+The way \hask{Once} is built on top of a concept we call a
+\emph{nested scheduler}. It takse a computation (the \emph{nested
+  computation}) and needs to know what to do in case of a success and
+in case of complete failure (no more branches to run). The nested
+scheduler is a process that \emph{always} returns a single case
+subbranch. This subbranch has the priority of the highest priority
+subbranch of the nested computation and when scheduled it internally
+schedules the next branch of the nested process. When the process
+yields results or fails completely the corresponding hook is
+run. \hask{once} implements these hooks as "return the result and
+stop" and as "propagate the failure" respecively. Since the
+implementation of \hask{once} is fairly small it is provided along
+with the types in listing \ref{lst:once_def}.
 
 \begin{code}
 \begin{haskellcode}
@@ -474,7 +543,7 @@ nested success fail c = ...
 once :: forall h m r a . (Monad m,IsHeap h) => HCntT h r m a -> HCntT h r m a
 once = nested (\_h r _rs -> HRes (Tup2 mempty mempty,[r])) emptyHRes
 \end{haskellcode}
-\caption{\label{org246cc16}The nested scheduler runs a subprocess within a single branch. Once is built on top of that to make sure the process stops once a result is returned.}
+\caption{\label{lst:once_def}The nested scheduler runs a subprocess within a single branch. Once is built on top of that to make sure the process stops once a result is returned.}
 \end{code}
 
 
@@ -486,10 +555,10 @@ other hand, means we are doing \(N\) pop/push pairs, one for each
 nested heap. For FluiDB we use a slighltly too general notion of a
 heap so we opt for the former.
 \section{The planner}
-\label{sec:org3e22e01}
+\label{sec:planner}
 
 \subsection{Traversing the graph}
-\label{sec:orgad5ab39}
+
 The planner is the subsystem of FluiDB that given the state of the
 QDAG and a target node to be materialized produces a logical plan that
 will materialize the query.  Our notion of a logical plan is slightly
@@ -508,7 +577,7 @@ produces a subset of the output nodes.
 The planner operates by backtracking using \hask{CntT} monad. Each branch
 mainains some branch-internal effects that are reified as monad
 transformers on top of the \hask{CntT} defining the \hask{PlanT} monad
-transformer (listing \ref{org0ac3c80}).
+transformer (listing \ref{lst:plant_def}).
 
 \begin{code}
 \begin{haskellcode}
@@ -519,7 +588,16 @@ type PlanT t n m =
      (ExceptT (PlanningError t n)
       (HCntT PlanHeap () m)))
 \end{haskellcode}
-\caption{\label{org0ac3c80}The monad that defines all the useful effects used by the planner. \hask{GCConf t n} is an immutable, from the persepctive of the planner, configuration that includes the QDAG, the node sizes, etc. \hask{GCState t n} is state that is mutated and private to each branch of the planner like the materialized status of the nodes, the set of transitions registered so far and various caches. The \hask{PlanningError t n} is a planner specific type of error. The entirety of the result of planning is accumumated in \hask{GCState} so the result of backtracking is just unit (\hask{()}).}
+  \caption{\label{lst:plant_def}The monad that defines all the useful
+    effects used by the planner. \hask{GCConf t n} is an immutable,
+    from the persepctive of the planner, configuration that includes
+    the QDAG, the node sizes, etc. \hask{GCState t n} is state that is
+    mutated and private to each branch of the planner like the
+    materialized status of the nodes, the set of transitions
+    registered so far and various caches. The \hask{PlanningError t n}
+    is a planner specific type of error. The entirety of the result of
+    planning is accumumated in \hask{GCState} so the result of
+    backtracking is just unit (\hask{()}).}
 \end{code}
 
 It is important to clarify the way we use the term "materialized node"
@@ -545,10 +623,10 @@ materialized, asserting first that the input nodes of that transition
 are materialized. In practice, due to intermediate n-nodes being
 auxiliary and not corresponding to real nodes, we know that t-nodes
 are organized in sequences that need to be triggered entirely or not
-at all. For example (figure \ref{fig:org8fe4b6e}) the intermediate
+at all. For example (figure \ref{fig:example_metaop}) the intermediate
 \(\lsemi\) nodes are not actually materialized as part of the join
 operator. Equipped with this knowledge we organize the t-nodes into
-\hask{MetaOps} (listing \ref{org682fa71}) that can atomically be triggered or
+\hask{MetaOps} (listing \ref{lst:metaop_def}) that can atomically be triggered or
 reverse triggered. \hask{MetaOps} also abstract the distinction between
 triggering and reverse triggering as they expose a set of input, a set
 of output nodes and a process that registers the correct transitions
@@ -562,7 +640,22 @@ we assert that the input set is materialized.
 \begin{figure}[p]
 \centering
 \includegraphics[width=.9\linewidth]{./imgs/example_metaop.pdf}
-\caption{\label{fig:org8fe4b6e}starting at node \(O\), the output of a join operation, we can derive three MetaOps that can materialize it.  \(MetaOp\{in: \langle I_l, I_r \rangle, out: \langle O \rangle \}\), \(MetaOp\{in: \langle I_l, I_r \rangle, out: \langle O_l, O \rangle \}\), \(MetaOp\{in: \langle I_l, I_r \rangle, out: \langle O, O_r \rangle \}\), \(MetaOp\{in: \langle I_1, I_2 \rangle, out: \langle O_l, O, O_r \rangle \}\). Because trying all combinations of outputs explodes the seach space we always go for the largest and then let the garbage collector deal with the possible reprecussions. On the other hand to materialize \(I_l\) there is only one \hask{MetaOp} that relates to this cluster \(MetaOp\{in:\langle O, O_l \rangle, out: \langle I_l \rangle, interm: \langle I_l \lsemi I_r \rangle \}\)}
+\caption{\label{fig:example_metaop}starting at node \(O\), the output
+  of a join operation, we can derive three MetaOps that can
+  materialize it.
+  \(MetaOp\{in: \langle I_l, I_r \rangle, out: \langle O \rangle \}\),
+  \(MetaOp\{in: \langle I_l, I_r \rangle, out: \langle O_l, O \rangle
+  \}\),
+  \(MetaOp\{in: \langle I_l, I_r \rangle, out: \langle O, O_r \rangle
+  \}\),
+  \(MetaOp\{in: \langle I_1, I_2 \rangle, out: \langle O_l, O, O_r
+  \rangle \}\). Because trying all combinations of outputs explodes
+  the seach space we always go for the largest and then let the
+  garbage collector deal with the possible reprecussions. On the other
+  hand to materialize \(I_l\) there is only one \hask{MetaOp} that
+  relates to this cluster
+  \(MetaOp\{in:\langle O, O_l \rangle, out: \langle I_l \rangle,
+  interm: \langle I_l \lsemi I_r \rangle \}\)}
 \end{figure}
 
 \begin{code}
@@ -574,7 +667,11 @@ data MetaOp t n = MetaOp {
   metaOpPlan   :: forall m' . Monad m' => PlanT t n m' [Transition t n]
   }
 \end{haskellcode}
-\caption{\label{org682fa71}A \hask{MetaOp} refers to input, output, and intermediate nodes that are involved in the set of operations it abstracts. Furthermore it contains a computation that registers and returns the transitions involved in the \hask{MetaOp}.}
+  \caption{\label{lst:metaop_def}A \hask{MetaOp} refers to input,
+    output, and intermediate nodes that are involved in the set of
+    operations it abstracts. Furthermore it contains a computation
+    that registers and returns the transitions involved in the
+    \hask{MetaOp}.}
 \end{code}
 
 
@@ -583,23 +680,27 @@ planner avoid cycles where it recursively tries to materialize the
 parents and then the children? and b) how does it know not to
 materialize a node twice? Both those problems are addressed by
 refining the possible states of the n-nodes (listing
-\ref{orge1e857d}). Rather than being just \hask{Mat} or \hask{NoMat}. We also
-disambiguate between \hask{Initial} and \hask{Concrete} nodes. Nodes in the
-\hask{Initial} state are allowed to change their materialization status. In
-contrast \hask{Concrete} nodes have their state fixed with very few
-exceptions. Then, when a node is asserted to be materialized its
-status is first checked and followin scenaria are possible:
+\ref{lst:ismat_def}). Rather than being just \hask{Mat} or
+\hask{NoMat}. We also disambiguate between \hask{Initial} and
+\hask{Concrete} nodes. Nodes in the \hask{Initial} state are allowed
+to change their materialization status. In contrast \hask{Concrete}
+nodes have their state fixed with very few exceptions. Then, when a
+node is asserted to be materialized its status is first checked and
+followin scenaria are possible:
 
 \begin{itemize}
-\item the node's status found to be \hask{Concrete} and \hask{NoMat} and the branch
-immediately fails as it is not allowed to be set to materialized.
-\item if it is \hask{Concrete} and \hask{Mat} the assertion simply succeeds
-\item If it is \hask{Initial} and \hask{Mat} it is turned into \hask{Concrete} and \hask{Mat}
-and the assertion succeeds.
-\item if the node's status is \hask{Initial} and also \hask{NoMat}, two things need
-to happen: first the node is set \hask{Concrete} and \hask{NoMat} in order to
-avoid cycles, and the aforementioned process of finding a \hask{MetaOp}
-is carried out recusively in order to materialize the node.
+\item the node's status found to be \hask{Concrete} and \hask{NoMat}
+  and the branch immediately fails as it is not allowed to be set to
+  materialized.
+\item if it is \hask{Concrete} and \hask{Mat} the assertion simply
+  succeeds
+\item If it is \hask{Initial} and \hask{Mat} it is turned into
+  \hask{Concrete} and \hask{Mat} and the assertion succeeds.
+\item if the node's status is \hask{Initial} and also \hask{NoMat},
+  two things need to happen: first the node is set \hask{Concrete} and
+  \hask{NoMat} in order to avoid cycles, and the aforementioned
+  process of finding a \hask{MetaOp} is carried out recusively in
+  order to materialize the node.
 \end{itemize}
 
 \begin{code}
@@ -613,7 +714,8 @@ data NodeState =
   -- neighbour or by the GC.
   | Initial IsMat
 \end{haskellcode}
-\caption{\label{orge1e857d}The different states that a node is allowed to be in.}
+  \caption{\label{lst:ismat_def}The different states that a node is
+    allowed to be in.}
 \end{code}
 
 
@@ -634,8 +736,9 @@ be sure whether a \hask{Concrete NoMat} node that renders a \hask{MetaOp}
 non-triggerable is actually in the process of becoming materialized,
 meaning that when that process succeeds the \hask{MataOp} under
 consideration will be triggerable.
+
 \subsection{Garbage collection}
-\label{sec:org1089d97}
+
 One of the fundamental design decisions of FluiDB is that it is
 commited to materializing all intermediate nodes and keeping them
 around for as long as possible. In one hand the plan selected is
@@ -653,15 +756,15 @@ order to make room for the new results. The selection process has two
 hard constraints:
 
 \begin{itemize}
-\item The nodes being deleted must be \emph{deletable}, i.e. the node's state
-is \hask{Initial} and if the node is deleted it can be reconstructed from
-the remaining materialized nodes.
-\item The nodes being deleted must not be required for the continuation of
-the current plan. We call these nodes \emph{protected}. For example, say
-we are planning for the query \(A \Join B\) and we have materialized
-\(A\) already but while materializing \(B\) the GC is
-triggered. \(A\) should not be in the repertoire of nodes the GC can
-delete under any circumstances.
+\item The nodes being deleted must be \emph{deletable}, i.e. the
+  node's state is \hask{Initial} and if the node is deleted it can be
+  reconstructed from the remaining materialized nodes.
+\item The nodes being deleted must not be required for the
+  continuation of the current plan. We call these nodes
+  \emph{protected}. For example, say we are planning for the query
+  \(A \Join B\) and we have materialized \(A\) already but while
+  materializing \(B\) the GC is triggered. \(A\) should not be in the
+  repertoire of nodes the GC can delete under any circumstances.
 \end{itemize}
 
 Selecting a subset of nodes is not an easy problem so we follow a
@@ -677,8 +780,8 @@ one by one starting from the smaller ones and working its way up to
 the larger ones. Every time a node is deleted it is possible that
 other nodes that were previously established to be deletable lose that
 property. For example if all nodes \(A\), \(\sigma_p A\), and
-\(\sigma_{\neg p} A\) are \hask{Initial} and materialized, each one of them
-can be materialized from the others and therefore all of them are
+\(\sigma_{\neg p} A\) are \hask{Initial} and materialized, each one of
+them can be materialized from the others and therefore all of them are
 marked as deletable. If the GC deletes \(\sigma_p A\) first the other
 two are no longer materializable as they depended on \(A\) to be
 materializable.
@@ -698,10 +801,11 @@ of states is created according to the following rules:
 
 \begin{itemize}
 \item The materialization status does not change between epochs: All
-materialized nodes from the previous epoch are materialized in the
-new one materialized and all non-materialized nodes are still not
-materialized.
-\item All non-protected \hask{Concrete} nodes become \hask{Initial} nodes.
+  materialized nodes from the previous epoch are materialized in the
+  new one materialized and all non-materialized nodes are still not
+  materialized.
+\item All non-protected \hask{Concrete} nodes become \hask{Initial}
+  nodes.
 \end{itemize}
 
 The sequence of transitions for the new epoch is empty. The reason we
@@ -734,7 +838,8 @@ transition. This way the physical planner will generate a plan where
 \(\sigma_{\neg p} A\) is never created in the first place. All nodes
 lose their free-to-delete status upon the creation of a new epoch.
 
-The comprehensive algorithm for the GC is presented in listing \ref{orgce398cd}
+The comprehensive algorithm for the GC is presented in listing
+\ref{lst:gc_algo}
 
 \begin{code}
 \begin{haskellcode}
@@ -771,7 +876,9 @@ markAsConcrete = do
     Initial m -> setNodeState (Concrete m)
     _ -> return ()
 \end{haskellcode}
-\caption{\label{orgce398cd}A sketch of the garbage collector algorithm in pseudo-haskell. The \hask{<//>} operator  is supported by the \hask{HCntT}.}
+  \caption{\label{lst:gc_algo}A sketch of the garbage collector
+    algorithm in pseudo-haskell. The \hask{<//>} operator is supported
+    by the \hask{HCntT}.}
 \end{code}
 
 The garbage collector may have a final trick up their sleeve when all
@@ -802,7 +909,7 @@ that value is zero, the node is not considered to be protected.
 
 
 \subsection{Order of traversal}
-\label{sec:org2851b35}
+
 We mentioned that the \hask{MetaOps} are selected non-deterministically. In
 this section we will go in depth on the FluiDB planner's strategy on
 the order in which it considers its options using the \hask{CntT}

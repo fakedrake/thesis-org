@@ -21,21 +21,49 @@ by merging the \texttt{linenumber}, \texttt{orders} and
 \texttt{partsupp} and completely dropped tables \texttt{nation} and
 \texttt{region} tables as shown in figure \ref{fig:ssb_tpch_schame}.
 
-\todo{translate to tikz}
 \begin{figure}[p]
-\centering
-\includegraphics[width=.9\linewidth]{./imgs/2021-11-15_23-36-57_screenshot.png}
-\caption{The traditional SSB-TPC-H schema}
+\begin{tikzdiagram}
+  \tikzset{tbl/.style={draw,rectangle,minimum height=2cm,minimum width=2cm}};
+  \node[tbl] (lo) {lineorder};
+  \node[tbl] (p) [above left = of lo] {part};
+  \node[tbl] (c) [above right = of lo] {customer};
+  \node[tbl] (s) [below right = of lo] {supplier};
+  \node[tbl] (d) [below left = of lo] {date};
+  \draw [-stealth] (c) -- (lo);
+  \draw [-stealth] (p) -- (lo);
+  \draw [-stealth] (s) -- (lo);
+  \draw [-stealth] (d) -- (lo);
+\end{tikzdiagram}
+\caption{The foreign key links in a SSB-TPC-H}
 \label{fig:ssb_tpch_schema}
 \end{figure}
 
 
-\todo{translate to tikz}
 \begin{figure}[p]
-\centering
-\includegraphics[width=.9\linewidth]{./imgs/2021-12-03_16-54-56_screenshot.png}
+\begin{tikzdiagram}
+  \tikzset{tbl/.style={draw,rectangle,minimum height=2cm,minimum width=2cm}};
+  \tikzset{arr/.style={-stealth}};
+  \node[tbl]                     (r) {region};
+  \node[tbl, right=of r]         (n) {nation};
+  \node[tbl, above right = of n] (c) {customer};
+  \node[tbl, right = of n] (s) {supplier};
+  \node[tbl, right = of c]         (o) {orders};
+  \node[tbl, right=of s]         (ps) {partsupp};
+  \node[tbl, below left = of ps] (p) {part};
+  \node[tbl, right= of ps]        (l) {lineitem};
+  % Connection
+  \path [arr]
+  (r) edge (n)
+  (n) edge (c)
+  (c) edge (o)
+  (o) edge (l)
+  (n) edge (s)
+  (s) edge (ps)
+  (ps) edge (l)
+  (p) edge (ps);
+\end{tikzdiagram}
 \label{fig:tpch_schema}
-\caption{The traditional TPC-H schema}
+\caption{The foreign key links in a traditional TPC-H schema}
 \end{figure}
 
 
