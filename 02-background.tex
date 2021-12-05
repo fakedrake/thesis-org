@@ -18,7 +18,7 @@ and maintaining intermediate results for workloads.
 Databases are more than just a method of accessing data. In their
 essence they are machines for question answering. The typical database
 works in a prepetual loop of reading queries and coming up with
-answers based on a set of datapoints. There are two important aspects
+answers based on a set of data points. There are two important aspects
 that every database needs to define in order to delineate its
 operational semantics:
 
@@ -45,14 +45,14 @@ aggregations \(\gamma\), semijoins \(\lsemi\), sorting, limiting, etc.
 A typical relational database processes operates in a cascading
 fashion. It initially receives a query in textual form. While
 relational algebra is the language that underpins the operation of a
-relational database it is raraly the language in which users interact
+relational database, it is rarely the language in which users interact
 with it. Instead, most relational databases expect queries writen in a
 variant of SQL, a query language that is parsed into a tree of
 relational algebra operators.
 
 This tree is processed by the query optimizer which rewrites it into a
 representation that is efficitent to be executed by taking advantage
-of the mathematical properties of RA and often gathered statistics
+of the mathematical properties of RA and often gathering statistics
 about the underlying data itself. This process leads to the formation
 of a relational algebra expression called the \emph{logical plan}. It
 is a high level description of a sequence of operations required to
@@ -62,19 +62,20 @@ implementation.
 
 Each RA operator is typically implemented by several different
 algorithms, each being efficient and even possible in some situations
-but not in others. For example a join can be implemented by nested
+but not in others. For example, a join can be implemented by nested
 loops or with merge join.  While the former algorithm is general and
 can implement any join, it is very inefficient. On the other hand a
 merge join is much more efficient but can only implement joins of the
-form \(\Join_{a=b}\) (equijoins). Furhtermore a logical plan typically
+form \(\Join_{a=b}\) (equijoins). Furthermore, a logical plan typically
 contains only implied information about the scheduling of the
-operators, for example the logical plan \((\pi A) \Join (\sigma B)\)
+operators, for example, the logical plan \((\pi A) \Join (\sigma B)\)
 implies that the join can not begin being evaluated before the
 projection and the selection but the latter can be evaluated in any
 order, or even simultaneously via pipelining. All these details about
 the execution of the query are resolved by the \emph{physical
   planner}. The physical planner accepts a logical plan and emits an
 unambiguous algorithm that will produce the result of the query.
+
 
 The final step is actually executing the physical plan which is
 handled by the \emph{query execution engine}. The execution engine
@@ -97,7 +98,7 @@ Finding an optimal plan is in the general case NP-complete
 do a good job at finding good plans using heuristics. The selection
 and organization of these heuristics as well as query cost estimation
 are the main problems that make a query optimizer non-trivial. In
-particular there one could separate the the tasks of a query optimizer
+particular one could separate the the tasks of a query optimizer
 into three broad categories:
 
 \begin{itemize}
@@ -105,6 +106,7 @@ into three broad categories:
 \item Query plan enumeration
 \item Size and cost estimation (cost model)
 \end{itemize}
+
 
 At a very high level the architecture of a query optimizer is
 demonstrated in figure \ref{fig:optimizer_arch} and is broadly
@@ -118,6 +120,7 @@ comprised of the following components:
 \end{figure}
 
 \begin{itemize}
+
 \item The \emph{parser} which receives the query in textual form and
   produces a logical plan in the form of an abstract syntax tree.
 \item The \emph{deterministic optimizer} or \emph{logical planner}
@@ -138,7 +141,7 @@ comprised of the following components:
 \end{itemize}
 
 These subsystems are presented here as separate for simplicity and
-because in many database systems they are clearly delineated but it is
+because in many database systems they are clearly delineated, but it is
 also common that they blur into each other. For example in some RDBMSs
 the physical and logical planner are merged into one
 \cite{graefeCascadesFrameworkQuery1995,shankarQueryOptimizationMicrosoft2012,solimanOrcaModularQuery2014}. In
