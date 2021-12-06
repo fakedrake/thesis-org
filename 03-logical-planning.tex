@@ -306,9 +306,9 @@ Here if
 \(sigma_{\neg p}A,\sigma_q \sigma_{p} A,\sigma_{p \land \neg q}A\) are
 all materialized, then \(A\) is materializable as their union. This
 way \(\sigma_p \sigma_q A\) is readily available with no space
-overhead. Instead the price paid is that in the event that \(A\) is
+overhead. Instead, the price paid is that in the event that \(A\) is
 required, possibly in a different context, constructing it requires some
-overhead. Furthermore there are two options for materializing
+overhead. Furthermore, there are two options for materializing
 \(\sigma_p A\): either by selecting over \(A\), or via the union
 \(\sigma_{q \land p}A \cup \sigma_{\neg q \land p}A\). Table \ref{tab:reverse_corresp}
 demonstrates the correspondence between relational algebra operators
@@ -331,7 +331,7 @@ and the equivalence that enables their reverse
 
 \subsection{Clusters and irreversible edges}
 
-\todo{Maybe remove this paragrah}
+\todo{Maybe remove this paragraph}
 A concept closer to the
 functionality of t-nodes and n-nodes than AND and OR nodes, 
 and in fact our very inspiration
@@ -339,18 +339,18 @@ for this approach, is \emph{propagators}
 \cite{radulPropagationNetworksFlexible2009a}. In short, propagators are
 hyperedges in a hypergraph, the nodes of which contain partial
 information about a value. Information about a value can be
-accumulated from it's neighbors. Each node can obtain at least as much
+accumulated from its neighbors. Each node can obtain at least as much
 information about its value as the most precise neighbor. The amusing
 yet illustrative example provided in the paper is the one of measuring
 the height of a building by means of a barometer. One approach is
 timing the barometer's free fall from the top of the building, another
 is by measuring the length of the shadow of the barometer and
 comparing with the length of the shadow of the building at the same
-time of day. One may even use the barometer in it's intended function
+time of day. One may even use the barometer in its intended function
 and derive the height of by comparing the difference in air pressure
 at the roof and at the ground floor. Each of the mentioned methods
 will give very noisy or partial information about the magnitude in
-question. In the propagator paradigm each of these measurments might
+question. In the propagator paradigm, each of these measurements might
 be represended as a node in a hypernet. A propagator edge connecting
 these nodes would combine information from all measurements and
 improve each of the nodes' accuracy in their perception of the
@@ -358,7 +358,7 @@ underlying value. A t-node is similar to a propagator in that it does
 not have a strict direction of information flow and can generate
 information on either side given information on the other.
 
-Generally there is no one-to-one correspondence between
+Generally, there is no one-to-one correspondence between
 t-nodes and relational operators. Usually that is the case but
 there is an exception: the join operator. As we made clear, a t-node
 can generate any number of its inputs by reverse triggering it as
@@ -378,7 +378,7 @@ is the complement of the semijoin \(\lsemi\). Therefore
 \[ \bar{\pi}_{cols(A)}(A \Join B) \cup (A \rnsemi B) \equiv A \]
 
 We remind the reader that \(\bar{\pi}_{cols(A)}\) means group by the
-unique columns of \(A\). Therefore by having materialized \(\{A \rnsemi B, A
+unique columns of \(A\). Therefore, by having materialized \(\{A \rnsemi B, A
 \Join B, A \lnsemi B\}\) we can create \({A,B}\) and vise versa. We could,
 however be slightly more flexible than that, as we might want to
 materialize \(A \rsemi B\) but not \(A \lnsemi B\) to the end of ensuring
@@ -386,18 +386,18 @@ the materializability of only \(A\) and not \(B\). We therefore
 represent joins not as a single t-node but rather as a \emph{cluster} of
 t-nodes.
 
-However in reality we can afford a bit more flexibility than
+However, in reality we can afford a bit more flexibility than
 choosing between the input and the output sets: We swap \(B \rnsemi A\)
 with \(B\) in these sets or \(A \rnsemi B\) with \(A\), thereby having
 materialized the tables \(\{A, A \Join B, B \rnsemi A\}\). In this case
 neither the entire input nor the entire output are materialized
 and yet all tables involved are materializable. To overcome the
-limitation that this poses we make the graph a bit more complex
+limitation that this poses, we make the graph a bit more complex
 and a bit more flexible by breaking the join into two stages (see
 figure \ref{fig:joinnet}):
 
 \begin{itemize}
-\item First we separate the join components (\(A\) and \(B\)) into the
+\item First, we separate the join components (\(A\) and \(B\)) into the
   part that will be used in the join (\(A \lnsemi B\) and \(B \lnsemi A\)
   respectively), and the part that will not (\(A \rnsemi B\) and
   \(B \rnsemi A\) respectively).
@@ -412,9 +412,9 @@ figure \ref{fig:joinnet}):
     flexibility.}
 \end{figure}
 
-The left anti-join node partitions \(A\) into \(A \lsemi B\) and
+The left antijoin node partitions \(A\) into \(A \lsemi B\) and
 \(A \lnsemi B\), which is left semijoin in our null-less
-context. Similarly for the right anti-join node which partitions \(B\)
+context. Similarly for the right antijoin node which partitions \(B\)
 to \(A \rsemi B\) and \(B \rnsemi A\). Joining the semijoin relations
 \(A \lsemi B\) and \(B \lsemi A\) is equivalent to joining \(A\) and
 \(B\).
@@ -423,15 +423,15 @@ In figure \ref{fig:joinnet} we used an antijoin t-node. From the
 semantics of the antijoin \(A \lsemi B\) it is clear that no tuples
 from \(B\) are included in either \(A \lnsemi B\) or \(A \rnsemi B\)
 as \(B\) acts as a kind of predicate for selecting over \(A\). This
-means that even though \(B\) is an input to this there is no natural
+means that even though \(B\) is an input, there is no natural
 way of creating \(B\) from the t-node's output. For these cases we
 introduce \emph{irreversible edges}. Remember that edges are always connections
 between n-nodes and t-nodes. An irreversible input edge (a connection
-from an n-node to a t-node) can only be used as input and its n-node
+from an n-node to a t-node) can only be used as an input and its n-node
 can not be materialized by reverse triggering the t-node.
 
 Irreversible edges appear in the inputs of anti-join t-nodes but also
-on the input of operations that can't be information preserving,
+on the input of operations that cannot be information preserving,
 notably aggregations. The output of an aggregation can not in general
 be supplemented with extra information to reconstruct the input,
 unless the entire input table is replicated. We therefore give up the
@@ -455,12 +455,12 @@ generate \(A\). This is demonstrated in figure \ref{fig:joinnetdir}.
 \section{Deterministic query processing}
 \label{sec:query_processing}
 
-In this section we will look at the initial steps of what happens when
-FluiDB receives a query. Initially the query is accepted in textual
+In this section, we will look at the initial steps of what happens when
+FluiDB receives a query. Initially, the query is accepted in textual
 form as SQL. Then it is sanitized to adhere to the properties we
 defined for relational algebra and some obvious optimizations are
-applied to remove artifacts of the parsing process. Finally the query
-is translated to a forest if possible join orderings. These are
+applied to remove artifacts of the parsing process. Finally, the query
+is translated to a forest of possible join orderings. These are
 rewrite-based optimizations that are deterministic and do not take
 into account the rest of the workload.
 
@@ -473,11 +473,11 @@ algebra based on parser combinator monads
 and decorrelation of the queries. In brief, parser combinators is a
 functional interface to combining parsers to make larger, more complex parsers. A
 parser \hask{p} has the form \hask{p a} which means that if the parser
-is used to parse matching text, it will return a result of type
-\hask{a}. For this framework to work two combinators are required:
+is used to parse the matching text, it will return a result of type
+\hask{a}. For this framework to work, two combinators are required:
 
 \begin{itemize}
-\item seqnence (the monadic bind) \hask{(>>=) : p a -> (a -> p b) -> p
+\item sequence (monadic bind) \hask{(>>=) : p a -> (a -> p b) -> p
     b} which sequentially tries two combinators and the latter one may
   use the result of the former.
 \item the 'alternative' parser combinator \hask{<|> : p a -> p a -> p
@@ -491,7 +491,7 @@ Simple parsers like the \hask{parseInt} parser combinators are then
 combined to create more complex parsers (listing
 \ref{lst:simple_parsers}). This approach is fundamentally not
 dissimilar to writing yacc files but it is much more flexible as parser combinators
-effectively function as a domain specific language that inherits all the power of 
+effectively function as a domain-specific language that inherits all the power of 
 the host language, in our case Haskell.
 
 \begin{code}
@@ -516,20 +516,20 @@ the host language, in our case Haskell.
       return (e,ex)
   \end{haskellcode}
   \caption{\label{lst:simple_parse}The selection parser is much more complex
-    and handles many different cases but it is built up from simple
+    and handles many different cases, but it is built up from simple
     fundamental blocks. This parser returns a query modifier that is
-    meant to be applied a very simple product query generated by the
+    meant to be applied to a very simple product query generated by the
     \sql{from} clause.}
 \end{code}
 
-\subsection{Query preprocessing}
+\subsection{Query prepossessing}
 
-Immediately after parsing the queries have several potential
+Immediately after parsing, the queries have several potential
 inconsistencies with the notion of relational algebra that we
 described in section \ref{sec:relational_algebra_semantics}. 
-For that reason we implement an intermediate stage
+For that reason, we implement an intermediate stage
 where we rewrite the query to comply with various properties of the
-RA, and which remove redundancies. In brief those are the following:
+RA, and which remove redundancies. In brief, those are the following:
 
 \begin{itemize}
 \item Projections and selections are squashed. For example
@@ -544,12 +544,12 @@ RA, and which remove redundancies. In brief those are the following:
 \item Optimization of the \sql{like} operator: \sql{<VAR> like
     <STRING_LITERAL>} expressions where \sql{<STRING_LITERAL>}
   begins or ends with \sql{\%} are turned into \hask{suffix_of} and
-  \hask{prefix_of} expressions. For example the expression \sql{a
+  \hask{prefix_of} expressions. For example, the expression \sql{a
     like "\%.txt"} would be turned into \sql{".txt".suffix_of(a)}.
 \item Substring expressions are turned into 0-indexed ones from
   1-indexed as is the case in SQL.
 \item It is asserted that each intermediate relation has uniquely
-  named columns. For example there are necessarily name conflicts in
+  named columns. For example, there are necessarily name conflicts in
   \(A \Join A\).
 \item It is asserted that sorting appears higher in the query AST than a
   selection, a join or an aggregation. All three of these operators
@@ -572,14 +572,14 @@ referring to symbols:
   keeping track of a set of columns, the unique sub-tuple, the
   combination of which is unique among the tuples of the same
   table. It is fairly easy to keep track of the unique subtuple for
-  most operations, e.g. the unique sub-tuple of a Cartesian product or
+  most operations, e.g., the unique sub-tuple of a Cartesian product or
   join is generally the concatenation of the unique sub-tuples of the
   input tables, the unique sub-tuple in the case a selection is the
   same as the unique sub-tuple of the input, in aggregations the
   unique sub-tuple is the same as the columns on which we aggregate,
   etc. The main problem is projections and, in a similar manner
   aggregations, where it is possible that the operation does not
-  project on the entire unique sub-tuple. To mitigate this we perform
+  project on the entire unique sub-tuple. To mitigate this, we perform
   a pre-processing step to rewrite the projections to expose the
   entier unique sub-tuple. It is worth mentioning that there are cases
   where there are more than one combinations of columns that form a
@@ -588,7 +588,7 @@ referring to symbols:
   to modify the projection as little as possible. In other words we
   want to project as few extra columns as possible to keep the table
   size as small as possible.
-\item annotate each symbol referring to a column with the corresponding
+\item Annotate each symbol referring to a column with the corresponding
   primary table if there is one (named columns of projections do not
   correspond to a primary table). This is useful both in determining possible joins
   (as we will see in section \ref{sec:possible_joins}) and in determining the
@@ -596,14 +596,14 @@ referring to symbols:
 \item Infer and annotate the type of each column reference. This inference is 
  sometimes trivial, for example, in the case of references to columns of primary tables,
  or when annotating literal values, but when references to columns of projections it is more complex.
- For example in the query \(\sigma_{p(a)} \pi_{a \mapsto f(X)}\), we need to infer the type of \(a\).
+ For example, in the query \(\sigma_{p(a)} \pi_{a \mapsto f(X)}\), we need to infer the type of \(a\).
  FluiDB will apply some very simple heuristics to fake proper type inference. This 
  is usually enough to come up with accurate types as SQL's type system is basic.
 \item Projection sharing is determined. As we will see in detail in 
     section \ref{sec:projection_algorithm} where we will be discussing 
-    the implementation details of the projection algorithm ant its reverse,
+    the implementation details of the projection algorithm and its reverse,
     it is important that at least one unique tuple of a projection is shared 
-    between a projection and its complement. At this stage it is decided which
+    between a projection and its complement. At this stage, it is decided which
     unique subtuple is to be shared and it is recorded in the RA expression
     tree.
 \end{itemize}
