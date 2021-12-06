@@ -38,7 +38,7 @@ algebra extended by unary operators for ordering \(s_e(X)\), limiting
     \hline
     Aggregation & \(\gamma_e(X)\) & \sql{select * from X group by e}\\
     Ordering & \(s_e(X)\) & \sql{select * from X order by e}\\
-    Aggregation & \(l_i(X)\) & \sql{select * from X limit i}\\
+    Limit & \(l_i(X)\) & \sql{select * from X limit i}\\
     Join & \(X \Join_p Y\) & \sql{select * from X, Y where p}\\
     Anti-semijoin & \(X \lnsemi_p Y\) & \\
     Union & \(X \cup Y\) & \\
@@ -91,25 +91,23 @@ As syntactic sugar we also define:
 \subsubsection{Expressions}
 
 Relational algebra expressions contain expressions that operate at the
-field level. These are in projection column definitions, selection
-predicates, aggregation column definitions, etc. These lower level are
-organized in up to 4 distinct layers based on the kinds of operators
-in order to make it easier to type functions that operate on only some
-of the layers:
+field level. These appear in projection column definitions, selection
+predicates, aggregation column definitions, etc. These expressions are
+organized in up to 4 nested layers based on the kinds of operators:
 
 \begin{itemize}
-\item The top layer is purely boolean operations \hask{Prop}. This
-  layer can thake the CNF form as an AND of ORs. This layer is nested.
+\item The top layer is purely Boolean operations \hask{Prop} that 
+  can be rewritten in Cartesian normal form.
 \item The intermediate layer \hask{Rel} describes relations between values
   (\(\equiv\), \sql{like}, \(<\), \(\le\), etc). This layer is not
-  nested, ie we do allow define relations between relations.
+  nested, i.e. we do not allow relations between relations.
 \item The lowest layer \hask{Expr} is expressions of any kind that may
   return any value. The above layers can be expressed in terms of this
-  layer because in order to support the ternary operator \hask{if
-    <expr> then <expr> else <expr>}..
-\item The symbol layer that in most parts of FluiDB leave the symbol
-  type. This allows us to tag the symbols in the expression without
-  breaking compatibility.
+  layer to support the ternary operator \hask{if
+    <expr> then <expr> else <expr>}.
+\item The symbol layer describes the literal and symbolic atoms involved in the query.
+  Its type is parametric in most parts of FluiDB to allow 
+  us to tag the symbols in the expression without breaking compatibility.
 \end{itemize}
 
 Predicates of selections and joins (joins are always \(\theta\) joins
@@ -178,94 +176,91 @@ listing \ref{lst:expr_types}.
       | AggrFirst
   \end{haskellcode}
   \label{lst:expr_types}
-  \caption{Types of the algebraic expressions that
-    compose the non-RA parts of the queries.}
+  \caption{Types of algebraic expressions that compose the non-RA parts of the queries.}
 \end{code}
-
 
 \subsection{QDAG: The unified query graph}
 \label{sec:qdag}
 
 The operation of FluiDB revolves around an AND-OR graph of relations
-and algebraic operations. not unlike ones used in the multiquery
-optimizations. This graph encodes all the plans that the query
-optimizer and planner will consider by means of traversal. It will
-become clear what that means in a moment. Said graph is a bipartite
+and algebraic operations, not unlike the ones commonly used in multiquery
+optimization literature. This graph encodes all plans that the query
+optimizer and planner will enumerate by means of traversal. Said graph is a bipartite
 graph where t-nodes (AND nodes in other literature) represent
 relational operations and n-nodes (OR nodes elsewhere) represent
-relations that will act as intermediate results. Before we consider
-our introduced extensions we describe the basic operation of the
-graph:
+relations that will act as intermediate results. 
+A set of extensions is introduced to the traditional AND-OR DAG to
+facilitate the operation of FluiDB. In the interest of motivating those 
+extensions, we will take a very high level view of the operations on the QDAG 
+before describing them in detail.
 
-\begin{itemize}
-\item There are multiple ways of composing relational operations to
+There are multiple ways of composing relational operations to
   materialize a certain relation. Each one is a relational algebraic
   representation and we commonly refer to them as logical plans. Each
-  one are represets trees similar to an abstract syntax tree. These
-  trees are made of two kinds of nodes: operation nodes, t-nodes, and
-  relation nodes, n-nodes. For example the query \(A \Join B \Join C\)
+  one represents a tree similar to an abstract syntax tree. These
+  trees are made of two kinds of nodes: operation nodes -- t-nodes, and
+  relation nodes -- n-nodes. For example, the query \(A \Join B \Join C\)
   may be represented as \((A \Join B) \Join C\) or
-  \(A \Join (B \Join C)\) due to associativity of \(\Join\). Those two
+  \(A \Join (B \Join C)\) due to associativity of \(\Join\). Those two expressions
   represent two tree forms where the join operators \(\Join\) are
   represented as t-nodes and each of \(A\), \(B\), \(C\),
   \(A \Join B\), \(B \Join C\) and \(A \Join B \Join C\) are
-  represented as n-nodes.
-\item All possible logical plans of a query are enumerated. The DAG of
-  a query is created by unifying all these logical plans by means of
-  merging n-nodes that are equivalent. For example the mentioned trees
-  \((A \Join B) \Join C\) and \(A \Join (B \Join C)\) shared the nodes
-  \(A \Join B \Join C\), \(A\), \(B\) and \(C\).
-\item Each n-node can be materialized by triggering one of the input
-  t-nodes. In other words by running a connected operation to which
+  represented as n-nodes. 
+
+Each n-node can be materialized by \emph{triggering} one of the input
+  t-nodes, by running a connected operation to which
   said n-node is on the output. It is clear then where the name
   OR-node found in other literature originates: any of the input nodes
   may participate to a plan involving the OR-node (n-node for
-  us). Conversely each t-node can be triggered iff all of it's input
+  us). Conversely, each t-node can be triggered \(\iff\) all of it's input
   n-nodes are materialized. Because \emph{all} input nodes must be
-  materialized, t-nodes are elsewhere refered to as AND-nodes.
-\item A global DAG is maintained into which the constructed DAGs of
-  all consdered queries are merged, again, by merging equivalent
-  n-nodes, where equivalent n-nodes are ones that refer to equivalent
-  relations.
-\item From a DAG we can derive logical plans for queries. We shall refer
-  to the encapsulating this functionality as the \emph{planner}. The
-  planner operates in terms of this global DAG. It traverses the DAG
-  searching for a plan (ie a sequence of t-node triggers) that will
-  cheaply materialize the requested node(s). This way nodes are
+  materialized, t-nodes are elsewhere referred to as AND-nodes. We depart from
+  the standard nomenclature to avoid confusion in the presence of the extensions
+  introduced by FluiDB. The planning of a query amounts to searching for a sequence of t-nodes to be
+triggered that would result in the corresponding node being materialized.
+
+The QDAG of a query is created by unifying all logical plans 
+that would derive it by means of
+  merging n-nodes that are equivalent. For example the mentioned trees
+  \((A \Join B) \Join C\) and \(A \Join (B \Join C)\) shared the nodes
+  \(A \Join B \Join C\), \(A\), \(B\) and \(C\). A global QDAG is maintained by 
+  unifying the QDAG of each query encountered into the global QDAG, again, 
+  by merging equivalent n-nodes.
+
+From a QDAG we can derive logical plans for queries. The
+  planner operates in terms of the global QDAG. It traverses the QDAG
+  searching for a plan (i.e., a sequence of t-node triggers) that will
+  cheaply materialize the requested node(s). This way, historical nodes can be
   naturally considered. The problem of reusing materialized
   intermediate results is thereby conceptualized as a graph traversal
   problem.
-\item During this planning process, if storage space runs out, the
+
+During this planning process, if storage space runs out, the
   garbage collector (GC) is triggered. Garbage collection in this
   context is the process of deleting materialized relations that are
   not used for the query at hand. We shall say that an n-node is
   \emph{deleted} when the garbage collector appends to the plan a delete
   operation that removes the corresponding materialized relation
   from storage.
-\end{itemize}
 
-In our particular case queries are solved one at a time. Each query is
-transformed into a DAG and inserted in the graph. Then the root node,
-that represents the solution to the query, is solved. This technique
-borrowed by the field of multiquery optimization (MQO) helps us with
-integrating the consideration of historical queries into the
-optimization process. In contrast multiquery optimization algorithms
-like \cite{mistryMaterializedViewSelection2001} we solve a different
-problem: rather than optimizing a batch of queries, we try to plan for
-each query in a sequence of them, optimizing for the amortized cost
-under storage budget constraints.
+This technique is 
+heavily inspired by multiquery optimization (MQO) approaches like
+\cite{mistryMaterializedViewSelection2001} where they use the AND-OR DAG
+to solve multiple queries simultaneously, optimizing computation reuse.
 
-We modify this conception of the DAG in a simple yet important way:
+QDAGs are different from AND-OR DAGs in a subtle but important way:
 each t-node may have multiple outputs and can be partially
-bidirectional. In other words a t-node, as well as multiple inputs,
+bidirectional. In other words, a t-node, as well as multiple inputs,
 may have multiple outputs, any number of which may be materialized by
 it being triggered. A \emph{reverse trigger} of said t-node would
-materialize inputs provided that all outputs are materialized and
-under certain other conditions on which we will elaborate shortly. In
+materialize inputs provided that all outputs are materialized. In
 other words, where AND-nodes are similar to functions that when
 evaluated produce an output given some input, t-nodes correspond to
 bidirectional relations between sets of input and output
-relations. This not only creates opportunities in terms of what plans
+relations. 
+
+% THIS IS THE IMPORTANT BIT!!! But it is buried in the text.
+This not only creates opportunities in terms of what plans
 are possible, but also opens the gate to a whole new regime for how
 garbage collection is involved in the process of query planning. Any
 n-node may potentially be garbage collected, even primary tables, as
@@ -273,9 +268,7 @@ long as the garbage collector can prove that it is reconstructable by
 triggering or reverse triggering t-nodes. The storage budget is
 thereby taken into account not only when selecting or rejecting
 materialized views, but also while planning the query solution
-itself. We shall refer to the DAG we just described as simply DAG
-where it is clear from context or tn-DAG when it is contrasted with
-the AND-OR DAG.
+itself. 
 
 To make this process clearer, as an example, consider a DAG that
 contains just a selection:
@@ -287,17 +280,18 @@ contains just a selection:
     rendering it a partition operation.}
 \end{figure}
 
-In the figures throghout this work we will denote n-nodes as
+In the figures throughout this work we will denote n-nodes as
 circular and t-nodes as squares or rectangles. When materializing
 \(\sigma_p(A)\) the planner has the option of also materializing
 \(\sigma_{\neg p}(A)\). If deemed beneficial \(A\) can be safely
 deleted as the t-node can be reverse triggered to produce it. A
 reverse trigger amounts to the union \(\sigma_{p}(A) \cup
-\sigma_{\neg p}(A)\). It is generally assumed thoughout this work
+\sigma_{\neg p}(A)\). It is generally assumed
 that any row not selected by \(p\) is necessarily selected by \(\neg
-p\). This means that we do not support missing or NULL values as
-they break boolean double negation. Furthermore relations are taken
-to be bags of tuples, ie they are unordered.
+p\). To remind the reader of our RA assumptions, 
+this means that we do not support missing or \sql{NULL} values as
+they break Boolean double negation. Furthermore, relations are taken
+to be bags of tuples, i.e., they are unordered.
 
 A slightly more complex example might be
 
@@ -309,20 +303,38 @@ A slightly more complex example might be
 \end{figure}
 
 Here if
-\(sigma_{\neg p}A,\sigma_q \sigma_pA,\sigma_{p \land \neg q}A\) are
+\(sigma_{\neg p}A,\sigma_q \sigma_{p} A,\sigma_{p \land \neg q}A\) are
 all materialized, then \(A\) is materializable as their union. This
-way \(\sigma_p\sigma_qA\) is readily available with no space
-overhead. Instead the price paied is that in the event that \(A\) is
-required in a different context, constructing it requires some
+way \(\sigma_p \sigma_q A\) is readily available with no space
+overhead. Instead the price paid is that in the event that \(A\) is
+required, possibly in a different context, constructing it requires some
 overhead. Furthermore there are two options for materializing
-\(\sigma_pA\): either by selecting over \(A\), or via the union
-\(\sigma_{q \land p}A \cup \sigma_{\neg q \land p}A\).
+\(\sigma_p A\): either by selecting over \(A\), or via the union
+\(\sigma_{q \land p}A \cup \sigma_{\neg q \land p}A\). Table \ref{tab:reverse_corresp}
+demonstrates the correspondence between relational algebra operators
+and the equivalence that enables their reverse 
+\todo{check the table rendering}
+\begin{table}[H]
+  \centering
+  \caption{\label{tab:reverse_cprresp}Each operation that may end up in the final result and the equivalence that ensures reversibility. \(\bot\) values indicate that the operator is not generally reversible.}
+  \begin{tabular}{ll}
+    Operator & Equivalence\\
+    \hline
+    Aggregation (\(\gamma_e(X)\)) & \(\bot\) \\
+    Sorting \(s_e(X)\) & \(\bot\) \\
+    Limit (\(l_i(X)\)) & \(l_i A \cup d_i A \equiv A\) \\
+    Join (\(X \Join_p Y\)) / Anti-semijoin (\(X \lnsemi_p Y\) & \( \bar{\pi}_{cols(A)}(A \Join B) \cup (A \rnsemi B) \equiv A\)  \\
+    Selection (\(\sigma_p(X)\)) & \(\sigma_p A \cup \sigma_{\neg p} A \equiv A\) \\
+    Projection (\(\pi_r(X)\)) & \(\pi_r A \Join \pi_{\bar{r}} A \equiv A\) \\
+  \end{tabular}
+\end{table}
 
-We change the nomeclature of the nodes from AND/OR-nodes to t-nodes
-and n-nodes, because despite the correspndence between the concepts
-and the similarities, as we will see moving forawrd there are major
-differences in their functionality. A concept closer to the
-functionality of t-nodes and n-nodes, and in fact our very inspiration
+\subsection{Clusters and irreversible edges}
+
+\todo{Maybe remove this paragrah}
+A concept closer to the
+functionality of t-nodes and n-nodes than AND and OR nodes, 
+and in fact our very inspiration
 for this approach, is \emph{propagators}
 \cite{radulPropagationNetworksFlexible2009a}. In short, propagators are
 hyperedges in a hypergraph, the nodes of which contain partial
@@ -346,9 +358,9 @@ underlying value. A t-node is similar to a propagator in that it does
 not have a strict direction of information flow and can generate
 information on either side given information on the other.
 
-Generally there is not an exactly one-to-one corresoncence between
+Generally there is no one-to-one correspondence between
 t-nodes and relational operators. Usually that is the case but
-there is an exception: the join operator. As we made clear a t-node
+there is an exception: the join operator. As we made clear, a t-node
 can generate any number of its inputs by reverse triggering it as
 long as all of the outputs are materialized. Then one approach to
 implementing a join operator might be:
@@ -361,8 +373,7 @@ implementing a join operator might be:
 
 The \(\lnsemi\) operator is the antijoin operator, \(A \lnsemi B\)
 includes the tuples in \(A\) that to not participate in \(A \Join B\). It
-is the complement of the semijoin \(\lsemi\). Therefore in our
-countext
+is the complement of the semijoin \(\lsemi\). Therefore
 
 \[ \bar{\pi}_{cols(A)}(A \Join B) \cup (A \rnsemi B) \equiv A \]
 
@@ -372,7 +383,7 @@ unique columns of \(A\). Therefore by having materialized \(\{A \rnsemi B, A
 however be slightly more flexible than that, as we might want to
 materialize \(A \rsemi B\) but not \(A \lnsemi B\) to the end of ensuring
 the materializability of only \(A\) and not \(B\). We therefore
-represent joins not as a single t-node but rather as a cluster of
+represent joins not as a single t-node but rather as a \emph{cluster} of
 t-nodes.
 
 However in reality we can afford a bit more flexibility than
@@ -394,14 +405,12 @@ figure \ref{fig:joinnet}):
   \((A \lnsemi B) \Join (B \lnsemi A) \equiv A \Join B\).
 \end{itemize}
 
-
-\begin{figure}[H]
+\begin{figure}[p]
   \centering \includegraphics[width=.9\linewidth]{./imgs/joinnet.pdf}
   \caption{\label{fig:joinnet}The DAG corresponding to a join is
     broken down in multiple t-nodes to facilitate greater
     flexibility.}
 \end{figure}
-
 
 The left anti-join node partitions \(A\) into \(A \lsemi B\) and
 \(A \lnsemi B\), which is left semijoin in our null-less
@@ -416,19 +425,18 @@ from \(B\) are included in either \(A \lnsemi B\) or \(A \rnsemi B\)
 as \(B\) acts as a kind of predicate for selecting over \(A\). This
 means that even though \(B\) is an input to this there is no natural
 way of creating \(B\) from the t-node's output. For these cases we
-introduce \emph{irreversible edges}. Irreversible can only triggered
-in only one direction. Remember that edges are always connections
+introduce \emph{irreversible edges}. Remember that edges are always connections
 between n-nodes and t-nodes. An irreversible input edge (a connection
 from an n-node to a t-node) can only be used as input and its n-node
 can not be materialized by reverse triggering the t-node.
 
 Irreversible edges appear in the inputs of anti-join t-nodes but also
-on the output of operations that can't be information preserving,
+on the input of operations that can't be information preserving,
 notably aggregations. The output of an aggregation can not in general
 be supplemented with extra information to reconstruct the input,
 unless the entire input table is replicated. We therefore give up the
-reversibility of such operations completely and mark the output edge
-as irreversible. This is genrally not a very big problem as on the one
+reversibility of such operations completely and mark the input edge
+as irreversible. This is generally not a big problem as on the one
 hand the results of aggregations tend to be small compared to the
 input relations, and in the case of anti-join t-nodes, which are only
 found in join clusters, for every anti-join node \(A \lnsemi B\) that
@@ -448,12 +456,12 @@ generate \(A\). This is demonstrated in figure \ref{fig:joinnetdir}.
 \label{sec:query_processing}
 
 In this section we will look at the initial steps of what happens when
-FluiDB receives a query. Initially the querry is accepted in textual
+FluiDB receives a query. Initially the query is accepted in textual
 form as SQL. Then it is sanitized to adhere to the properties we
-defined for relational alegbra and some obvious optimizations are
+defined for relational algebra and some obvious optimizations are
 applied to remove artifacts of the parsing process. Finally the query
-is translated to a forest if possible join orderings. These are the
-rewrite based optimizations that are deterministic and do not take
+is translated to a forest if possible join orderings. These are
+rewrite-based optimizations that are deterministic and do not take
 into account the rest of the workload.
 
 \subsection{Query parsing}
@@ -461,9 +469,9 @@ into account the rest of the workload.
 
 We use a custom library for parsing SQL queries into relational
 algebra based on parser combinator monads
-\cite{leijenParsecDirectStyle}. Our parser handles both the aprsing
-and decorrelation of the queries. In biref, parser combinators is a
-functional interface to combining parsers to make larger parsers. A
+\cite{leijenParsecDirectStyle}. Our parser handles both the parsing
+and decorrelation of the queries. In brief, parser combinators is a
+functional interface to combining parsers to make larger, more complex parsers. A
 parser \hask{p} has the form \hask{p a} which means that if the parser
 is used to parse matching text, it will return a result of type
 \hask{a}. For this framework to work two combinators are required:
@@ -482,8 +490,9 @@ is used to parse matching text, it will return a result of type
 Simple parsers like the \hask{parseInt} parser combinators are then
 combined to create more complex parsers (listing
 \ref{lst:simple_parsers}). This approach is fundamentally not
-dissimilar to writing yacc files but it is much more flexible as it is
-effectively an EDSL that inherits all the power of the host language.
+dissimilar to writing yacc files but it is much more flexible as parser combinators
+effectively function as a domain specific language that inherits all the power of 
+the host language, in our case Haskell.
 
 \begin{code}
   \begin{haskellcode}
@@ -507,7 +516,7 @@ effectively an EDSL that inherits all the power of the host language.
       return (e,ex)
   \end{haskellcode}
   \caption{\label{lst:simple_parse}The selection parser is much more complex
-    and handlse many different cases but it is built up from simple
+    and handles many different cases but it is built up from simple
     fundamental blocks. This parser returns a query modifier that is
     meant to be applied a very simple product query generated by the
     \sql{from} clause.}
@@ -517,7 +526,8 @@ effectively an EDSL that inherits all the power of the host language.
 
 Immediately after parsing the queries have several potential
 inconsistencies with the notion of relational algebra that we
-described so far. For that reason we implement an intermediate stage
+described in section \ref{sec:relational_algebra_semantics}. 
+For that reason we implement an intermediate stage
 where we rewrite the query to comply with various properties of the
 RA, and which remove redundancies. In brief those are the following:
 
@@ -525,17 +535,17 @@ RA, and which remove redundancies. In brief those are the following:
 \item Projections and selections are squashed. For example
   \(\sigma_p\sigma_q\) becomes \(\sigma_{p \land q}\).
 \item Date intervals are translated to dates. This is because the
-  plysical planner does not handle dates specially so all dates and
+  physical planner does not handle dates specially so all dates and
   date intervals are converted to timestamps and second intervals. For
-  exaple the expression \sql{date '2020-12-01' - interval '90' day} is
+  example the expression \sql{date '2020-12-01' - interval '90' day} is
   immediately turned into \sql{date 2021-03-01}. Note that an
-  expression like \sql{date '2020-12-01' + shipping\_time} is not
+  expression like \sql{date '2020-12-01' + shipping_time} is not
   supported as it is not date arithmetic between literals.
 \item Optimization of the \sql{like} operator: \sql{<VAR> like
-    <STRING\_LITERAL>} expressions where \sql{<STRING\_LITERAL>}
-  begins or ends with \sql{\%} are turned into \hask{suffix\_of} and
-  \hask{prefix\_of} expressions. For example the expression \sql{a
-    like "\%.txt"} would be turned into \sql{".txt".suffix\_of(a)}.
+    <STRING_LITERAL>} expressions where \sql{<STRING_LITERAL>}
+  begins or ends with \sql{\%} are turned into \hask{suffix_of} and
+  \hask{prefix_of} expressions. For example the expression \sql{a
+    like "\%.txt"} would be turned into \sql{".txt".suffix_of(a)}.
 \item Substring expressions are turned into 0-indexed ones from
   1-indexed as is the case in SQL.
 \item It is asserted that each intermediate relation has uniquely
@@ -552,7 +562,7 @@ RA, and which remove redundancies. In brief those are the following:
 Once the preliminary sanitization and simple optimization steps are
 done we mark each instance of the primary table symbols with the
 columns and their types. This is simply information derived by the
-databse schema. Then we do some processing and annotation on symbols
+database schema. Then we do some processing and annotation on symbols
 referring to symbols:
 
 \begin{itemize}
@@ -562,7 +572,7 @@ referring to symbols:
   keeping track of a set of columns, the unique sub-tuple, the
   combination of which is unique among the tuples of the same
   table. It is fairly easy to keep track of the unique subtuple for
-  most operations, e.g. the unique sub-tuple of a cartesian product or
+  most operations, e.g. the unique sub-tuple of a Cartesian product or
   join is generally the concatenation of the unique sub-tuples of the
   input tables, the unique sub-tuple in the case a selection is the
   same as the unique sub-tuple of the input, in aggregations the
@@ -570,7 +580,7 @@ referring to symbols:
   etc. The main problem is projections and, in a similar manner
   aggregations, where it is possible that the operation does not
   project on the entire unique sub-tuple. To mitigate this we perform
-  a pre-processing setp to rewrite the projections to expose the
+  a pre-processing step to rewrite the projections to expose the
   entier unique sub-tuple. It is worth mentioning that there are cases
   where there are more than one combinations of columns that form a
   unique sub-tuple. We opt to keep track of all of them in order to
@@ -578,12 +588,25 @@ referring to symbols:
   to modify the projection as little as possible. In other words we
   want to project as few extra columns as possible to keep the table
   size as small as possible.
-\item annotate each symbol refering to a column with the corresponding
+\item annotate each symbol referring to a column with the corresponding
   primary table if there is one (named columns of projections do not
-  correspond to a primary table)
-\item Infer and annotate the type of each column referene.
+  correspond to a primary table). This is useful both in determining possible joins
+  (as we will see in section \ref{sec:possible_joins}) and in determining the
+  types of columns.
+\item Infer and annotate the type of each column reference. This inference is 
+ sometimes trivial, for example, in the case of references to columns of primary tables,
+ or when annotating literal values, but when references to columns of projections it is more complex.
+ For example in the query \(\sigma_{p(a)} \pi_{a \mapsto f(X)}\), we need to infer the type of \(a\).
+ FluiDB will apply some very simple heuristics to fake proper type inference. This 
+ is usually enough to come up with accurate types as SQL's type system is basic.
+\item Projection sharing is determined. As we will see in detail in 
+    section \ref{sec:projection_algorithm} where we will be discussing 
+    the implementation details of the projection algorithm ant its reverse,
+    it is important that at least one unique tuple of a projection is shared 
+    between a projection and its complement. At this stage it is decided which
+    unique subtuple is to be shared and it is recorded in the RA expression
+    tree.
 \end{itemize}
-
 
 \subsection{Possible joins}
 \label{sec:possible_joins}
