@@ -611,33 +611,50 @@ referring to symbols:
 \subsection{Possible joins}
 \label{sec:possible_joins}
 
-The focus of our optimization where we separate different plans of the
-query where it is a-priori unclear which of them is the optimal, much
-less which is the optimal accounting for generated intermediate
-views. We focus on enumerating all possible join permutations. First
-all joins are turned into selection-products so \(A \Join B\) becomes
-\(\sigma(A \times B)\), selections are pulled up and merged
-(\(\sigma_p \sigma_q A\) becomes \(\sigma_{p \land q}\)) and products
-are represented as sets of relational algebraic expressions. Then all
-possible permutations of joins are created. For example
+Join ordering is one of the most detrimental optimizations of a query.
+It is the selection of the associative order of joins. 
+The relation \(A \Join B \Join C\) can be exressed as \((A \Join B) \Join C\)
+or as \(A \Join (B \Join C)\).
+Individual joins can have a wide range of behaviors. From being
+similar to Cartesian products, being prohibitively costly, and exploding the cardinality of the result;
+to being similar to lookups, very cheap, and with a very small result.
+Optimizers that process queries in isolation can aggressively push down selections
+and prune the search space of join combinations when they encounter expensive intermediate results.
+FluiDB, however, needs to keep track even of more expensive intermediate results as the
+high cost may be amortized in the long run.
+
+For this reason, at this stage we enumerate all possible join permutations building a graph of all possible joins.
+
+\begin{itemize}
+\item All joins are turned into selection-products, so \(A \Join B\) becomes
+\(\sigma(A \times B)\)
+\item selections are pulled up and merged,
+(\(\sigma_p \sigma_q A\) becomes \(\sigma_{p \land q}\)) 
+\item products are represented as sets of relational algebraic expressions.
+\end{itemize}
+
+Then all possible permutations of joins are created. For example
 \(\sigma{a=b \land b=c}(A \times B \times C)\) becomes
 \(\{(A \Join_{a=b} B) \Join_{b=c} C, A \Join_{a=b} (B \Join_{b=c}
-C)\}\). Note that we do not include queries that are only different
-w.r.t. commutativity, ie we don't include both \(A \Join B\) and
-\(B \Join B\), this part of FluiDB depends on the consumer of the data
-structure to disambiguate between them. Also note that since cartesian
-products are very large and almost never used in the actual plans, an
-option that disallows product intermediate results is enabled by
-default. Therefore, in our example we do not enumerate relations like
-\(\sigma_{a=b}((A \times C) \Join_{b=c}B)\). Furthermore, allowing
-cartesian products exponentially explodes the space of possible plans
-and makes the results unusable.
+C)\}\). 
 
-Once selections are merged we find product trees, i.e. contiguous parts
-of the tree that only contain cartesian products, and combine them
-into multisets of subtrees such that \(\sigma(C \times (A \times B)
-\times D)\) becomes \(\sigma(\{A,B,C,D\})\). Then selection propositions
-are normalized to conjunctive normal form and into sets. For example
+Note that we do not include queries that are only different
+w.r.t. commutativity, i.e., we don't include both \(A \Join B\) and
+\(B \Join A\), this part of FluiDB depends on the consumer of the data
+structure to disambiguate between them. Another caveat is that since Cartesian
+products are very large and are almost never used in the actual plans, an
+option that disallows product intermediate results is enabled by
+default. Therefore, in our example we prune relations like
+\(\sigma_{a=b}((A \times C) \Join_{b=c}B)\). Furthermore, allowing
+Cartesian products exponentially explodes the space of possible plans
+to a degree that makes the resulting data structure virtually unusable.
+
+Once selections are merged, we find product trees, i.e., contiguous 
+parts of the tree that only contain Cartesian products, and combine them
+into multi-sets of subtrees such that \(\sigma(C \times (A \times B)
+\times D)\) becomes \(\sigma(\{A,B,C,D\})\). 
+
+Then selection propositions are normalized to conjunctive normal form and into sets. For example
 \(\sigma_{p_1 \lor (p_2 \land p_3}A\) becomes \(\sigma_{(p_1 \lor p_2)
   \land (p_1 \lor p_3)}A\), and in fact the conjunctive terms are also
 represented as sets of subterms, so the final form would be better
@@ -648,38 +665,38 @@ with a tree of terms of the form
 \(Q[\cdot]\) is a query tree with \(\cdot\) as a subtree. We will
 refer to such a selection-product pair as an SP-term.
 
-To turn this representation into a forest we will turn each SP-term
-into a set of regular join trees, the cartesian product of which will
-yiled the possible joins. We summarize the process as follows:
+To turn this representation into a forest, we will turn each SP-term
+into a set of regular join trees, the Cartesian product of which will
+yieled the possible joins. We summarize the process as follows:
 
 \begin{itemize}
-\item We iterate over all the pairs of multisets into which the multiset
+\item We iterate over all pairs of sub-multisets into which the multiset
   \(\{Q_0,Q_1,...,Q_k\}\) can be split. We follow each of the
-  following steps for each of the multisets.
-\item we split the \(p\) terms in three parts depending on which
+  following steps for each of the resulting sub-multisets.
+\item We split the \(p\) terms in three parts depending on which
   sub-multiset of relations their symbols refer to. One set are terms
   where the columns mentioned refer \emph{only} to the left sub-multiset
   (left \(p\)-terms), another set are terms where columns mentioned
-  refer \emph{only} to the right sub-multiset and the rest (right
+  refer \emph{only} to the right sub-multiset, and the rest (right
   \(p\)-terms) must necessarily have references to columns of \emph{both}
   sub-multisets. We call the latter category \emph{connector \(p\)-terms}.
 \item We turn each side of the split into an SP-term by associating it
-  with the left and right \(p\)-term set. We recursively repeat the
+  with the left and right \(p\)-term set. We repeat the
   process of generating join trees out of each SP-term created and
   connect them in an all-to-all fashion by creating theta joins using
   the conjunction of the connector \(p\)-terms. In case the the set of
-  connector \(p\)-terms is empty that would mean that the connection
-  of the join trees must be done with a cartesian product. As
-  mentioned above we want to avoid inserting cartesian products in our
-  graph so we reject those cases outright. Optionally we may even want
+  connector \(p\)-terms is empty, that would mean that the connection
+  of the join trees must be done with a Cartesian product. As
+  mentioned above, we want to avoid inserting Cartesian products in our
+  graph so we reject those cases outright. Optionally, we may even want
   to reject all non-natural joins altogether, unless that would mean
   not coming up with any plans at all.
 \end{itemize}
 
-
-It is worth mentioning that an issue with this approach is the
+\todo{maybe omit this paragraph}
+It is worth mentioning that this approach requires delicate
 handling of projections. As elaborated in the section
-\ref{sec:query_parsing} on query parsing projections come up a lot in
+\ref{sec:query_parsing} on query parsing, projections come up a lot in
 decorrelating queries. Joins separated by projections can not
 trivially be mixed with the above method as moving projections would
 potentially break the rule that we demand that there is no naming
@@ -694,23 +711,22 @@ plan individually is highly redundant. Therefore, we abstract away the
 redundancy by representing the forest as a bipartite tree.
 
 \begin{itemize}
-\item One kind of node represents a plan fragment. We will refer to
-  these as sub-trees.
+\item One kind of node represents a plan fragment, or a \emph{sub-tree}
 \item The other kind represents a forest of semantically equivalent
   subtrees earmarked with a unique hash for them. The fact that the
   subtrees are semantically equivalent means that they essentially
   evaluate to the same data. They therefore have the same normal form
-  as discussed in Query Normal forms (QNF). Finding the normal form
+  as discussed in section \ref{sec:qnf} on  Query Normal Form (QNF). Finding the normal form
   hash of one would mean the normal form hash of the rest. This will
   prove useful when inserting this structure in the graph. We refer to
-  these as sub-forests.
+  these as \emph{sub-forests}.
 \end{itemize}
 
-In other words the relational algebra tree is interleaved with
+In other words, the relational algebra tree is interleaved with
 OR-nodes of different representations of the subquery. For example
 \(\gamma(\sigma_{a=b \land b=c}(A \times B \times C))\) becomes
 \(\gamma\{A \Join_{a=b} B) \Join_{b=c} C, A \Join_{a=b} (B \Join_{b=c}
-C)\}\). This way we avoid the compinatorial explosion of interleaved
+C)\}\). This way we mitigate the combinatorial explosion of interleaved
 nesting joins with other operations.
 
 The algorithm is also described in listing \ref{lst:possible_joins}.
@@ -745,26 +761,26 @@ The algorithm is also described in listing \ref{lst:possible_joins}.
             yield join(jps,possible_joins(lq), possible_joins(rq))
   \end{pycode}
   \label{lst:possible_joins}
-  \caption{Pseud-python description of finding all
-    possible for clarity it is abreviated to omit sanity checking,
+  \caption{Pseudo-python description of finding all
+    possible for clarity, it is abbreviated to omit sanity checking,
     memoization, some type conversions, etc.}
 \end{code}
 
-It is worth mentioning that as many of the subtrees generated this way
+It is worth stressing that, because many of the subtrees generated this way
 will be equivalent. As analyzed in \cite{bibtexa} and discussed in
-section g in pure functional settings like ours DAGs can have
+section \ref{sec:qnf}, in pure functional settings like our, DAGs can have
 explosive complexity during traversal. Even worse in this case even
 the space complexity can indeed be needlessly exponential. For that
 reason we maintain a hash map matching hashes with the corresponding
 matching subtrees. Before inserting a newly created forest into our
-tree we perform a lookup in the hash map. If we find something we
-throw away the newly created forest for the garbage collector to
-recycle and use the one in the hash map instead. Otherwise we insert
+structure we perform a lookup in the hash map. If we find something we
+throw away the newly created forest for the optimizer runtime's garbage collector to
+recycle, and we use the one in the hash map instead. Otherwise, we insert
 our forest both in the hashmap and in the tree. This way we
-deduplicate our data structure. Furthermore, in the same vain as
+deduplicate our data structure to some degree. Furthermore, in the same vain as
 \cite{bibtexa} we earmark all our forests with their hash so we don't
 have to traverse them again to compute it. The result of this is that
-in total we completely traverse the forest once to compute the hashes
+in total we completely traverse the forest once, in order to compute the hashes
 of each sub-forest and then we use those hashes to test sub-forests
 for equality.
 
