@@ -13,7 +13,7 @@
 FluiDB is focused on query optimization and planning when the queries in a workload being served can have common subqueries.
 To exploit these similarities between queries, FLuiDB transforms them to bipartite graphs of subqueries and bidirectional operators,
 which it incrementally merges them into a global query DAG, which it then uses to enumerate the possible plans. 
-In this chapter we will dive into how FluiDB processes and merges these graphs. 
+In this chapter, we will dive into how FluiDB processes and merges these graphs. 
 
 We will start by looking into what kinds of queries FluiDB
 can understand and how it processes them. Then we will look at how it relates
@@ -1229,75 +1229,101 @@ the product of two NQNFs \(Q_1\) and \(Q_2\) we first conflicts,
 where columns of \(Q_1\) can be found in the product collection of
 \(Q_2\). If none are found, we can simply merge all of their fields and recalculate the hashes.
 If there is at least one conflicting pair of \hask{QNFName}s \((c_1,c_2)\), non deterministically
-increment the index of \(c_1\) or \(c_2\). For example, if we want compute the QNF of the product
+increment the index of \(c_1\) or \(c_2\). For example, if we want to compute the QNF of the product
 \(\sigma_{a_0=1}(A_0) \times \sigma_{a_0=2}(A_0)\) we get in QNF-like
 form \(\sigma_{a_0=1 \land a_1=2} (A_0 \times A_1)\) and also
 \(\sigma_{a_1=1 \land a_0=2} (A_0 \times A_1)\).
 
 \begin{code}
   \begin{pycode}
-    # TODO: algorithm for QNF of product.
+    # TODO: algorithm for QNF of product:
   \end{pycode}
   \label{lst:qnf_product}
   \caption{The qnf product.}
 \end{code}
 
+\subsection{Pragmatism of QNFs}
+
+As mentioned, query equivalence is an NP-complete problem. QNF is only a heuristic
+that does fail to identify many cases of equivalent RA queries.
+For example, our design of QNFs does not capture the equivalence
+\(\sigma_p A \cup \sigma_{\neg p} A = A\). It captures enough rewrite rules, however to be 
+useful in most common cases. In particular, it covers the following RA properties:
+
+- \(\sigma_p \sigma_q A = \sigm_{p \land q} A\)
+- \(\pi_m \pi_{n} A = \pi_{m \circ n} A\)
+- \(A \Join B = B \Join A\)
+- \((A \Join (B \Join C) = (A \Join B) \Join C\)
+- \(\sigma_\theta (A \times B) = A \Join_\theta B\)
+- \(\pi_m \gamma_{n,g} A = \gamma_{m \circ n,g} A \)
+- \(\gamma_{m,g} \pi_n A = \gamma_{m \circ n,g \circ n} A \)
+- \(A \lnsemi B = B \rnsemi A \)*
+- \(A \cup B = B \cup A \) *
+
 \subsection{Symbol correspondence}
 \label{sec:symbol_correspondence}
 
-The schema of each n-node is described in terms of column IDs that are
-agnostic to the particular name assigned to it by the user. Therefore
-the first step before inserting an operator in the graph is to
-normalize the symbol name. We consider that two symbols are equal only
-if they refer to the same column. This is done by means of
-converting the query into normal form. This is required to resolve the
-possible ambiguity of symbols with the same name but different scope
-when expressions are moved around. This abstracts away the symbol
-names but creates some complications. In the query
-\(\sigma_{a=x \lor a=z}(\gamma(\sigma_{a<y}(A))\) the \(a\) in \(a=x\)
-and the \(a\) in \(a < y\) are not equal symbols as they refer to
-different columns. The former refers to a column in the table
-\(\gamma(\sigma_{a<y}(A))\) and the latter in the table \(A\). They
-both refer to some transformation of a column labelled \(a\) form the
-selection \(A\). However \(a\) in \(a=z\) and \(a\) in \(a=x\) are
-indeed equivalent as they refer to the same column. To clear up the
-confusion we will say that symbols are \emph{strictly-equivalent} if
-they refer to the same column but that they are
-\emph{provenance-equivalent} when they refer to different columns but
-they are transformations of the same column, ie they would be
-represented by the same name modulo projections in a normal relational
-algebraic setting. Should it be required in any of the preliminary
-optimization steps that we are discussing, when normalizing the names
-we also produce a function tha instantiates provenance equivalence
-between symbols that accepts two symbols and produces a boolean that
-is true when they refer to transformations of the same column and
-false if they do not. Obviously strictly equivalent symbols are also
-provenance equivalent.
-
 We need to normalize the names in each operator, but we also require
-that there is no naming ambiguity at any level. So why is it necessary
+that there is no naming ambiguity at any level. Why, then, is it necessary
 to normalize the symbols if they are unambiguous in each context? If
 we were only dealing with one query we could declare that we trust
 that the user would be consistent when naming their columns
 (\sql{select col as name where...}), declare that the broader problem
-of alpha equivalence is beyond the scope of this thesis and move on to
-more central issues. It is, however, the case that the user is not in
-total control of naming columns. In the examples of generated
-enumerating unique ids and decorrelation transformation our system
-produces unique column names non-deterministically. This is not a
+of RA equivalence is beyond the scope of this thesis and move on to
+more central issues to FluiDB. It is, however, the case that the user is not in
+total control of naming columns. When exposing
+unique ids and during the decorrelation transformations, FluiDB
+produces unique column names stochastically. This is not a
 problem until different queries interact in the context of the
-graph. In particular, each materialized n-node must have a precise
+graph.
+
+Normalizing the queries that correspond to n-nodes is of little use
+if we do not also normalize the symbols that refer to the columns
+of each n-node. To produce the code implementing
+an operator we need to be able to establish a stable correspondence 
+between 
+
+- the symbols that refer to the columns of the input tables 
+- the symbols that refer columns that refer to the output
+- the symbols in the predicates and expressions of the RA operators that t-nodes correspond to.
+
+This is a problem unique to FluiDB because most systems will produce
+variants of QDAGs that are specific to the query being solved. FluiDB maintains
+a QDAG that must maintain its consistency between different queries.
+
+The first step before inserting an operator in the graph is to
+normalize the symbol name. We consider that two symbols are equal only
+if they refer to the same column. This is done by means of
+converting the query into normal form as described previously.
+
+This is required to resolve the possible ambiguity of symbols with the same name but different scope
+when expressions are moved around. It abstracts away the symbol
+names but creates some complications. For example, in the query
+\(\sigma_{a=x \lor a=z}(\gamma(\sigma_{a<y}(A))\) the \(a\) in \(a=x\)
+and the \(a\) in \(a < y\) are not equal symbols as they refer to
+different columns. The former refers to a column in the table
+\(\gamma(\sigma_{a<y}(A))\) and the latter in the table \(A\). They
+both refer to some transformation of a column labelled \(a\). On the other hand \(a\) in \(a=z\) and \(a\) in \(a=x\) are
+indeed equivalent as they refer to the same column. To clear up the
+confusion we will say that symbols are \emph{strictly-equivalent} if
+they refer to the same column but that they are
+\emph{provenance-equivalent} when they refer to different columns but
+they are transformations of the same column, i.e., they would be
+represented by the same in a normal relational
+algebraic setting. 
+
+In particular, each materialized n-node must have a precise
 schema that represents the order of columns. The identities of these
 columns must be agnostic to the particular names decided by the user,
-the decorellating subsystem or any other query processor. Otherwise it
+the decorellating subsystem, or any other query processor. Otherwise it
 would be impossible for two clusters to share an input/output n-node
 would both be able to interact with it only in the case that they
 happen to be in total agreement about the column names of the relation
 that the n-node represents.
 
-So in order interact with the nodes inserted in the graph
-previously and to allow future queries to match nodes we insert we
-split it's symbols' reprenentation in two notions.
+Thus, to interact with the nodes inserted in the graph
+previously and to allow future queries to match the nodes we insert we
+split it's symbols' representation in two notions.
 
 \begin{itemize}
 \item A local notion of a symbol is subject to the names given by the
@@ -1312,45 +1338,26 @@ should it be needed (being cautious when merging symbols based
 on them sharing a local notion that the global notion maintains
 correctness, i.e., it refers to the right column). It is clear that
 local notions of symbols are sensitive to the name chosen, the
-global is not. Remember that uncorrelating queries creates named
-projections where the names are undefined.
+global is not.
 
-On the other hand, since the colums on the output side of a cluster
-refer necessarily to different columns than the ones on the input
-side. Otherwise the input and output relations would be the same and
-therefore the cluster would share n-nodes in the input and the output
-side. Using the global notions of symbols creates a problem with the
+Using the global notion of symbols creates a problem with the
 correspondance of the query schema of the output with the schemata on
 the input side. In other words, if we throw away the names of the
-columns in the operations in favor of column unique ids, how would the
-code generator know how to arrange the elements of each inpout tuple
-it encounters to generate the output tuple? To mitigate that we use
-the internal operations of the cnf query builder. To build a cluster
-we use as parameters a named normal form (a query in normal form and a
-mapping between the column names and column ids, see the section on
-Query Normal forms (QNF) [sec:qnf] along with an n-node for each input
+columns in the inserted operations in favor of column unique ids, how would the
+code generator know how to arrange the elements of each input tuple
+it encounters to generate the output tuple? 
+
+To mitigate that, we use the internal operations of the QNF query builder. 
+To build a cluster we use as parameters a named normal form (a query in normal form and a
+mapping between the column names and column ids, along with an n-node for each input
 and output relation, and the operator with column references in terms
-of local notions of symbols. As described in detail in Query Normal
-forms (QNF) to calculate the normal form we apply an operator to \(k\)
-named normal form inputs where \(k\) is the arity of the operator. The
-output of the procedure is:
+of local notions of symbols. As described in detail in section \ref{sec:building_qnfs} on building QNF,
+the result of building the QNF that corresponds to an n-node also 
+returns the root operator with globalized symbols, as well as a correspondence 
+between globalized symbols at the input with globalized symbols at the
+output side of operator.
 
-\begin{itemize}
-\item the query in named normal form. We use this to come up with an
-  output n-node. We first try to lookup the node based on the
-  normal form query and if nothing comes up we create one.
-\item the operator written with global notion column symbols. Store
-  this as metadata to the cluster for the code generator.
-\item A mapping between the columns of the output normal form query and
-  each of the input normal form queries. Exceptions to this are
-  projections and aggregations where there is possibly no
-  one-to-one correspondence between input and output queries. This
-  is also stored as metadata for the benefit the physical
-  planner/code generator, but also, as we will see, to generate the
-  n-node schema.
-\end{itemize}
-
-Each cluster then is marked with all the relevant information
+Each cluster is marked with all the relevant information
 required in order for the useful to the code generator. But is that
 enough? Not quite. As we have alluded to, each relation we deal
 with, and therefore each n-node, must be associated with a schema
@@ -1364,56 +1371,44 @@ which contains information about:
 \item What is the order in which the columns are store.
 \end{itemize}
 
-The final one is tricky. One way of dealing with this would be to
-order them in terms of their hash, ie to maintain a global order
-for all columns. To avoid unnecessarily depending on the quality of
-our hash functions and, more imporantly because we found a fast way
-of hashing the columns too late, we opted for dynamically storing
-updating the query schema at runtime. In particular, when an n-node
-is first inserted it is not associated with a schema. A cluster has
-a \emph{trigger} method which updates the schemata of the connected
-n-nodes. Nodes not associated with a schema are assigned one based
-on the other connected nodes.
-
 \section{Query clusters}
 
-Clusters are the highest level building block of the graph. This
+Clusters are the highest level building blocks of the graph. This
 section describes a very high level of the semantic role of the
-cluster as a set of connected \hyperref[sec:org5a9ec3b]{N-nodes and
-  T-nodes}.
+cluster as a set of connected n-nodes and T-nodes.
 
 Clusters represent \emph{logical operations} and they are the connection
 between the basic graph and the relational algebra semantics.
 
 \subsection{Cluster polymorphism}
 
-As alluded to when describing the \hyperref[sec:org5a9ec3b]{QDAG}
+As alluded to when describing the QDAG in section \ref{sec:qdag},
 clusters come in different shapes depending on what the underlying
-operator is. In this subsection we will take a closer look at the
+operator is. In this section we will take a closer look at the
 structure of the different cluster types. Each type of cluster has
 input, output and intermediate slots, and each of the slots typically
 contains an n-node reference and an
-\hyperref[sec:relational_algebra_semantics]{RA operator} that relates
+RA operator that relates
 the node to the cluster. They also contain slots to accomodate the
 t-nodes connecting said n-nodes. In dealing with clusters it is
-assumed that input and output cells contain values that may be shared
-by other clusters. In contrast intermediate and t-node slots are
+assumed that input and output n-nodes contain values that may be shared
+by other clusters. In contrast, intermediate n-nodes and t-node slots are
 always completely private to each cluster.
 
-There are three different kinds of clusters and a unified type
+We define are three different kinds of clusters and a unified type
 \hask{AnyCluster}:
 
 \begin{itemize}
 \item \hask{NClust} is a cluster containing exactly one slot which
   corresponds to a primary table.
 \item \hask{UnClust} a cluster corresponding to a unary operation. It
-  has two slots in output position, one slot in input position, no
-  intermediate nodes and a single t-node slot \ref{fig:unclust}.
+  has two slots in the output position, one slot in input position, no
+  intermediate n-nodes and a single t-node slot \ref{fig:unclust}.
 \item \hask{BinClust} is a cluster corresponding to a non-join binary
-  RA operation. It has one output slot, two input slot and a t-node
+  RA operation. It has one output slot, two input n-node slots and a t-node
   slot \ref{fig:binclust}.
 \item \hask{JoinClust} augments the \hask{BinClust} with two
-  intermediate nodes, two extra output nodes and two input nodes to
+  intermediate n-nodes, two extra output n-nodes, and two input t-nodes to
   facilitate the antijoin results of a FluiDB join operation
   \ref{fig:joinclust}.
 \end{itemize}
@@ -1447,8 +1442,8 @@ the cluster itself.
 
 \subsection{Populating the graph}
 
-Once the query is transformed into a possible-join forest as described
-in section \ref{sec:possible_joins} on enumaration of possible joins, the query
+Once the query is transformed into a forest of possible join orderings as described
+in section \ref{sec:possible_joins} on enumeration of possible joins, the query
 is transformed into a forest (listing \ref{lst:query_forest}) of plans we
 can insert it into the tree. This is an iterative process where each
 operation in each of the trees in the forest is translated to a
