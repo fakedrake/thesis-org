@@ -4,7 +4,7 @@
 \item The FluiDB query planner follows an A*-like method for seaching plans
   plans are searched in a top-down fashion, guided by a cost model that
   takes into account the cost historical queries.
-\item The query planner can make use of \emph{forward} or \emph{reverse} 
+\item The query planner can make use of \emph{forward} or \emph{reverse}
 \item The garbage collector clears up space on-demand maintaining the materializability
   of all the nodes in the graph.
 \end{summary}
@@ -204,9 +204,10 @@ newtype HRes h m r = HRes (Tup2 (h (Brnch h r m)),[r])
 type Brnch h r m = ReaderT (HeapKey v)
   (StateT (CompState h r m) m) (HRes h m r)
 \end{haskellcode}
-\label{lst:hcntt_def}
-\caption{The \hask{HCntT} monad transformer allows continuation based
-  non-determinism that allows switching between branches.}
+
+  \caption{\label{lst:hcntt_def} The \hask{HCntT} monad transformer
+    allows continuation based non-determinism that allows switching
+    between branches.}
 \end{code}
 
 Here we use the continuation monad to capture the rest of the
@@ -231,9 +232,9 @@ class (forall v . Monoid (h v),Functor h,Monoid (HeapKey h),Ord (HeapKey h))
   singletonHeap :: HeapKey h -> v -> h v
   maxKeyHeap :: h v -> Maybe (HeapKey h)
 \end{haskellcode}
-\label{lst:heap_def}
-  \caption{We parameterize over heaps to allow the
-    user to decide an efficient priority queue for the branches.}
+
+  \caption{\label{lst:heap_def} We parameterize over heaps to allow
+    the user to decide an efficient priority queue for the branches.}
 \end{code}
 
 A halted computation branch, denoted as \hask{Brnch} is simply a

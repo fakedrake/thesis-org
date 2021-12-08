@@ -14,7 +14,7 @@ recycling and how they solve the problem of automatically selecting
 and maintaining intermediate results for workloads.
 
 \section{Relational databases}
-\label{sec:org5af5e27}
+
 Databases are more than just a method of accessing data. In their
 essence they are machines for question answering. The typical database
 works in a perpetual loop of reading queries and coming up with
@@ -242,7 +242,6 @@ commercial and research databases
 \cite{nunesalonsoBuildingPolyglotData2020}.
 
 \subsection{Cost estimation}
-\label{sec:org4f8e111}
 
 Probably the hardest aspect of the planner design is the cost
 estimation algorithm. These are required in order to select plans and
@@ -346,7 +345,6 @@ We identify 4 different approaches in the literature to solving this
 problem:
 
 \subsection{Transpilation}
-\label{sec:orgbf8a953}
 
 Transpilation of a physical plan to a systems language like C or C++
 which is then fed to an off-the-shelf compiler
@@ -383,7 +381,6 @@ program is seamlessly replaced by the compiled one once the LLVM
 compiler finishes generating machine code.
 
 \subsection{Direct machine code generation}
-\label{sec:org344a12c}
 
 Some databases do not reuse any compiler or JITing VM, but rather
 directly generate highly specific machine code out of the physical
@@ -398,7 +395,6 @@ which they have a custom compiler that translates it directly to
 machine code.
 
 \subsection{Custom execution engines}
-\label{sec:org7bca3a3}
 
 The final category is per database code generation rather than per-query
 code generation. Volcano/EXODUS

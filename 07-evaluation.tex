@@ -34,8 +34,7 @@ by merging the \texttt{linenumber}, \texttt{orders} and
   \draw [-stealth] (s) -- (lo);
   \draw [-stealth] (d) -- (lo);
 \end{tikzdiagram}
-\caption{The foreign key links in a SSB-TPC-H}
-\label{fig:ssb_tpch_schema}
+\caption{\label{fig:ssb_tpch_schema}The foreign key links in a SSB-TPC-H}
 \end{figure}
 
 
@@ -62,8 +61,7 @@ by merging the \texttt{linenumber}, \texttt{orders} and
   (ps) edge (l)
   (p) edge (ps);
 \end{tikzdiagram}
-\label{fig:tpch_schema}
-\caption{The foreign key links in a traditional TPC-H schema}
+\caption{\label{fig:tpch_schema}The foreign key links in a traditional TPC-H schema}
 \end{figure}
 
 
@@ -114,14 +112,13 @@ focused on analytics workloads that do not include sub-second queries.
 \begin{figure}[p]
 \centering
 \includegraphics[width=.9\linewidth]{./imgs/2021-12-03_18-36-27_screenshot.png}
-\label{fig:min_budget_plot}
-\caption{The total page read/writes for each query a sequence of
-  queries. The SSB query number is \(mod(\text{query
-    sequence},12\). The baseline is the query being run by FluiDB
-  directly without any materialized nodes. The workload bars represent
-  the cost of each query in a workload built within the same QDAG. The
-  budget for this is the minimum budget within which FluiDB can run
-  each individual query.}
+\caption{\label{fig:min_budget_plot}
+  The total page read/writes for each query a sequence of queries. The
+  SSB query number is \(mod(\text{query sequence},12\). The baseline
+  is the query being run by FluiDB directly without any materialized
+  nodes. The workload bars represent the cost of each query in a
+  workload built within the same QDAG. The budget for this is the
+  minimum budget within which FluiDB can run each individual query.}
 \end{figure}
 
 It is clear from figure \ref{fig:min_budget_plot} that even at the minimum budget
@@ -136,14 +133,15 @@ intermediate results as demonstrated in figure \ref{fig:large_budget_plot}
 \begin{figure}[p]
 \centering
 \includegraphics[width=.9\linewidth]{./imgs/2021-12-03_20-12-36_screenshot.png}
-\label{fig:large_budget_plot}
-\caption{The total page read/writes for each query a sequence of
-  queries. The SSB query number is \(mod(\text{query
-    sequence},12)\). The baseline is the query being run by FluiDB
-  directly without any materialized nodes. The workload bars represent
-  the cost of each query in a workload built within the same QDAG. The
-  budget for this is triple the minimum budget within which FluiDB can
-  run each individual query.}
+
+\caption{\label{fig:large_budget_plot}
+  The total page read/writes for each query a sequence of queries. The
+  SSB query number is \(mod(\text{query sequence},12)\). The baseline
+  is the query being run by FluiDB directly without any materialized
+  nodes. The workload bars represent the cost of each query in a
+  workload built within the same QDAG. The budget for this is triple
+  the minimum budget within which FluiDB can run each individual
+  query.}
 \end{figure}
 
 \section{A note on size estimation}

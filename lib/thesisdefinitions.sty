@@ -121,7 +121,7 @@
   \setcounter{secnumdepth}{-1}%
   \renewcommand{\chaptermark}[1]{}%
   \pagestyle{plain}%
-  %\titlespacing*{\chapter}{0pt}{0pt}{30pt}%
+  % \titlespacing*{\chapter}{0pt}{0pt}{30pt}%
 }%
 {
   %% Restart numbering
@@ -264,5 +264,31 @@
   \end{center}
 }
 \makeatother
+
+
+\RequirePackage{tcolorbox}
+\NewEnviron{summary}{%
+  \begin{tcolorbox}[title=Chapter summary]
+    \begin{itemize}
+      \BODY
+    \end{itemize}
+  \end{tcolorbox}
+}
+
+% Chapter
+\KOMAoption{chapterprefix}{true}
+\renewcommand*\raggedchapter{\centering}
+\newif\ifmakeupper
+\newcommand*\chaptertitleformat[1]{\ifmakeupper\MakeUppercase{#1}\else#1\fi}
+\addtokomafont{chapter}{\makeuppertrue}
+\setkomafont{chapterprefix}{\normalsize\mdseries}
+\renewcommand*{\chapterformat}{%
+    \MakeUppercase{\chapappifchapterprefix{\nobreakspace}}\thechapter\autodot%
+    \IfUsePrefixLine{%
+      \par\nobreak\vspace{-\parskip}\vspace{-.6\baselineskip}%
+      \rule{0.9\textwidth}{.5pt}%
+    }{\enskip}%
+}
+\RedeclareSectionCommand[beforeskip=0pt,afterskip=8\baselineskip]{chapter}
 
 \message{Hello world thesis!}

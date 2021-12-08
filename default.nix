@@ -13,6 +13,7 @@ let
       todonotes
       biblatex
       xcolor
+      tcolorbox
       titlesec
       environ
       abstract
