@@ -1381,6 +1381,7 @@ Clusters represent \emph{logical operations} and they are the connection
 between the basic graph and the relational algebra semantics.
 
 \subsection{Cluster polymorphism}
+\label{sec:cluster_polymorphism}
 
 As alluded to when describing the QDAG in section \ref{sec:qdag},
 clusters come in different shapes depending on what the underlying
@@ -1448,15 +1449,15 @@ is transformed into a forest (listing \ref{lst:query_forest}) of plans we
 can insert it into the tree. This is an iterative process where each
 operation in each of the trees in the forest is translated to a
 cluster which is then inserted into the DAG. The process if inserting
-a sub-forest or sub-tree into the \hyperref[sec:org5a9ec3b]{QDAG} has
+a sub-forest or subtree into the QDAG has
 the effect of extending the QDAG by the connected clusters
 corresponding to the operators at the nodes of the forest, and also
-returns an n-node that corresponds the sub-forest or sub-tree
-relation. However since the insertion function is idempotent, that is
-inserting the same forest in the DAG once or twice has no effect
+returns an n-node that corresponds to the subforest or sub-tree
+relation. However, since the insertion function is idempotent, i.e.,
+inserting the same forest in the DAG more than once has no effect
 either on the returned value or on the resulting DAG, we memoize the
 function. Since the same function recursively inserts all sub-trees
-and sub-forests we get for free the mechanism of not traversing the
+and sub-forests we get for "free" a mechanism of not traversing the
 same tree twice during insertion.
 
 \begin{code}
@@ -1478,29 +1479,27 @@ same tree twice during insertion.
 \end{code}
 
 The process of traversing the forest and inserting the clusters in the
-graph is fairly straightforward. The actual creatin of the clusters,
-however, is slightly more convoluted. First a cluster of a type
+graph is fairly straightforward. The actual creation of the clusters,
+however, is slightly more convoluted. First, a cluster of a type
 corresponding to the query operation at the forest node is created
-(see section on \hyperref[sec:orgadee761]{cluster polymorphism}). That
+(see section \ref{sec:cluster_polymorphism} on cluster polymorphism). That
 cluster initially contains QNF forms at its edges. The QNF forms are
 then matched against existing QNFs in the QDAG and the missing ones
 are generated. If no new nodes were generated and the matched nodes
 all correspond to the same existing cluster, we infer that the cluster
-is already in the QDAG and the process finishes . Otherwise we need to
-create and insert a clustera and a corresponding
-\hyperref[sec:org089acdd]{propagator}. Finally all new nodes, QNFs and
-the cluster are registered and cross matched so they are easy to look
-up. We memoize the entire process using the \hask{qfHash} to avoid
-re-traversing the same path.
-
+is already in the QDAG and the process finishes . Otherwise, we need to
+create and insert a cluster and a corresponding
+propagator (see section \ref{sec:shape_propaga}). Finally all new nodes, QNFs, and
+the cluster are registered and cross matched so they are easily cross referenced.
+We memoize the entire process using the \hask{qfHash} to avoid re-traversing the same path.
 
 \section{Query shapes}
 
 In the section on QNFs we discussed the need to abstract away
-infomration that pretains to the particular structure of a query in
+information that pertains to the particular structure of a query in
 favor of semantic information that is rewrite and data
 independent. Query shapes cover the opposite need: they encode the
-particular cardinality and shape of a relation a specific point in
+particular cardinality and shape of a relation at a specific point in
 time.
 
 A query shape is a datastructure that contains information about the
@@ -1523,60 +1522,45 @@ shape of a query.
     deriving (Show,Generic)
 \end{haskellcode}
 
-A shape contains all combinations that create a uniques subtuple. This
-is useful among other places to determine foreign key joins. In a join
-like \sql{SELECT * FROM t1,t2 WHERE t1.a = t2.uid}.
+A shape contains all combinations of columns that comprise a unique subtuple. 
+This is useful, among other things, to determine foreign key joins. The expression
 
-The resulting table has cardinality at most the size of t1 because
-each row of \sql{t1} matches at most one row of \sql{t2}. FluiDB does not
-support functional dependencies but realistically the column \sql{a} will
-usually be a foreign and therefore the cardinality of the resulting
-table will be exactly the cardinality of \sql{t2}. But what if \sql{t2} is
-actually a subquery things become more complex. Consider the example
+\[Q_1 := A \Join_{bId_A = id_B \land cId_A = id_C} (B \times C)\] 
 
-\begin{sqlcode}
-  SELECT *
-  FROM t1,(SELECT * FROM t2,t3)
-  WHERE t1.a = t2.uid
-\end{sqlcode}
+behaves like a foreign key join while the join 
 
-Here \sql{t2.uid} is part of the unique subtuple but it does not contain
-unique values in \sql{SELECT * FROM t2,t3}. However, the pair \sql{t2.uid} and
-\sql{t3.uid} together are indeed unique. Therefore we abolish the notion
-of unique columns in favour of the notion of uniques subtuples.
+\[Q_2 := A \Join_{bId_A = id_B} (B \times C)\]
 
-This is taken a step furthen when one considers which is the unique
-unique in the latter example. One might say \sql{t1.uid},
-\sql{t2.uid} and \sql{t3.uid}. But that is only partially
-correct as another unique tuple would be \sql{t1.uid},
-\sql{t1.a} and \sql{t3.uid} due to the equality \sql{t1.a =
-  t2.uid}. As stated above FluiDB does not keep track of functional
-dependencies, instead it keeps an explicit set of unique subtuples.
+does not because for the expression\(B \times C\) neither \(id_B\) nor \(id_C\) are unique on their own. 
+Their combination is. Therefore, the cardinality \(|Q_1|\) is at most the size of \(A\) because
+each row of \(A\) matches at most one row of \(B \times C\).
 
-To generalize slightly
+So the unique subtuples are computed using the following rules:
 
 \begin{itemize}
-\item when relations \sql{A} and \sql{B} are joined or their product is computed,
-  we concatenate all combinations their unique subtuples to come up
-  with the new set of unique subtuples.
-\item The unique subtuples of a selection are the same as the unique
-  subtuples for the underlying relation.
+\item In general the set of unique subtuples of \(A \Join B\) is computed by
+  concatenating all combinations of the unique subtuples of \(A\) and \(B\).
+\item The unique subtuples of a selection, semijoin, antijoin, and limit are the same as the unique
+  subtuples of the underlying relation.
+\item The unique subtuples of a projection are the unique subtuples of the input that are entirely exposed. 
+  The reader is reminded that FluiDB's notion of RA requires that there is at least one
+  such unique subtuple.
 \end{itemize}
 
 \subsection{Shape propagators}
-\label{sec:org089acdd}
+\label{sec:shape_propagators}
 
 Shape propagators are based on the the idea of the propagator as first
-explained in \cite{sussmanArtPropagator2009} and more in depth in
-\cite{hansonSoftwareDesignFlexibility2021a}. Very briefly a propagator
-network is a hypergraph of cells contianing mutable state and
+introduced in \cite{sussmanArtPropagator2009} and analyzed more in depth in
+\cite{hansonSoftwareDesignFlexibility2021a}. Very briefly, a propagator
+network is a hypergraph of cells containing mutable state and
 hyperedges as multi-directional functions that, when triggered, update
 the state of the connected cells so they are consistent with each
 other. The state of each cell represents some information about a
 value (like a bound or a value paired with a certainty metric), and
 the propagator takes into account the state of each cell and
 propagates that information to the other cells (for example tightening
-their bound or finding a linear combination of the alternative values
+their bound or finding a linear combination of alternative values
 based on the certainty of each). Kmett \cite{kmettPropagators2021}
 formalized the notion of "information about a value" drawing from
 \cite{kuperLVarsLatticebasedData2013} encoding it as a lattice with
@@ -1586,22 +1570,23 @@ joined ( \(\lor\) ) with the old ones and the value is updated to
 reflect the combination of information. The example provided by Kmett
 is cell being embedded in a 3 level lattice where the bottom level is
 \hask{Nothing}, the middle level is \hask{Just x} and the top level
-being a haskell error.
+being a Haskell error (ironically denoted as \(\bot\) in literature 
+unrelated to propagators).
 
 As the name of our propagator implementation suggests, our idea is to
 correspond each cluster to a propagator to form a propagator network
 that computes the shapes of the relations corresponding to n-nodes.
 
 Intuitively, we model a propagator as a partial function that changes
-the values at the edges of a \hyperref[sec:org6e4b098]{cluster}. At
-construction, each cluster is equipped with a propagator which, when
+the values at the edges of a cluster. Each cluster 
+is equipped with a propagator which, when
 triggered synchronizes the values at the edges of the cluster. The
-partiallity of the function stems from the fact that it might detect
+partiality of the function stems from the fact that it might detect
 irreconcilable inconsistencies between the cells (see listing
 \ref{lst:acpropagator}). This conception of the propagator departs slightly
 form the conception described in the paper in that it clearly
 separates the \emph{cluster} as a datastructure that holds a fixed
-number of interdependent values and the function that updates the
+number of interdependent values, and the function that updates the
 values in that cluster.
 
 \begin{code}
@@ -1619,27 +1604,28 @@ values in that cluster.
     synchronized.}
 \end{code}
 
-Given a cluster with n-nodes at the edges we lookup the shape of each
-node and add that to the cluster edge. Then the cluster is triggered
-Once a cluster is triggered and the values synchoinized those values
+Given a cluster with n-nodes at the edges, we lookup the shape of each
+node and add that to the cluster edge.
+Once a cluster is triggered and the values synchronized those values
 are checked against the old ones and for the ones that were updated we
 find the clusters in which they participate and run the same
-process. The convergence of this process is justified in
-\cite{kuperLVarsLatticebasedData2013}.
-
+process. The convergence of this process is justified in \cite{kuperLVarsLatticebasedData2013}.
 
 \subsection{Defaulting functor}
 
-While discussing propagators we mentioned that the cells of a
+While discussing propagators, we mentioned that the cells of a
 propagator involve more structure than raw values. Indeed, FluiDB
 wraps these values in a functor that we dub as \emph{defaulting
-  functor} to resason about the consistency of the query shape. In
-particular we require that the cell can handle cases where a) the
-value for the shape is not computed yet, b) the shape was inferred via
-the propagator network and is therefore subject to change and c) the
-shape stored in the cell corresponds to a materialized node and other
-parts of the FluiDB's internal state are dependent on it. The latter
-point is salient. Different logical plans can lead to different, yet
+  functor} to reason about the consistency of the query shape. In
+particular we require that the cell can handle cases where 
+\begin{itemize}
+\item The value for the shape is not computed yet
+\item The shape is inferred via the propagator network and is therefore subject to change and
+\item The shape stored in the cell corresponds to a materialized node and other
+parts of the FluiDB's internal state depend on it.
+\end{itemize}
+
+The latter point is salient. Different logical plans can lead to different, yet
 semantically equivalent as per the FluiDB RA.
 
 The defaulting functor (DF) may hold up to two values (see listing
@@ -1647,14 +1633,15 @@ The defaulting functor (DF) may hold up to two values (see listing
 
 \begin{itemize}
 \item An empty DF means we have no information about the value.
-\item a single value (the "default" value) coresponds to a derived shape
+\item A single value (the "default" value) corresponds to a derived shape
   that was computed using the propagator network. The default value is
   updated when propagators are triggered.
 \item A full value exists alongside a default value and is constant
   through its lifetime as it matches the value of some state that is
   external to the propagator network, in our particular application it
   represents the shape of a materialized relation. Until that relation
-  is delete the registered shape is not allowed to change.
+  is deleted, and the full propagator is demoted to a defaulting one, the 
+  registered shape is not allowed to change.
 \end{itemize}
 
 \begin{code}
@@ -1668,27 +1655,28 @@ The defaulting functor (DF) may hold up to two values (see listing
   \caption{The defaulting functor definition.}
 \end{code}
 
-Since instances of the DF are meant to accomodate propagator values,
+Since instances of the DF are meant to accommodate propagator values,
 adhering to Kmett's approach to cell value maintenance, we define a
 semilattice over the DF and define it in terms of a monoid (listing
 \ref{lst:defaulting_semigroup} ).
 
-Semigroups are not commutative so we give meaning to the order. The
+Semigroups are not commutative, so we give meaning to the order. The
 left operand of the semigroup operator is the newer value and the
-right one is the older value. Therefore the DF does not require all
+right one is the older value. Therefore, the DF does not require all
 the properties of the semilattice which is required to commutative and
-associative. In general the semigroup implemented by the underlying
+associative. In general, the semigroup implemented by the underlying
 type of the DF is taken to mean \hask{better <> backup}, i.e. keep as
-much of the left oparand as possible unless the right operand is found
-to be better for some definition of better. In the case of query
-shapes it means keep the schema from the left hand side and the more
-certain size.
+much of the left operand as possible unless the right operand is found
+to be "better" for some definition of better. For example, when calculating 
+the cardinality we include a value of certainty between \(\left[0,1\right]\). 
+A more certain right-hand cardinality is preferred over a less certain left-hand side. 
 
 Bringing our attention to the implementation of the \hask{Def <> Full}
-combination: it inverts the order of combination of the default
+combination in the semigroup definition \ref{lst:defaulting_semigroup}: 
+it inverts the order of the combination of the default
 values. The reason we do this is to give priority the the full valued
 (materialized) nodes when propagating to their immediate neighbors. We
-need this when commiting an operator to the code-generation.
+need this when committing an operator to the code generation.
 
 \begin{code}
   \begin{haskellcode}
@@ -1710,18 +1698,20 @@ need this when commiting an operator to the code-generation.
   \caption{The join semilattice that is defined in terms of the}
 \end{code}
 
-When commiting to a query plan we are also commiting to full values
+When committing to a query plan we are also committing to full values
 for the defaulting values in the propagator cells. Every operator of
-the plan corresponds to a query shape propagator. When commiting an
+the plan corresponds to a query shape propagator. When committing an
 operator to the plan by translating it into C++ code, we promote all
-the defaulting values at the edges. It is clear that for the generated
+the defaulting values at the edges. It is clear that the generated
 code expects a certain data layout and therefore the \emph{full parts
-  of the values must be structurally consistent with each other}. As
-we went over in the previous sections, however the default values are
-consistent in the amount of information they hold, not in the
-structure of the query shape. To facilitate that, before promoting the
-default values to full values we trigger the propagator to enforce
-full consistency between the values.
+  of the values must be structurally consistent with each other}. 
+  
+As we went over in the previous sections, however, the default values are
+consistent with other default values of the same cluster w.r.t. the amount of information they hold, 
+but not w.r.t. the order of the columns in the query shape. Therefore, before promoting the
+default functors to full functors by duplicating the default value to fill both
+fields of the \hask{FullDefaulting} constructor, we trigger the propagator to enforce
+full consistency between the defaultvalues.
 
 The full part and the default part of the the defaulting value are not
 necessarily structurally synchronized. We \emph{internally synchronise} a
@@ -1734,7 +1724,7 @@ will be able to create structurally consistent cells. In that case the
 propagator will fail. Handling of this failure is beyond the current
 scope of this work.
 
-When an n-node is to be materialized, the corresponding defaultint
+When an n-node is to be materialized, the corresponding defaulting
 functor containing the value is \emph{promoted}.  Promotion of propagators
 is copying the default value of a non-full prpagator to the full
 state (listing \ref{lst:promote_defaulting}).
@@ -1753,25 +1743,25 @@ state (listing \ref{lst:promote_defaulting}).
     during code generation when an n-node is materialized.}
 \end{code}
 
-\section{Conclusion}
+\section{Summary and conclusion}
 
 In this chapter, we detailed how FluiDB processes queries. From
 parsing to generating a graph of queries and inferring the shapes of
 the relations in that graph. We also discussed different conceptions
 of relational algebra that are used in FluiDB (normal RA and QNF) and
-reverse operations. This will serve as a sold bedrock on which we can
-build the query planner and on top of that the code generator.
+reverse operations. This will serve as a solid bedrock on which we can
+build the query planner and on top of the code generator.
 
 There are a few shortcomings to this model that we have not yet
 addressed that we plan to implement in later incarnations of
 FluiDB. The most important ones being:
 
 \begin{itemize}
-\item As things stand the QDAG will keep growing infinitely as new queries
+\item As things stang QDAG will keep growing infinitely as new queries
   arrive and there is no obvious way to prune it while guaraneeing the
   materializability of all the nodes.
 \item There is no obvious path to supporting updates in the primary
   tables. There has been a lot of work on materialized view
-  maintenance [refs] but most of it assumes that the primary tables
+  maintenance but most of it assumes that the primary tables
   are also materialized.
 \end{itemize}
