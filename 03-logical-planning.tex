@@ -1,3 +1,15 @@
+\begin{summary}
+\item FluiDB expresses queries in relational algebra and defines 
+  reverse operations for most operations.
+\item Query plan trees are accumulated in a bipartite DAG (QDAG) 
+  where the types of nodes are tables and bidirectional operations.
+\item Queries are normalized to hashable objects (QNF) that abstract a wide 
+   range of rewrites. This allows efficient merging query plan trees into the QDAG.
+\item Sub-graphs of the QDAG (clusters) represent higher level operations
+  and are used as \emph{propagators} to infer information of the n-nodes 
+  like cardinality, column type, and uniqueness of subtuples.
+\end{summary}
+
 FluiDB is focused on query optimization and planning when the queries in a workload being served can have common subqueries.
 To exploit these similarities between queries, FLuiDB transforms them to bipartite graphs of subqueries and bidirectional operators,
 which it incrementally merges them into a global query DAG, which it then uses to enumerate the possible plans. 
@@ -1237,7 +1249,7 @@ The schema of each n-node is described in terms of column IDs that are
 agnostic to the particular name assigned to it by the user. Therefore
 the first step before inserting an operator in the graph is to
 normalize the symbol name. We consider that two symbols are equal only
-if they refer to the exact same column. This is done by means of
+if they refer to the same column. This is done by means of
 converting the query into normal form. This is required to resolve the
 possible ambiguity of symbols with the same name but different scope
 when expressions are moved around. This abstracts away the symbol
@@ -1247,11 +1259,11 @@ and the \(a\) in \(a < y\) are not equal symbols as they refer to
 different columns. The former refers to a column in the table
 \(\gamma(\sigma_{a<y}(A))\) and the latter in the table \(A\). They
 both refer to some transformation of a column labelled \(a\) form the
-selation \(A\). However \(a\) in \(a=z\) and \(a\) in \(a=x\) are
+selection \(A\). However \(a\) in \(a=z\) and \(a\) in \(a=x\) are
 indeed equivalent as they refer to the same column. To clear up the
-confusion we will say that sybols are \emph{strictly-equivalent} if
+confusion we will say that symbols are \emph{strictly-equivalent} if
 they refer to the same column but that they are
-\emph{provenance-equivalent} when they refer to differnt columns but
+\emph{provenance-equivalent} when they refer to different columns but
 they are transformations of the same column, ie they would be
 represented by the same name modulo projections in a normal relational
 algebraic setting. Should it be required in any of the preliminary
@@ -1268,8 +1280,8 @@ to normalize the symbols if they are unambiguous in each context? If
 we were only dealing with one query we could declare that we trust
 that the user would be consistent when naming their columns
 (\sql{select col as name where...}), declare that the broader problem
-of alpha equivalence is beyond the scope of this paper and move on to
-more central issues. It is however the case that the user is not in
+of alpha equivalence is beyond the scope of this thesis and move on to
+more central issues. It is, however, the case that the user is not in
 total control of naming columns. In the examples of generated
 enumerating unique ids and decorrelation transformation our system
 produces unique column names non-deterministically. This is not a
@@ -1295,10 +1307,10 @@ split it's symbols' reprenentation in two notions.
   the column itself.
 \end{itemize}
 
-The local symbol is useful in order to find provenance equality
-should it be needed, (being very careful when merging symbols based
+The local symbol is useful to find provenance equality
+should it be needed (being cautious when merging symbols based
 on them sharing a local notion that the global notion maintains
-correctness, ie it refers to the right column). It is clear that
+correctness, i.e., it refers to the right column). It is clear that
 local notions of symbols are sensitive to the name chosen, the
 global is not. Remember that uncorrelating queries creates named
 projections where the names are undefined.
