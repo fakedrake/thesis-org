@@ -1,8 +1,11 @@
 \begin{summary}
-\item FluiDB is an in-memory RDBMs optimizes data layout for space efficiency w.r.t. the workload
-\item The main novelty relates to the introduction of reversible relational operations which affords a new
-  perspective on query planning and view selection.
-\item It materializes all intermediate nodes and deletes garbage collects when it runs out of space.
+\item FluiDB is an in-memory RDBMs optimizes data layout for space
+  efficiency w.r.t. the workload
+\item The main novelty relates to the introduction of reversible
+  relational operations which affords a new perspective on query
+  planning and view selection.
+\item It materializes all intermediate nodes and deletes garbage
+  collects when it runs out of space.
 \end{summary}
 
 With the advent of technologies that make access to information
@@ -14,13 +17,11 @@ they have collected and their capacity for such collection. In cases
 like these the layout of the stored data is independent of the growing
 number of applications taking advantage of it.
 
-Particularly there are many opportunity
-
 Consider the following query over the TPC-H dataset that computes the
 average discount per country:
 
 \begin{code}
-  \begin{sqlcode}
+\begin{sqlcode}
     select      n_name, avg(l_discount)
     from        lineitem, customer, nation, order
     where       l_orderkey = o_orderkey
@@ -31,24 +32,98 @@ average discount per country:
   \end{sqlcode}
 \end{code}
 
-An optimizer considering this query in isolation might come up with
-the following plan following plan:
+An optimizer considering this query in isolation would come up with
+some plan resembling the following following plan following:
 
 \begin{figure}[H]
-  \centering
-  \includegraphics[width=.9\linewidth]{./imgs/optplan.pdf}
-  \caption{\label{fig:optplan}A possible optimal plan for an isolated
-    query.}
+  \begin{tikzdiagram}
+    \tikzset{
+      every node/.style={draw,rectangle, align=center},
+      sibling distance=10cm,
+      level distance=3cm
+    };
+    \node{\gamma}
+    child {node{\(\Join\)}
+      child {node{\(\Join\)}
+        child {node{\(\Join\)}
+          child {
+            node{\(\sigma_{shipdate > 10-11-2015}\)}
+            child { node{lineitem}}
+          }
+          child {node {order}}
+        }
+        child {node{customer}}
+      }
+      child {node{nation}}
+    };
+  \end{tikzdiagram}
+  \caption{\label{fig:single_plan}An efficient logical plan for a single wuery}
 \end{figure}
 
-However, for certain workloads, it might be beneficial to opt for
-a plan that materializes the relation \(lineitem \Join order\) and the
-relation \(customer \Join nation\) so they can be used to optimize
-later queries. In that case, even if the most beneficial plan for the
-isolated query is deemed to be the one shown in figure \ref{fig:optplan},
-taking a holistic view of a workload during query planning making
-heavy use of \(lineitem \Join order\) and \(customer \Join nation\) a
-better choice would be what appears in figure \ref{fig:workplan}.
+Notice how the selection (\(\sigma_{shipdate > 10-11-2015}\)) is
+pushed all the way to the bottom of the tree because it is a cheap
+operation (worst case a single scan over the input) and can
+potentially shrink the input by a lot rendering the joins higher in
+the tree much cheaper.
+
+Consider a workload that repeatedly runs a query generated from the
+following template:
+
+\begin{sqlcode}
+  select      n_name, avg(l_discount)
+  from        lineitem, customer, nation, order
+  where       l_orderkey = o_orderkey
+  and         c_custkey = o_custkey
+  and         c_nationkey = n_nationkey
+  and         l_shipdate > ${min_date}
+  group by    n_name
+ \end{sqlcode}
+
+It is clear in this case that it would be beneficial if the workload
+is large enough for the cost of
+\(lineitem \Join order \Join customer \Join nation\) to be amortized
+we would like to materialize the large join and only run
+\(\gamma \sigma\) for each query attached as show in figure
+\ref{fig:multi_plan}.
+
+\begin{figure}[H]
+  \begin{tikzdiagram}
+    \tikzset{
+      every node/.style={draw,rectangle, align=center},
+      sibling distance=10cm,
+      level distance=3cm
+    };
+    \node{\gamma}
+    child {
+      node{\(\sigma_{shipdate > \$\{min\_date\}}\)}
+      child {node (mat){\(\Join\)}
+        child {node{\(\Join\)}
+          child {node{\(\Join\)}
+            child { node{lineitem}}
+            child { node {order}}
+        }
+        child {node{customer}}
+      }
+      child {node{nation}}
+    }
+  };
+  \node[draw=none] (n) [left = of mat] {Keep materialized}
+  edge [-stealth] (mat);
+  \end{tikzdiagram}
+  \caption{\label{fig:multi_plan}An efficient logical plan for a
+    template workload}
+\end{figure}
+
+
+It is beneficial in this case to opt for a plan that materializes the
+relation \(lineitem \Join order\) and the relation
+\(customer \Join nation\) so they can be used to optimize later
+queries. In that case, even if the most beneficial plan for the
+isolated query is deemed to be the one shown in figure
+\ref{fig:optplan}, taking a holistic view of a workload during query
+planning making heavy use of \(lineitem \Join order\) and
+\(customer \Join nation\) a better choice would be what appears in
+figure \ref{fig:workplan}.
 
 \begin{figure}[H]
   \centering

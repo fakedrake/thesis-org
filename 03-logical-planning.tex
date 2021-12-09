@@ -1,19 +1,26 @@
+\dictum[Zizek]{This is the ideological manipulation.}
+
 \begin{summary}
 \item FluiDB expresses queries in relational algebra and defines
   reverse operations for most operations.
-\item Query plan trees are accumulated in a bipartite DAG (QDAG)
-  where the types of nodes are tables and bidirectional operations.
-\item Queries are normalized to hashable objects (QNF) that abstract a wide
-   range of rewrites. This allows efficient merging query plan trees into the QDAG.
-\item Sub-graphs of the QDAG (clusters) represent higher level operations
-  and are used as \emph{propagators} to infer information of the n-nodes
-  like cardinality, column type, and uniqueness of subtuples.
+\item Query plan trees are accumulated in a bipartite DAG (QDAG) where
+  the types of nodes are tables and bidirectional operations.
+\item Queries are normalized to hashable objects (QNF) that abstract a
+  wide range of rewrites. This allows efficient merging query plan
+  trees into the QDAG.
+\item Sub-graphs of the QDAG (clusters) represent higher level
+  operations and are used as \emph{propagators} to infer information
+  of the n-nodes like cardinality, column type, and uniqueness of
+  subtuples.
 \end{summary}
 
-FluiDB is focused on query optimization and planning when the queries in a workload being served can have common subqueries.
-To exploit these similarities between queries, FLuiDB transforms them to bipartite graphs of subqueries and bidirectional operators,
-which it incrementally merges them into a global query DAG, which it then uses to enumerate the possible plans.
-In this chapter, we will dive into how FluiDB processes and merges these graphs.
+FluiDB is focused on query optimization and planning when the queries
+in a workload being served can have common subqueries.  To exploit
+these similarities between queries, FLuiDB transforms them to
+bipartite graphs of subqueries and bidirectional operators, which it
+incrementally merges them into a global query DAG, which it then uses
+to enumerate the possible plans.  In this chapter, we will dive into
+how FluiDB processes and merges these graphs.
 
 We will start by looking into what kinds of queries FluiDB
 can understand and how it processes them. Then we will look at how it relates
@@ -21,17 +28,20 @@ the queries to each other to construct a tightly interrelated story
 of the workflow by looking at the basic query graph, the heart of
 FluiDB.
 
-For manipulating a graph of queries, it is important that FluiDB can distinguish between semantically different queries and when they are the same.
-We will look at how FluiDB normalizes queries to efficiently determine this equivalence.
+For manipulating a graph of queries, it is important that FluiDB can
+distinguish between semantically different queries and when they are
+the same.  We will look at how FluiDB normalizes queries to
+efficiently determine this equivalence.
 
-Then we will see how FluiDB organizes the nodes in the query graphs into  clusters representing single operations are formed within the query
-graph and how those are used to maintain consistency among information about
-intermediate results.
+Then we will see how FluiDB organizes the nodes in the query graphs
+into clusters representing single operations are formed within the
+query graph and how those are used to maintain consistency among
+information about intermediate results.
 
-Finally, we conclude by describing how the query
-processing infrastructure, which sits at the core of the RDBMS,
-interfaces with the rest of the components: the planner, Antisthenis
-and the code generator, described in later chapters.
+Finally, we conclude by describing how the query processing
+infrastructure, which sits at the core of the RDBMS, interfaces with
+the rest of the components: the planner, Antisthenis and the code
+generator, described in later chapters.
 
 \section{Relational Algebra}
 \label{sec:relational_algebra_semantics}

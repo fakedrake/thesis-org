@@ -213,7 +213,7 @@
 
 \RequirePackage{float}
 \RequirePackage{caption}
-\RequirePackage[outputdir=./build/,newfloat,draft=false]{minted}
+\RequirePackage[outputdir=./build/,newfloat,draft=true]{minted}
 \setminted{autogobble=true,breaklines=true}
 \RequirePackage{fontspec}
 \setmonofont{FiraCode}[Scale=0.8]
@@ -273,6 +273,7 @@
       \BODY
     \end{itemize}
   \end{tcolorbox}
+  \clearpage
 }
 
 % Chapter
@@ -283,9 +284,9 @@
 \addtokomafont{chapter}{\makeuppertrue}
 \setkomafont{chapterprefix}{\normalsize\mdseries}
 \renewcommand*{\chapterformat}{%
-    \MakeUppercase{\chapappifchapterprefix{\nobreakspace}}\thechapter\autodot%
+    \MakeUppercase{\chapappifchapterprefix{\nobreakspace}}\thechapter%
     \IfUsePrefixLine{%
-      \par\nobreak\vspace{-\parskip}\vspace{-.6\baselineskip}%
+      \par\nobreak\vspace{-\parskip}\vspace{-.5\baselineskip}%
       \rule{0.9\textwidth}{.5pt}%
     }{\enskip}%
 }
