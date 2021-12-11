@@ -242,6 +242,28 @@
   file = {/Users/cperivol/Zotero/storage/D7A3SRYT/Selsam et al. - 2020 - Sealing pointer-based optimizations behind pure fu.pdf}
 }
 
+@article{bibtexb,
+  title = {Efficient Query Processing in Managed Runtimes},
+  author = {Nagel, Fabian},
+  pages = {162},
+  langid = {english},
+  annotation = {00001},
+  file = {/Users/cperivol/Zotero/storage/IWA3EE2T/Nagel - Efﬁcient query processing in managed runtimes.pdf}
+}
+
+@article{bibtexc,
+  title = {Library Support for Historical and Persistent Data Structures in Non-Volatile Memories},
+  author = {Chatzistergiou, Andreas},
+  date = {2016-11-29},
+  publisher = {{The University of Edinburgh}},
+  url = {https://era.ed.ac.uk/handle/1842/25797},
+  urldate = {2021-12-09},
+  abstract = {In the context of emerging non-volatile memory (NVM) where data structures can  persist in-memory and are accessed through CPU loads and stores, we study how  to efficiently manage data evolution. This is an extensively applied problem in both  the scientific and business domains and is rapidly becoming an important component  for a wider range of applications. We argue that the best way to achieve a smoother  transition to the new programming model is to design a solution that is non-intrusive  and generic i.e. not bound to a specific data model. We propose a novel library-level  approach where the user can manage historical data directly from programming language  code. This is achieved with a combination of two software layers: REWIND  and VARIANT. At the bottom, lies REWIND (REcovery Write-Ahead System for In-  Memory Non-Volatile Data Structures) which handles the low level specifics of NVM  by dealing with write-ordering problems that arise in such context and allows recoverability  of arbitrary data structures. Then, VARIANT (Versioning ARbItrary dAta  structures in Non-volatile memory for Time-travel) focuses on versioning and time  travel (moving between versions). We adopt a logging approach and we tightly integrate  both systems for best performance by utilizing a common physical log of memory  operations.  With REWIND, we propose a novel recoverable log structure that permits atomic  and durable appends and removals of log records. This is the keystone for building  recoverable systems on top of NVM. Because latencies in recent NVM technologies  such as Phase-change memory (PCM) are asymmetric, we propose novel techniques  for reducing the write pressure of the recoverable log as well as mitigating the effect  of synchronization control primitives such as memory fences (enhanced for NVM),  i.e. barriers that enforce ordering and persistence to preceding instructions. We also  propose different implementations for trading logging performance for rollback performance  when this is appropriate. Finally, we revisit state-of-the-art recovery algorithms  for the new context given the different latencies and synchronization control.  Our results clearly indicate that current approaches for recoverability are ill-fitted for  persisting data structures in the new context and it is possible to achieve low-overhead  logging with customized mechanisms.  Next, we focus on data evolution. We expose a simple API that allows versioning  and time travel with minimal intrusiveness.We propose mechanisms for efficient  and transparent cloning of Versionable data structures.This allows high concurrency  since past images are returned as copies of the original data structure which remains  intact. Then, we propose novel indexing techniques that significantly improve time  travel performance as well as cloning with lazy schemes. We achieve a low overhead  architecture by employing a mix of volatile and non-volatile data structures as well as  hybrid structures that reside in both volatile and non-volatile memories. We perform  an extensive evaluation of the proposed techniques and conclude that, in our context,  by carefully mitigating the drawbacks of physical logging it is possible to create efficient  systems for managing data evolution that are both data structure agnostic and  non-intrusive.},
+  langid = {english},
+  annotation = {00000  Accepted: 2017-12-20T16:19:17Z},
+  file = {/Users/cperivol/Zotero/storage/QQ5M7HJL/25797.html}
+}
+
 @inproceedings{boukorcaHYPADHypergraphdrivenApproach2015,
   title = {{{HYPAD}}: Hyper-Graph-Driven Approach for Parallel Data Warehouse Design},
   shorttitle = {{{HYPAD}}},

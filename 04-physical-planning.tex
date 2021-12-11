@@ -525,7 +525,7 @@ The \hask{once} operator runs the argument computation and stops once it
 returns the first result. FluiDB uses \hask{once} to run the garbage
 collector without exploding the search space. Generally the different
 combinations of nodes that can be deleted is huge. We prune that by
-space by settling for the first result the solver can find.
+space by settling for the first result the planner can find.
 
 The way \hask{Once} is built on top of a concept we call a
 \emph{nested scheduler}. It takse a computation (the \emph{nested

@@ -8,14 +8,61 @@
   collects when it runs out of space.
 \end{summary}
 
+% Nagel plan:
+%
+% Look how cheap and fast main memory is, get rid of disks
+%
+% The application data model is very different than the relational
+% model
+%
+% The system and the code are on the same server and do not need all
+% the bells and whistles. => Store data as normal containers (but
+% it's hard)
+
 With the advent of technologies that make access to information
 scalable and affordable, the mental and temporal gap between
 collection of data and their analysis grows rapidly. At least two of
 the biggest players in the the tech industry, Facebook and Google,
-base their competitive advantage on vast amounts of information that
-they have collected and their capacity for such collection. In cases
-like these the layout of the stored data is independent of the growing
-number of applications taking advantage of it.
+base their competitive advantage almost exclusively on vast amounts of
+information that they have collected and their capacity for such
+collection and processing. In cases like these the layout of the
+stored data is independent of the growing number of applications
+taking advantage of it.
+
+A mantra in database community used to be that ``storage is cheap''
+and while that is true a more complete version of the mantra might be
+that ``slow storage is cheap''.
+
+Databases have traditionally been dealing with the tradeoff between
+memory and time efficiency within monetary constraints especially with
+the use of intermediate result recycling technologies which employ
+sophisticated ways of chosing parts of computation to be stored for
+reuse. This model has had some impressive results in OLAP
+workloads. We adopt a slightly different view of the problem:
+executing query plans does not only leave some specific intermediate
+results as residue, but rather \emph{transitions the entire storage
+  state from one where the result of the query is not materialized to
+  one where it is}. Whith such a notion of query planning what new
+dimensions open up in the desgn space of a query planner? The creation
+of FluiDB is an attempt to study some aspects of this question. In
+particular FluiDB is based on the following pillars:
+
+\begin{itemize}
+\item Reversible query operations that allow for more sophisticated
+  plans based on available materialized views.
+\item The planner involves a garbage collector that will delete
+  materialized views or primary tables that can be materialized from
+  the remaining relations.
+\item An incremental numeric evaluation system that allows the planner
+  to efficiently and repeatedly infer the cost of materializing
+  queries under a rapidly changing inventory of materialized views.
+\item Query execution driven based code generation.
+\end{itemize}
+
+These concepts allow FluiDB to dynamically adapt the data layout to
+the workload in ways that would not be possible in traditional
+intermediate view recycling systems. To make this more concrete let's
+look at an example.
 
 Consider the following query over the TPC-H dataset that computes the
 average discount per country:
@@ -57,7 +104,8 @@ some plan resembling the following following plan following:
       child {node{nation}}
     };
   \end{tikzdiagram}
-  \caption{\label{fig:single_plan}An efficient logical plan for a single wuery}
+  \caption{\label{fig:single_plan}An efficient logical plan for a
+    single query.}
 \end{figure}
 
 Notice how the selection (\(\sigma_{shipdate > 10-11-2015}\)) is
@@ -65,6 +113,7 @@ pushed all the way to the bottom of the tree because it is a cheap
 operation (worst case a single scan over the input) and can
 potentially shrink the input by a lot rendering the joins higher in
 the tree much cheaper.
+
 
 Consider a workload that repeatedly runs a query generated from the
 following template:
@@ -78,6 +127,7 @@ following template:
   and         l_shipdate > ${min_date}
   group by    n_name
  \end{sqlcode}
+
 
 It is clear in this case that it would be beneficial if the workload
 is large enough for the cost of
@@ -101,78 +151,105 @@ we would like to materialize the large join and only run
           child {node{\(\Join\)}
             child { node{lineitem}}
             child { node {order}}
+          }
+          child {node{customer}}
         }
-        child {node{customer}}
+        child {node{nation}}
       }
-      child {node{nation}}
-    }
-  };
-  \node[draw=none] (n) [left = of mat] {Keep materialized}
-  edge [-stealth] (mat);
+    };
+    \node[draw=none] (n) [left = of mat] {Keep materialized}
+    edge [-stealth] (mat);
   \end{tikzdiagram}
   \caption{\label{fig:multi_plan}An efficient logical plan for a
-    template workload}
+    template based workload.}
 \end{figure}
 
-
-It is beneficial in this case to opt for a plan that materializes the
-relation \(lineitem \Join order\) and the relation
-\(customer \Join nation\) so they can be used to optimize later
-queries. In that case, even if the most beneficial plan for the
-isolated query is deemed to be the one shown in figure
-\ref{fig:optplan}, taking a holistic view of a workload during query
-planning making heavy use of \(lineitem \Join order\) and
-\(customer \Join nation\) a better choice would be what appears in
-figure \ref{fig:workplan}.
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=.9\linewidth]{./imgs/workplan.pdf}
-  \caption{\label{fig:workplan}A possible optimal plan for a sequence
-    of queries that makes heavy use of \(lineitem \Join order\) and
-    \(customer \Join nation\)}
-\end{figure}
-
-A simple but effective solution to addressing the problem of
-integrating incremental query materialization and the optimization
-processes, was presented in
+This shift of focus from per-query optimization to considering the
+amortized cost of materialization of expensive relations is already a
+tall order for most RDBMSes that feature materialized views. A simple
+but effective approach to integrating incremental query
+materialization and the optimization processes, was presented in
 \cite{perezHistoryawareQueryOptimization}. In their approach they
-maintain a \emph{history pool} (a list of all the past queries) that is
-used to decide the benefit of materializing a sub-expression, and a
+maintain a \emph{history pool} (a list of all the past queries) that
+is used to decide the benefit of materializing a sub-expression, and a
 \emph{view pool} that keeps track of the materialized tables at every
 moment. Both these sets are taken into account during planning to
 produce a plan that will likely minimize the amortized cost of the
-workload. After the query is solved the sets are updated. A limitation
-of such an approach is that when dealing with relations like
-\(lineitem \Join order\) in budget restricted settings, materialized
-view storage can quickly become a scarce resource.
+workload. After the query is planned the sets are updated. A
+limitation of such an approach is that when dealing with relations
+like \(lineitem \Join order\) in budget restricted settings,
+materialized view storage can quickly become a scarce resource.
 
 There is an opportunity to reduce the effect of this problem by
 exploiting another common workload attribute: certain tables are
-frequently subsumed by the same intermediate result. In the case of
-our example it may be the case that, within our hypothetical workload,
-whenever the \(lineitem\) or the \(order\) tables are encountered in a
-query, they can usually be subsumed by the \(lineitem \Join order\)
-relation. In other words, when both \(lineitem \Join order\) and
-\(lineitem\) (or \(order\)) are materialized it is preferable to only use
-\(lineitem \Join order\) in the query plan. Since most of the data of
-\(lineitem\) and \(order\) are also in \(lineitem \Join order\), it might
-make sense, instead of maintaining the \(lineitem\) and \(order\) tables
-separately, to keep \(lineitem \Join order\) and enough information to
-reconstruct \(lineitem\) or \(order\) when needed.
+frequently subsumed by the same intermediate result. In our example
+workload \(lineitem\) is fully subsumed by \(lineitem \Join order\),
+\(lineitem \Join order \Join customer\), and
+\(lineitem \Join order \Join customer \Join nation\). Similarly
+\(opreder\), \(customer\), and \(nation\) are fully or partially
+subsumed by these relations. It seems wasteful to always keep the rows
+of all primary tables separately \emph{and} concatenated in the rows
+\(lineitem \Join order \Join customer \Join nation\).
 
-We propose a solution to both those problems resembles the solution
-provided in \cite{gouSupSearchEfficient2006} by Gou et.al. In their work
-they embed aggregations \sql{group by x1, .., xk} into the
-\(\subseteq\)-lattice that arises from the powerset \(P(\{x_1, ...,
-x_k\})\). Thereby they encode the fact that \sql{group by A, B, C} is
-subsumed, or can be computed by, either of \sql{group by A, B}, \sql{group by
-  A, C} or \sql{group by B, C}. Once the lattice is constructed a variant of
-the \(A^{\star}\) path finding is used algorithm to search for the
-optimal aggregation plan. However \cite{gouSupSearchEfficient2006} on
-the one hand makes no attempt to recycle tables, ie. garbage collect
-tables, whose data can be found in other relations, and narrows it's
-attention to aggregations.
+In particular we can retrieve the rows of \(lineitem\) by projecting
+on the latter relation and deduplicating the resulting rows we can
+obtain any of the former. In this -- contrived yet demonstrative --
+example a plan taking into account amortized costs could be:
+
+\begin{figure}[H]
+\begin{minted}[escapeinside=||,mathescape=true]{trace-lexer.py:TraceLexer -x}
+    Query |\(\gamma \sigma_{p_0}(lineitem \Join order \Join customer \Join nation)\)| {
+      |\(Q_0\)| := Materialize[|\(lineitem \Join order\)|]
+      |\(Q_1\)| := Materialize[|\(customer \Join Q_0\)|]
+      |\(Q_2\)| := Materialize[|\(nation \Join Q_1\)|]
+      # Not enough space to continue. Delete relations that we can rebuild.
+      GC {
+        Delete[|\(lineitem\)|]
+        Delete[|\(Q_0\)|]
+      }
+      |\(Q_3\)| := Materialize[|\(\sigma_{p_0} Q_2\)|]
+      |\(Q_4\)| := Materialize[|\(\gamma Q_3\)|]
+    }
+    Query |\(\gamma \sigma_{p_1}(lineitem \Join order \Join customer \Join nation)\)| {
+      GC {
+        Delete[|\(Q_1\)|]
+      }
+      |\(Q_5\)| := Materialize[|\(\sigma_{p_1} Q_2\)|]
+      |\(Q_6\)| := Materialize[|\(\gamma Q_5\)|]
+    }
+    Query |\(\gamma \sigma_{p_2}(lineitem \Join order \Join customer \Join nation)\)| {
+       GC {
+        Delete[|\(customer\)|]
+       }
+      |\(Q_7\)| := Materialize[|\(\sigma_{p_2} Q_2\)|]
+      |\(Q_8\)| := Materialize[|\(\gamma Q_7\)|]
+    }
+    ...
+    # Since the large join has all the columns of lineitem we should be able
+    # to create it by simply getting slicing and deduplicating
+    Query |\(lineitem\)| {
+      |\(lineitem\)| := Materialize[|\(uniq\{\pi_{cols(lineitem)} Q_2\}\)|]
+    }
+\end{minted}
+  \caption{\label{fig:amortized_plan}A sequence of plans optimizing
+    the workload amortized cost and involving reverse operations.}
+\end{figure}
+
+By incorporating reverse relational operations where possible FluiDB
+can indeed generate workload plans similar to the one described.
+
+The solution we experiment with by implementing FluiDB resembles the
+solution provided in \cite{gouSupSearchEfficient2006} by Gou et.al for
+multi-quer. In their work they embed aggregations \sql{group by x1,
+  .., xk} into the \(\subseteq\)-lattice that arises from the powerset
+\(P(\{x_1, ..., x_k\})\). Thereby they encode the fact that \sql{group
+  by A, B, C} is subsumed, or can be computed by, either of \sql{group
+  by A, B}, \sql{group by A, C} or \sql{group by B, C}. Once the
+lattice is constructed a variant of the \(A^{\star}\) path finding is
+used algorithm to search for the optimal aggregation plan. However
+they make no attempt to recycle tables, ie. garbage collect tables,
+whose data can be found in other relations, and narrows it's attention
+to aggregations.
 
 From the aforementioned work we keep the basic notion of using a graph
 to represent the subsumption of queries and to derive the benefit of
@@ -191,29 +268,55 @@ goal query and performing "backwards" operations for saving up
 space. We clarify this with an example which demonstrates a slightly
 simplified version of our system's functionality.
 
-In figure \ref{fig:intro_selectexample} we provide representation of a subsumption
-graph that our RDBMS might create after witnessing selections on
-\(lineitem\). For brevity let \(p:=shipdate > 10-11-2015\),
-\(q:=quantity < 24\) and \(r:=discount < .06\). The RDBMS has
-encountered \(\sigma_{p}(lineitem)\), \(\sigma_{q}(lineitem)\) and
+In figure \ref{fig:intro_selectexample} we provide representation of a
+subsumption graph that our RDBMS might create after witnessing
+selections on \(lineitem\). For brevity let
+\(p:=shipdate > 10-11-2015\), \(q:=quantity < 24\) and
+\(r:=discount < .06\). The RDBMS has encountered
+\(\sigma_{p}(lineitem)\), \(\sigma_{q}(lineitem)\) and
 \(\sigma_{q} \sigma_{r} (lineitem)\).
 
+
 \begin{figure}[H]
-  \centering
-  \includegraphics[width=.9\linewidth]{./imgs/intro_selectexample.pdf}
-  \caption{\label{fig:intro_selectexample}Any relation can be selected
-    in different ways forming a tree can be further split on top of
-    that.}
+  \begin{tikzdiagram}
+    \tikzset{
+      grow=up,
+      sibling distance=10cm,
+      level distance=3cm,
+      every node/.style={draw},
+      mat/.style={fill=gray!30}
+    };
+
+    \newcommand{\n}[1]{node {\(#1\)}}
+    \newcommand{\bn}[1]{node[mat] {\(#1\)}}
+
+    \node {\(lineitem\)} % lineitem
+    child { \bn{\sigma_{q}(lineitem)}} % σ_q
+    child { \bn{\sigma_{\neg q}(lineitem)}} % σ_nq
+    child { \n{\sigma_{\neg p}(lineitem)}}  % σ_np
+    child {
+      \n{\sigma_{p}(lineitem)} % σ_p
+      child {\n{\sigma_{p \land r}(lineitem)} } % σ_pq
+      child {\n{\sigma_{p \land \neg r}(lineitem) }} % σ_rpq
+    } ;
+\end{tikzdiagram}
+\caption{\label{fig:intro_selectexample}The materialized relations are
+  marked with grey. Assuming the absense of null values and assuming
+  set semantics
+  \(lineitem = \sigma_p lineitem \cup \sigma_{\neg p} lineitem\).
+  FluiDB can find a plan to generate any of the relations in the graph
+  from \(\sigma_p lineitem\) and \(\sigma_{\neg p} lineitem\).  }
 \end{figure}
 
-With \(\boldsymbol{bold}\) we mark the materialized relations. The query
-that we are solving is \(\sigma_{quantity < 24} \sigma_{discount < .06}
-(lineitem)\), which is denoted in the figure as \(\sigma_{q \land
-  r}(lineitem)\). Our total size budget is 2.5.
 
-Following the edges in the graph, to solve \(\sigma_{q \land
-  r}(lineitem)\) we need \(\sigma_{q}(lineitem)\) and for that we need
-\(lineitem\). So first the union:
+The query that we are planning is
+\(\sigma_{quantity < 24} \sigma_{discount < .06} (lineitem)\), which
+is denoted in the figure as \(\sigma_{q \land r}(lineitem)\). Our
+total size budget is 2.5.
+
+Following the edges in the graph, to plan
+\(\sigma_{q \land r}(lineitem)\) we need \(\sigma_{q}(lineitem)\) and
+for that we need \(lineitem\). So first the union:
 
 \[
   \sigma_{\neg p}(lineitem) \cup \sigma_{p}(lineitem) \rightarrow lineitem
@@ -255,20 +358,40 @@ Once both those tables are materialized we can safely delete
   \sigma_{q}(lineitem) \rightarrow \sigma_{q \land r} (lineitem)
 \]
 
-Which is the requested query and, in summary, the final plan is:
+Which is the requested query and, in summary, the final can be
+represented as:
 
-\begin{align*}
-  &\sigma_{\neg p}(lineitem) \cup \sigma_{p}(lineitem) \rightarrow lineitem \\
-  &Delete[\sigma_{\neg p}(lineitem)] \\
-  &lineitem \rightarrow \{\sigma_{q}(lineitem), \sigma_{\neg q}(lineitem)\} \\
-  &Delete[lineitem] \\
-  &\sigma_{q}(lineitem) \rightarrow \sigma_{q \land r} (lineitem)
-\end{align*}
 
-The key idea behind this work is that a) by using reversible
-operations between relations and b) by integrating the query planner
-and the materialized view recycling mechanism, we get grater
-flexibility to adapt the data layout to the workload thereby
-optimizing the use of our space budget.
+\begin{figure}[H]
+\begin{minted}[escapeinside=||,mathescape=true]{trace-lexer.py:TraceLexer -x}
+    Inventory {
+       Q_0 := |\(\sigma_{\neg p}(lineitem)\)|
+       Q_1 := |\(\sigma_{p}(lineitem)\)|
+    }
+    Query _ {
+      |\(lineitem\)| := Materialize[|\(Q_0 \cup  Q_1\)|]
+      GC { Delete[|\(Q_0\)|] }
+      |\(Q_2\)|,|\(Q_3\)| := Materialize[|\(\{\sigma_{q}(lineitem), \sigma_{\neg q}(lineitem)\}\)|]
+      GC { Delete[|\(lineitem\)|] }
+      |\(Q_4\)| := Materialize[|\(\sigma_{r} Q_3\)|]
+    }
+\end{minted}
+  \caption{\label{fig:reverse_operations}A sequence of plans optimizing
+    the workload amortized cost and involving reverse operations.}
+\end{figure}
 
--
+This thesis describes in detail how we implemented a system targeted
+at performing this kind of reasoning to planning and executing
+queries. In chapter \ref{chapter:background} we provide a brief
+overview of the state of the art and common practices that pretain to
+query processing; in chapter \ref{chapter:fluidb_logical_planning} we
+describe how queries are processed and stored at a logical level; in
+chapter \ref{chapter:physical_planning} we describe how FluiDB
+performs planning and garbage collection to come up with a concrete
+physical plan for each query; in chapter
+\ref{chapter:execution_engine} we go over the algorithms and
+particular techniques that FluiDB employs to transpile the physical
+plan into C++ code; finally at chapter \ref{chapter:evaluation} we
+describe some exprimental evaluation of FluiDB on the benchmark
+SSB-TPC-H. We present a conclusion and some future directions in the
+final chapter \ref{chapter:conclusion}

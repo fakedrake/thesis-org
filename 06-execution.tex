@@ -320,19 +320,21 @@ respectively.
 
 \subsection{In-place sorting}
 
-It is important for the planner to have full control of the
-budget. For that reason we require that all operators' algorithms have
-constant space complexity. This may mean major compromizes for some
-algorithms with respect to the time complexity like join and
-aggregation. Fortunately we can mitigate that by taking advantage of
-the set semantics of FluiDB relational algebra and sorting input
-tables in-place before running joins or aggregations. Our particular
-implementation of in-place sorting hinges on the \cpp{RecordMap} type that
-provides C++ random access iterators iterators to the records of a
-file, abstracting the page reads and writes. We pass these iterators
-to \cpp{std::sort} (see listing \ref{lst:record_map_sort}) which runs insertion
-sort for small ranges to take advantage of the processors reorder
-buffer and quicksort for longer ones.
+It is important for the planner to have full control of the storage
+budget and assume that no significant memory is required for
+evaluating each operator. For that reason we require that all
+operators' algorithms have constant space complexity. This may mean
+major compromizes for some algorithms with respect to the time
+complexity like join and aggregation. Fortunately we can mitigate that
+by taking advantage of the set semantics of FluiDB relational algebra
+and sorting input tables in-place before running joins or
+aggregations. Our particular implementation of in-place sorting hinges
+on the \cpp{RecordMap} type that provides C++ random access iterators
+iterators to the records of a file, abstracting the page reads and
+writes. We pass these iterators to \cpp{std::sort} (see listing
+\ref{lst:record_map_sort}) which runs insertion sort for small ranges
+to take advantage of the processors reorder buffer and quicksort for
+longer ones.
 
 \begin{code}
 \begin{cppcode}

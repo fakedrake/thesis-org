@@ -345,7 +345,7 @@ and the equivalence that enables their reverse
     Aggregation (\(\gamma_e(X)\)) & \(\bot\) \\
     Sorting \(s_e(X)\) & \(\bot\) \\
     Limit (\(l_i(X)\)) & \(l_i A \cup d_i A \equiv A\) \\
-    Join (\(X \Join_p Y\)) / Anti-semijoin (\(X \lnsemi_p Y\) & \( \bar{\pi}_{cols(A)}(A \Join B) \cup (A \rnsemi B) \equiv A\)  \\
+    Join (\(X \Join_p Y\)) / Anti-semijoin (\(X \lnsemi_p Y\)) & \( \bar{\pi}_{cols(A)}(A \Join B) \cup (A \rnsemi B) \equiv A\)  \\
     Selection (\(\sigma_p(X)\)) & \(\sigma_p A \cup \sigma_{\neg p} A \equiv A\) \\
     Projection (\(\pi_r(X)\)) & \(\pi_r A \Join \pi_{\bar{r}} A \equiv A\) \\
   \end{tabular}
@@ -353,32 +353,30 @@ and the equivalence that enables their reverse
 
 \subsection{Clusters and irreversible edges}
 
-\todo{Maybe remove this paragraph}
-A concept closer to the
-functionality of t-nodes and n-nodes than AND and OR nodes,
-and in fact our very inspiration
-for this approach, is \emph{propagators}
-\cite{radulPropagationNetworksFlexible2009a}. In short, propagators are
-hyperedges in a hypergraph, the nodes of which contain partial
-information about a value. Information about a value can be
-accumulated from its neighbors. Each node can obtain at least as much
-information about its value as the most precise neighbor. The amusing
-yet illustrative example provided in the paper is the one of measuring
-the height of a building by means of a barometer. One approach is
-timing the barometer's free fall from the top of the building, another
-is by measuring the length of the shadow of the barometer and
-comparing with the length of the shadow of the building at the same
-time of day. One may even use the barometer in its intended function
-and derive the height of by comparing the difference in air pressure
-at the roof and at the ground floor. Each of the mentioned methods
-will give very noisy or partial information about the magnitude in
-question. In the propagator paradigm, each of these measurements might
-be represended as a node in a hypernet. A propagator edge connecting
-these nodes would combine information from all measurements and
-improve each of the nodes' accuracy in their perception of the
-underlying value. A t-node is similar to a propagator in that it does
-not have a strict direction of information flow and can generate
-information on either side given information on the other.
+A concept closer to the functionality of t-nodes and n-nodes than AND
+and OR nodes, and in fact our very inspiration for this approach, is
+\emph{propagators} \cite{radulPropagationNetworksFlexible2009a}. In
+short, propagators are hyperedges in a hypergraph, the nodes of which
+contain partial information about a value. Information about a value
+can be accumulated from its neighbors. Each node can obtain at least
+as much information about its value as the most precise neighbor. The
+amusing yet illustrative example provided in the paper is the one of
+measuring the height of a building by means of a barometer. One
+approach is timing the barometer's free fall from the top of the
+building, another is by measuring the length of the shadow of the
+barometer and comparing with the length of the shadow of the building
+at the same time of day. One may even use the barometer in its
+intended function and derive the height of by comparing the difference
+in air pressure at the roof and at the ground floor. Each of the
+mentioned methods will give very noisy or partial information about
+the magnitude in question. In the propagator paradigm, each of these
+measurements might be represended as a node in a hypernet. A
+propagator edge connecting these nodes would combine information from
+all measurements and improve each of the nodes' accuracy in their
+perception of the underlying value. A t-node is similar to a
+propagator in that it does not have a strict direction of information
+flow and can generate information on either side given information on
+the other.
 
 Generally, there is no one-to-one correspondence between
 t-nodes and relational operators. Usually that is the case but
@@ -429,7 +427,7 @@ figure \ref{fig:joinnet}):
 
 \begin{figure}[p]
   \centering \includegraphics[width=.9\linewidth]{./imgs/joinnet.pdf}
-  \caption{\label{fig:joinnet}The DAG corresponding to a join is
+  \caption{\label{fig:joinnet}The QDAG corresponding to a join is
     broken down in multiple t-nodes to facilitate greater
     flexibility.}
 \end{figure}
@@ -469,7 +467,7 @@ generate \(A\). This is demonstrated in figure \ref{fig:joinnetdir}.
 \begin{figure}[H]
   \centering
   \includegraphics[width=.9\linewidth]{./imgs/joinnetdir.pdf}
-  \caption{\label{fig:joinnetdir}The DAG corresponding to a join is
+  \caption{\label{fig:joinnetdir}The QDAG corresponding to a join is
     broken down in multiple t-nodes to facilitate greater
     flexibility.}
 \end{figure}
@@ -805,7 +803,7 @@ in total we completely traverse the forest once, in order to compute the hashes
 of each sub-forest and then we use those hashes to test sub-forests
 for equality.
 
-\section{Section: Query Normal Form (QNF)}
+\section(Query Normal Form (QNF))
 \label{sec:qnf}
 
 It is imperative that the QDAG has as little redundancy as possible,
@@ -1061,7 +1059,6 @@ exception: ordering the sides of equalities. Equality relations are
 flipped if necessary so that all subexpressions \(E_0 = E_1\) in a QNF
 have \(hash(E_0) \le hash(E_1)\).
 
-
 \begin{verbatim}
 TODO
 \pi(...,1+a,...) {
@@ -1289,18 +1286,17 @@ useful in most common cases. In particular, it covers the following RA propertie
 \label{sec:symbol_correspondence}
 
 We need to normalize the names in each operator, but we also require
-that there is no naming ambiguity at any level. Why, then, is it necessary
-to normalize the symbols if they are unambiguous in each context? If
-we were only dealing with one query we could declare that we trust
-that the user would be consistent when naming their columns
+that there is no naming ambiguity at any level. Why, then, is it
+necessary to normalize the symbols if they are unambiguous in each
+context? If we were only dealing with one query we could declare that
+we trust that the user would be consistent when naming their columns
 (\sql{select col as name where...}), declare that the broader problem
 of RA equivalence is beyond the scope of this thesis and move on to
-more central issues to FluiDB. It is, however, the case that the user is not in
-total control of naming columns. When exposing
-unique ids and during the decorrelation transformations, FluiDB
-produces unique column names stochastically. This is not a
-problem until different queries interact in the context of the
-graph.
+more central issues to FluiDB. It is, however, the case that the user
+is not in total control of naming columns. When exposing unique ids
+and during the decorrelation transformations, FluiDB produces unique
+column names stochastically. This is not a problem until different
+queries interact in the context of the graph.
 
 Normalizing the queries that correspond to n-nodes is of little use
 if we do not also normalize the symbols that refer to the columns
@@ -1308,34 +1304,39 @@ of each n-node. To produce the code implementing
 an operator we need to be able to establish a stable correspondence
 between
 
-- the symbols that refer to the columns of the input tables
-- the symbols that refer columns that refer to the output
-- the symbols in the predicates and expressions of the RA operators that t-nodes correspond to.
+\begin{itemize}
+\item the symbols that refer to the columns of the input tables the
+  symbols that refer columns that refer to the output the symbols in
+\item the predicates and expressions of the RA operators that t-nodes
+  correspond to.
+\end{itemize}
 
 This is a problem unique to FluiDB because most systems will produce
-variants of QDAGs that are specific to the query being solved. FluiDB maintains
-a QDAG that must maintain its consistency between different queries.
+variants of QDAGs that are specific to the query being planned. FluiDB
+maintains a QDAG that must maintain its consistency between different
+queries.
 
 The first step before inserting an operator in the graph is to
 normalize the symbol name. We consider that two symbols are equal only
 if they refer to the same column. This is done by means of
 converting the query into normal form as described previously.
 
-This is required to resolve the possible ambiguity of symbols with the same name but different scope
-when expressions are moved around. It abstracts away the symbol
-names but creates some complications. For example, in the query
-\(\sigma_{a=x \lor a=z}(\gamma(\sigma_{a<y}(A))\) the \(a\) in \(a=x\)
-and the \(a\) in \(a < y\) are not equal symbols as they refer to
-different columns. The former refers to a column in the table
+This is required to resolve the possible ambiguity of symbols with the
+same name but different scope when expressions are moved around. It
+abstracts away the symbol names but creates some complications. For
+example, in the query \(\sigma_{a=x \lor
+a=z}(\gamma(\sigma_{a<y}(A))\) the \(a\) in \(a=x\) and the \(a\) in
+\(a < y\) are not equal symbols as they refer to different
+columns. The former refers to a column in the table
 \(\gamma(\sigma_{a<y}(A))\) and the latter in the table \(A\). They
-both refer to some transformation of a column labelled \(a\). On the other hand \(a\) in \(a=z\) and \(a\) in \(a=x\) are
-indeed equivalent as they refer to the same column. To clear up the
-confusion we will say that symbols are \emph{strictly-equivalent} if
-they refer to the same column but that they are
-\emph{provenance-equivalent} when they refer to different columns but
-they are transformations of the same column, i.e., they would be
-represented by the same in a normal relational
-algebraic setting.
+both refer to some transformation of a column labelled \(a\). On the
+other hand \(a\) in \(a=z\) and \(a\) in \(a=x\) are indeed equivalent
+as they refer to the same column. To clear up the confusion we will
+say that symbols are \emph{strictly-equivalent} if they refer to the
+same column but that they are \emph{provenance-equivalent} when they
+refer to different columns but they are transformations of the same
+column, i.e., they would be represented by the same in a normal
+relational algebraic setting.
 
 In particular, each materialized n-node must have a precise
 schema that represents the order of columns. The identities of these
@@ -1445,42 +1446,41 @@ the cluster itself.
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.5\textwidth]{./imgs/unclust.pdf}
-  \label{fig:unclust}
-  \caption{The structure of a \hask{UnClust}.}
+  \caption{\label{fig:unclust}The structure of a \hask{UnClust}.}
 \end{figure}
 
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.5\textwidth]{./imgs/binclust.pdf}
-  \label{fig:binclust}
-  \caption{The structure of a \hask{BinClust}.}
+
+  \caption{\label{fig:binclust}The structure of a \hask{BinClust}.}
 \end{figure}
 
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=.9\linewidth]{./imgs/joinclust.pdf}
-  \label{fig:joinclust}
-  \caption{The structure of a \hask{JoinClust}
+
+  \caption{\label{fig:joinclust}The structure of a \hask{JoinClust}
     notice how it contains a \hask{BinClust}.}
 \end{figure}
 
 \subsection{Populating the graph}
 
-Once the query is transformed into a forest of possible join orderings as described
-in section \ref{sec:possible_joins} on enumeration of possible joins, the query
-is transformed into a forest (listing \ref{lst:query_forest}) of plans we
-can insert it into the tree. This is an iterative process where each
-operation in each of the trees in the forest is translated to a
-cluster which is then inserted into the DAG. The process if inserting
-a sub-forest or subtree into the QDAG has
-the effect of extending the QDAG by the connected clusters
+Once the query is transformed into a forest of possible join orderings
+as described in section \ref{sec:possible_joins} on enumeration of
+possible joins, the query is transformed into a forest (listing
+\ref{lst:query_forest}) of plans we can insert it into the tree. This
+is an iterative process where each operation in each of the trees in
+the forest is translated to a cluster which is then inserted into the
+QDAG. The process if inserting a sub-forest or subtree into the QDAG
+has the effect of extending the QDAG by the connected clusters
 corresponding to the operators at the nodes of the forest, and also
 returns an n-node that corresponds to the subforest or sub-tree
 relation. However, since the insertion function is idempotent, i.e.,
-inserting the same forest in the DAG more than once has no effect
-either on the returned value or on the resulting DAG, we memoize the
+inserting the same forest in the QDAG more than once has no effect
+either on the returned value or on the resulting QDAG, we memoize the
 function. Since the same function recursively inserts all sub-trees
 and sub-forests we get for "free" a mechanism of not traversing the
 same tree twice during insertion.
@@ -1493,11 +1493,11 @@ same tree twice during insertion.
         ,qfQueries --
         :: Either --
         (NEL.NonEmpty (Query e (QueryForest e s))) -- An actual forest
-        (s,QueryShape e s) -- A final leaf
+        (s,RelationShape e s) -- A final leaf
       }
   \end{haskellcode}
-  \label{lst:query_forest}
-  \caption{The definition of the query forest. The
+
+  \caption{\label{lst:query_forest}The definition of the query forest. The
     query forest is hashed so that we can avoid traversing the same
     query forest repeatedly. The query forest is essentially a
     non-empty of queries with forests at their leafs.}
@@ -1507,38 +1507,54 @@ The process of traversing the forest and inserting the clusters in the
 graph is fairly straightforward. The actual creation of the clusters,
 however, is slightly more convoluted. First, a cluster of a type
 corresponding to the query operation at the forest node is created
-(see section \ref{sec:cluster_polymorphism} on cluster polymorphism). That
-cluster initially contains QNF forms at its edges. The QNF forms are
-then matched against existing QNFs in the QDAG and the missing ones
-are generated. If no new nodes were generated and the matched nodes
-all correspond to the same existing cluster, we infer that the cluster
-is already in the QDAG and the process finishes . Otherwise, we need to
-create and insert a cluster and a corresponding
-propagator (see section \ref{sec:shape_propaga}). Finally all new nodes, QNFs, and
-the cluster are registered and cross matched so they are easily cross referenced.
-We memoize the entire process using the \hask{qfHash} to avoid re-traversing the same path.
+(see section \ref{sec:cluster_polymorphism} on cluster
+polymorphism). That cluster initially contains QNF forms at its
+edges. The QNF forms are then matched against existing QNFs in the
+QDAG and the missing ones are generated. If no new nodes were
+generated and the matched nodes all correspond to the same existing
+cluster, we infer that the cluster is already in the QDAG and the
+process finishes . Otherwise, we need to create and insert a cluster
+and a corresponding propagator (see section
+\ref{sec:shape_propaga}). Finally all new nodes, QNFs, and the cluster
+are registered and cross matched so they are easily cross referenced.
+We memoize the entire process using the \hask{qfHash} to avoid
+re-traversing the same path.
 
-\section{Query shapes}
+As an example of what a more realistic QDAG looks like, first run
+through all 12 queries of the SSB TPC-H benchmark (see chapter
+\ref{chapter:evaluation}) produces the graph presented in figure
+\ref{fig:ssb_graph}.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.3\textwidth]{./imgs/ssb_graph.pdf}
+  \caption{\label{fig:ssb_graph}A QDAG accumulated out of every node
+    in the SSB TPC-H.}
+\end{figure}
+
+
+
+\section{Relation shapes}
 
 In the section on QNFs we discussed the need to abstract away
-information that pertains to the particular structure of a query in
+information that pertains to the particular structure of a relation in
 favor of semantic information that is rewrite and data
-independent. Query shapes cover the opposite need: they encode the
+independent. Relation shapes cover the opposite need: they encode the
 particular cardinality and shape of a relation at a specific point in
 time.
 
-A query shape is a datastructure that contains information about the
-shape of a query.
+A relation shape is a datastructure that contains information about
+the shape of the result of query.
 
 \begin{haskellcode}
-  data QueryShape' e' =
-    QueryShape
-    { qpSchema :: [(e',ColumnProps)]
-      ,qpUnique :: NEL.NonEmpty (NEL.NonEmpty e')
-      ,qpSize :: QuerySize
+  data RelationShape' e' =
+    RelationShape
+    { rsSchema :: [(e',ColumnProps)]
+      ,rsUnique :: NEL.NonEmpty (NEL.NonEmpty e')
+      ,rsSize :: RelationSize
     }
 
-  type QueryShape e s = QueryShape' (ShapeSym e s)
+  type RelationShape e s = RelationShape' (ShapeSym e s)
 
   data ShapeSym e s =
     ShapeSym { planSymQnfName :: QNFName e s
@@ -1619,9 +1635,10 @@ values in that cluster.
     type ACPropagator a e s t n =
       EndoE e s (PropCluster a NodeRef e s t n)
     type EndoE e s x = x -> Either (AShowStr e s) x
-    type ShapeCluster f e s t n = PropCluster (QueryShape e s) f e s t n
+    type ShapeCluster f e s t n =
+      PropCluster (RelationShape e s) f e s t n
     type PropCluster a f e s t n =
-      AnyCluster' (ShapeSym e s) (WMetaD (Defaulting a) f) t nω
+      AnyCluster' (ShapeSym e s) (WMetaD (Defaulting a) f) t n
     newtype WMetaD a f b = WMetaD { unMetaD :: (a,f b)}
   \end{haskellcode}
   \caption{\label{lst:acpropagator}A propagator matches a cluster with
@@ -1641,7 +1658,7 @@ process. The convergence of this process is justified in \cite{kuperLVarsLattice
 While discussing propagators, we mentioned that the cells of a
 propagator involve more structure than raw values. Indeed, FluiDB
 wraps these values in a functor that we dub as \emph{defaulting
-  functor} to reason about the consistency of the query shape. In
+  functor} to reason about the consistency of the relation shape. In
 particular we require that the cell can handle cases where
 \begin{itemize}
 \item The value for the shape is not computed yet
@@ -1676,8 +1693,8 @@ The defaulting functor (DF) may hold up to two values (see listing
       | DefaultingDef a
       | DefaultingFull a a
   \end{haskellcode}
-  \label{lst:defaulting_functor}
-  \caption{The defaulting functor definition.}
+
+  \caption{\label{lst:defaulting_functor}The defaulting functor definition.}
 \end{code}
 
 Since instances of the DF are meant to accommodate propagator values,
@@ -1719,24 +1736,25 @@ need this when committing an operator to the code generation.
     instance Semigroup a => Monoid (Defaulting a) where
       mempty = DefaultingEmpty
   \end{haskellcode}
-  \label{lst:defaulting_semigroup}
-  \caption{The join semilattice that is defined in terms of the}
+
+  \caption{\label{lst:defaulting_semigroup}The join semilattice that is defined in terms of the}
 \end{code}
 
 When committing to a query plan we are also committing to full values
 for the defaulting values in the propagator cells. Every operator of
-the plan corresponds to a query shape propagator. When committing an
-operator to the plan by translating it into C++ code, we promote all
-the defaulting values at the edges. It is clear that the generated
+the plan corresponds to a relation shape propagator. When committing
+an operator to the plan by translating it into C++ code, we promote
+all the defaulting values at the edges. It is clear that the generated
 code expects a certain data layout and therefore the \emph{full parts
-  of the values must be structurally consistent with each other}.
+of the values must be structurally consistent with each other}.
 
-As we went over in the previous sections, however, the default values are
-consistent with other default values of the same cluster w.r.t. the amount of information they hold,
-but not w.r.t. the order of the columns in the query shape. Therefore, before promoting the
-default functors to full functors by duplicating the default value to fill both
-fields of the \hask{FullDefaulting} constructor, we trigger the propagator to enforce
-full consistency between the defaultvalues.
+As we went over in the previous sections, however, the default values
+are consistent with other default values of the same cluster
+w.r.t. the amount of information they hold, but not w.r.t. the order
+of the columns in the relation shape. Therefore, before promoting the
+default functors to full functors by duplicating the default value to
+fill both fields of the \hask{FullDefaulting} constructor, we trigger
+the propagator to enforce full consistency between the defaultvalues.
 
 The full part and the default part of the the defaulting value are not
 necessarily structurally synchronized. We \emph{internally synchronise} a
@@ -1763,8 +1781,8 @@ state (listing \ref{lst:promote_defaulting}).
       DefaultingDef x        -> DefaultingFull x x
       d@(DefaultingFull _ _) -> d
   \end{haskellcode}
-  \label{lst:promote_defaulting}
-  \caption{Promoting of defaulting functor happens
+
+  \caption{\label{lst:promote_defaulting}Promoting of defaulting functor happens
     during code generation when an n-node is materialized.}
 \end{code}
 
@@ -1782,11 +1800,11 @@ addressed that we plan to implement in later incarnations of
 FluiDB. The most important ones being:
 
 \begin{itemize}
-\item As things stang QDAG will keep growing infinitely as new queries
-  arrive and there is no obvious way to prune it while guaraneeing the
-  materializability of all the nodes.
+\item As things stand, the QDAG will keep growing infinitely as new
+  queries arrive and there is no obvious way to prune it while
+  guaraneeing the materializability of all the nodes.
 \item There is no obvious path to supporting updates in the primary
   tables. There has been a lot of work on materialized view
-  maintenance but most of it assumes that the primary tables
-  are also materialized.
+  maintenance but most of it assumes that the primary tables are
+  already materialized.
 \end{itemize}

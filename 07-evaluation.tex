@@ -1,3 +1,7 @@
+\begin{summary}
+\item TODO
+\end{summary}
+
 We based our evaluation on the Star Schema Benchmarkx (SSB)
 \cite{barataOverviewDecisionSupport2015} which is a variation of
 TPC-H. Like TPC-H it models the data warehouse of a wholesale
@@ -17,9 +21,9 @@ Each flight contains 3 queries making a total of 12 distinct queries.
 
 As the name suggests these queries query a star schama. The star
 schema is derived from the TPC-H schema (figure \ref{fig:tpch_schema})
-by merging the \texttt{linenumber}, \texttt{orders} and
-\texttt{partsupp} and completely dropped tables \texttt{nation} and
-\texttt{region} tables as shown in figure \ref{fig:ssb_tpch_schame}.
+by merging the \sql{linenumber}, \sql{orders} and
+\sql{partsupp} and completely dropped tables \sql{nation} and
+\sql{region} tables as shown in figure \ref{fig:ssb_tpch_schame}.
 
 \begin{figure}[p]
 \begin{tikzdiagram}
@@ -68,11 +72,12 @@ by merging the \texttt{linenumber}, \texttt{orders} and
 The particular queries contained in the workload are presented in
 listing [ref] in the appendix (\ref{chapter:appendix}).
 
-To construct queries were compiled and solved one by one in a loop for
-total of 30 times and run them over a database of data generated with
+We generated a workload where queries were compiled and planned one by
+one in a loop for and run them over a database of data generated with
 a modified version of the TPC-H dbgen
-\cite{perivolaropoulosFakedrakeSsbdbgen2021a} with scaling of size
-1. The size of the data generated after formatting them to the format
+\cite{perivolaropoulosFakedrakeSsbdbgen2021a} with scaling of size 1,
+meaning that the total primary data is around 1GB in CSV format. The
+exact size of the data generated after formatting them to the format
 required by FluiDB (described in chapter \ref{chapter:execution}) are
 
 \begin{minted}[]{sh}
@@ -86,12 +91,7 @@ $ du -sh *.dat
 
 Which makes a total of approximately 200k pages.
 
-Since the scaling factor provided to \texttt{dbgen} scales all the tables in
-the database, applying the same scaling factor to the available budget
-will cause FluiDB to produce approximately the same query plans
-(barring rounding "errors" due to integer page size).
-
-The lowset budget within which FluiDB was able to solve all 12 queries
+The lowset budget within which FluiDB was able to plan all 12 queries
 of SSB-TPC-H was 2050k pages.
 
 In our expriment we use page IO as a proxy for performance, despite
@@ -102,12 +102,13 @@ will have a major impact on the perofrmance. Instead the perfomance
 cost is dominated by page IO that will certainly cause cache misses at
 the LLC. Another thing to note is that FluiDB generates code that
 focuses on performance and not on compilation time, making heavy use
-of \cpp{constexpr} and temlpates.  This makes for fairly slow compilation
-times (approximately 1 sec to 2 sec with \texttt{-O2}). There are ways to
-speed up compilation time like using pre-compiling header files
-\cite{PrecompiledHeadersPCH} and fine-tuning the compiler optimization
-passes. These techniques are beyond the scope of this work, FluiDB is
-focused on analytics workloads that do not include sub-second queries.
+of metaprogramming like \cpp{constexpr} and temlpates.  This makes for
+fairly slow compilation times (approximately 1 sec to 2 sec with
+\texttt{-O2}). There are ways to speed up compilation time like using
+pre-compiling header files \cite{PrecompiledHeadersPCH} and
+fine-tuning the compiler optimization passes. These techniques are
+beyond the scope of this work, FluiDB is focused on analytics
+workloads that do not include sub-second queries.
 
 \begin{figure}[p]
 \centering
@@ -164,10 +165,10 @@ Pages & Expr\\
 \end{center}
 
 From looking at those nodes it seems that a sufficiently advanced
-garbage collector should be able to solve the nodes in about half the
-budget as fluidb should have been able to solve the query needing
-around double the pages of the largest equijoin which for us is
-customer date lineorder.
+garbage collector should be able to support plans that materialize the
+nodes in about half the budget as fluidb should have been able to plan
+the query needing around double the pages of the largest equijoin
+which for us is customer date lineorder.
 
 The main issue however, as it is with many query prolcessing systems
 \cite{leisHowGoodAre2015}, is the cardinality estimator. With a more
