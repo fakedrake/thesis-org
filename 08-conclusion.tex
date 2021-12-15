@@ -1,120 +1,87 @@
 \dictum[Someone Else]{We had our fun}
 
-Itroduction
-
 \begin{summary}
-\item FluiDB is an in-memory RDBMs optimizes data layout for space
-  efficiency w.r.t. the workload
-\item The main novelty relates to the introduction of reversible
-  relational operations which affords a new perspective on query
-  planning and view selection.
-\item She materializes all intermediate nodes and deletes garbage
-  collects when she runs out of space.
-\end{summary}
-
-Background
-\begin{summary}
-\item Relational databases are question answering systems that deal
-  with information organized in tables or relations.
-\item Query optimization and planning revolves around finding an
-  efficient alorithm for answering a query.
-\item In-mamory databases keep all the data in main memory so they are
-  closer to the processer
-\item many in-memory databases employ some variant of code generation
-  to execute the query plans.
-\item Intermediate result recycling is the practice of reusing
-  computation between queries.
-\end{summary}
-
-Logical planning
-\begin{summary}
-\item FluiDB expresses queries in relational algebra and defines
-  reverse operations for most operations.
-\item Query plan trees are accumulated in a bipartite DAG (QDAG) where
-  the types of nodes are tables and bidirectional operations.
-\item Queries are normalized to hashable objects (QNF) that abstract a
-  wide range of rewrites. This allows efficient merging query plan
-  trees into the QDAG.
-\item Sub-graphs of the QDAG (clusters) represent higher level
-  operations and are used as \emph{propagators} to infer information
-  of the n-nodes like cardinality, column type, and uniqueness of
-  subtuples.
-\end{summary}
-
-Physical planning
-\begin{summary}
-\item We introduce a monad-based functional method of weighted
-  backtracking search that supports \emph{once} and \emph{fallback},
-  two cut-like operations.
-\item The FluiDB query planner follows an A*-like method for seaching plans
-  plans are searched in a top-down fashion, guided by a cost model that
-  takes into account the cost historical queries.
-\item The query planner can make use of \emph{forward} or
-  \emph{reverse} triggering of operators.
-\item The garbage collector clears up space on-demand maintaining the
-  materializability of all the nodes in the graph.
+\item Summary of FluiDB concepts.
+\item Future work.
 \end{summary}
 
 
-Antisthenis
-\begin{summary}
-\item \emph{Antisthenis} is a system for incremental evaluation of
-  algebraic expressions using heuristics to optimize the order in
-  which subexpressions are evaluated and to calculate some classes of
-  self referrential computations.
-\item Mealy arrows are a construct to implement adaptable computations
-  that can can prodice a value and a new, semantically equivalent
-  computation. Each iteration adapts to the previous caching values
-  and changing the evaluation plan to be more efficient.
-\item Antisthenis computations are implemented as network of mealy
-  arrows that compose larger adaptive (incremental and partial)
-  computations.
-\item Machines are named processes that can be referred to by other
-  machines. Antisthenis can handle some classes of self referrential
-  computations.
-\item We implement antisthenis operations to cover requirements of the
-  FluiDB physical planner:
+In this thesis we coverd the important and interesting aspects of
+FluiDB. Implementing the system itself involved much work that is not
+covered in this thesis in order to not flood the reader with details
+that might remove focus from the important stuff. Some of these are:
 
-  \begin{itemize}
-  \item calculate min/sum of natural numbers -- used to compute cost
-  \item boolean functions -- used determine node materializability
-  \item calculate min/sum of numbers annotated with certainty metrics
-    -- used to calculate the cost of materialization of nodes give
-    nodes that \emph{might} be magterialized.
-  \end{itemize}
-\end{summary}
+\begin{itemize}
+\item Implementation of a backtracking-based, caching pretty printing
+  library.
+\item A query decorellation algorithm.
+\item A set of tools for debugging and tracing backtracking
+  algoirhtms.
+\end{itemize}
 
+Aside from those, in the introduction we discussed some examples where
+data layout can be radically adapted to the workload by making use of
+reversible operations and integrating a garbage collector into the
+planner. We further introduced the relational database model and
+provided an overview of the various stages of query processing. We
+focused two subfields of database research that are of particular
+relevance to FluiDB: code generation for in-memory databases, and
+intermediate result recycling.
 
-Execution
+The first non-introductory chapter (chapter
+\ref{chapter:fluidb_logical_planning}) goes in depth about the
+semantics of reversible operations and how they, along with possible
+intermediate results for each query form the QDAG. It covers topics
+that relate to the construction of the QDAG, the use of the QDAG for
+enumerating plans, higher levels of organization of the QDAG nodes
+into clusters and how those cluseters are used by FluiDB to infer
+properties of intermediate query results like cardinality and relation
+extent using propagators.
 
-\begin{summary}
-\item Tables are stored in a memory file systems and records are
-  stored as POD binary objects organized in 4K pages.
-\item The extent of each relation involved in a plan is converted to
-  C++ struct and each predicate is converted to a C++ callable
-  class.
-\item These parameterize the templatized operators to allow the
-  compiler to generate highly specifialized code.
-\item (TODO) We use an approach reminise of scheme's macro hygene to manage
-  the uniqueness of symbols in the generated code.
-\item In this chapter we discuss the implementation important
-  operations and their reverse.
-\end{summary}
+Chpater \ref{chapter:physical_planning} on physical planning starts
+off by introducing a novel framework for implementing search
+algorithms, the \hask{HCntT} monad transformer. Computationn expressed
+in terms of \hask{HCntT} can dynamically switch between branches of
+the backtracking algorithm essentially implementing a weighted
+search. The main novelty lies in the implementatiuon of \hask{once}
+and \hask{fallback} operations that, to our knowledge, are not
+supported by any similar weighted search framework.
 
-\begin{summary}
-\item FluiDB is well suited for join-heavy star schemata so we
-  evaluated using the SSB-TPC-H benchmark.
-\item Our evaluation shows that FluiDB is able to plan around the
-  space constraints and come up with plans that materialize
-  intermediate results that are useful for future queries.
-\item FluiDB is generally faster than the baseline due to caching but
-  at times may be slower when it receives ``unexpected''
-  queries.
-\item FluiDB generally performs better when allowed larger memory
-  budgets but this speedup is based on heuristic assumptiosn that
-  sometimes break in interesting ways.
-\end{summary}
+Based on \hask{HCntT} we describe the implementation of the physical
+planner that lies at the core of FluiDB. The physical planner uses an
+\(A^{\star}\)-like algorithm to traverse the QDAG in order to enumerate
+query plans that take. Query plan fragments are interleaved with GC
+runs that produce sequences of table deletions when the planner
+detects that the storage budget is exceeded.
 
+The decisions made by the planner are besd on computations that depend
+on the inventory of materialized relationions, namely variations of
+intermediate result cost estimation and intermediate result
+materializability. It makes sense to implement computations in terms
+of an intcremental computation framework as there are major
+opportunities for sharing between evaluations. Furthermore, the
+performance of these computations is sensitive to the order of
+evaluation due to absorbing elements and \(\min\) operations. To solve
+these problems we developed \emph{Antisthenis} which was described in
+detail in chapter \ref{chapter:antisthenis}.
+
+We wrap up the technical description of FluiDB with chapter
+\ref{chapter:execution_engine} that goes in depth about how FluiDB
+transpiles physical plans into C++ and what algorithms are used to
+implement each operation and their reverse.
+
+Finally, we present some exerimental results to demonstrate the
+performance characteristics of FluiDB and any system that might
+implement similar concepts to it. Particularly, we run the SSB TPC-H
+benchmark and show that FluiDB can successfully outperform a similar
+system that only does per-query optimization in amortized cost and
+even in most per-query cases. We also demonstrate the expected result
+that FluiDB's repertoire of heuristics may cause individual queries
+planned within the context of a workload to be be less performant than
+the same query planned in isolation. We furthed demonstrate how FluiDB
+usually succeeds at making better use of larger storage budgets but
+occasionally, like every heuristic based system, will make decisions
+that hurt performance.
 
 \section{Future perspectives}
 
@@ -128,4 +95,38 @@ better is cardinality estimation. As mention in section
 (\ref{sec:size_estimation_problems}) FluiDB is very naive w.r.t. to
 how it estimates sizes. That said the propagator network structure
 used to estimate cardinalities can be augmented to propagate
-information about selectivity and statistics about the
+information about selectivity and statistics about each node. These
+statistice could be collected for every materialized intermediate
+relation to enrich the much needed information available during
+planning.
+
+Another low hanging fruit is parallelism. All plans that FluiDB
+produces are single threaded but there is no fundamental reason for
+that to be so. A simple data dependency analysis could reveal
+opportunities for parallelism and operators themselves could be easily
+replaced with parallel versions. A more difficoult but very
+interesting problem would be how to teach the planner to take this
+into account in order to produce plans that aren't just accidentally
+parallel, but are designed taking such speedups into account.
+
+Another important shortcoming of FluiDB as it was implemented is its
+complete lack of support for updates. There are heaps of literature to
+draw from and many excellent approaches to the problem. It would be
+interesting to find out which of these and how they could be applied
+to the peculiar case of FluiDB's data model where primary tables are
+likely not materialized in memory.
+
+Furthermore, a system based on FluiDB could take advantage of
+non-relational operations like table compression, materialization of
+indexes, movement of data in a memory hierarchy in order to produce
+plans that can better take advantage of the various possibilities
+provided by the state of the art in database research.
+
+Finally, a major bottleneck especially for cheap queries, is the
+latency of the C++ compiler that can take up to 10 sec to build a
+query plan into an executable. The FluiDB code generation make
+absolutely no attempt to make life easier for the C++ compiler, making
+heavy use of metaprogramming facilities like templates, traits, and
+\cpp{constexpr} expressions. There has been a lot of work to mitigate
+this problem, in the literature, some good examples of which are
+outlined in the background section \ref{sec:transpilation}

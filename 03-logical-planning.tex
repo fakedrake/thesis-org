@@ -789,25 +789,26 @@ The algorithm is also described in listing \ref{lst:possible_joins}.
     checking, memoization, some type conversions, etc.}
 \end{code}
 
-It is worth stressing that, because many of the subtrees generated this way
-will be equivalent. As analyzed in \cite{bibtexa} and discussed in
-section \ref{sec:qnf}, in pure functional settings like our, DAGs can have
-explosive complexity during traversal. Even worse in this case even
-the space complexity can indeed be needlessly exponential. For that
-reason we maintain a hash map matching hashes with the corresponding
-matching subtrees. Before inserting a newly created forest into our
-structure we perform a lookup in the hash map. If we find something we
-throw away the newly created forest for the optimizer runtime's garbage collector to
-recycle, and we use the one in the hash map instead. Otherwise, we insert
-our forest both in the hashmap and in the tree. This way we
-deduplicate our data structure to some degree. Furthermore, in the same vain as
+It is worth stressing that, because many of the subtrees generated
+this way will be equivalent. As analyzed in \cite{bibtexa} and
+discussed in section \ref{sec:qnf}, in pure functional settings like
+our, DAGs can have explosive complexity during traversal. Even worse
+in this case even the space complexity can indeed be needlessly
+exponential. For that reason we maintain a hash map matching hashes
+with the corresponding matching subtrees. Before inserting a newly
+created forest into our structure we perform a lookup in the hash
+map. If we find something we throw away the newly created forest for
+the optimizer runtime's garbage collector to recycle, and we use the
+one in the hash map instead. Otherwise, we insert our forest both in
+the hashmap and in the tree. This way we deduplicate our data
+structure to some degree. Furthermore, in the same vain as
 \cite{bibtexa} we earmark all our forests with their hash so we don't
 have to traverse them again to compute it. The result of this is that
-in total we completely traverse the forest once, in order to compute the hashes
-of each sub-forest and then we use those hashes to test sub-forests
-for equality.
+in total we completely traverse the forest once, in order to compute
+the hashes of each sub-forest and then we use those hashes to test
+sub-forests for equality.
 
-\section(Query Normal Form (QNF))
+\section{Query Normal Form (QNF)}
 \label{sec:qnf}
 
 It is imperative that the QDAG has as little redundancy as possible,
