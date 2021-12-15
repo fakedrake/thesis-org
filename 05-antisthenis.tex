@@ -1,8 +1,30 @@
+\dictum[Antisthenis]{There is no horse, there is horses}
+
 \begin{summary}
-\item Introduction to Antisthenis: a system for incremental evaluation
-  of algebraic expressions using heuristics to optimize the order in
-  which subexpressions are evaluated.
-\
+\item \emph{Antisthenis} is a system for incremental evaluation of
+  algebraic expressions using heuristics to optimize the order in
+  which subexpressions are evaluated and to calculate some classes of
+  self referrential computations.
+\item Mealy arrows are a construct to implement adaptable computations
+  that can can prodice a value and a new, semantically equivalent
+  computation. Each iteration adapts to the previous caching values
+  and changing the evaluation plan to be more efficient.
+\item Antisthenis computations are implemented as network of mealy
+  arrows that compose larger adaptive (incremental and partial)
+  computations.
+\item Machines are named processes that can be referred to by other
+  machines. Antisthenis can handle some classes of self referrential
+  computations.
+\item We implement antisthenis operations to cover requirements of the
+  FluiDB physical planner:
+
+  \begin{itemize}
+  \item calculate min/sum of natural numbers -- used to compute cost
+  \item boolean functions -- used determine node materializability
+  \item calculate min/sum of numbers annotated with certainty metrics
+    -- used to calculate the cost of materialization of nodes give
+    nodes that \emph{might} be magterialized.
+  \end{itemize}
 \end{summary}
 
 This chapter goes in depth descibing the various parts that compose
@@ -75,7 +97,7 @@ D &= 0
 Which can be represented as a dag in figure
 \ref{fig:example_antisthenis_dag}.
 
-\begin{figure}[p]
+\begin{figure}[H]
 \centering
 \includegraphics[width=.5\textwidth]{./imgs/example_antisthenis_dag.pdf}
 \caption{\label{fig:example_antisthenis_dag}A computation DAG.}
@@ -1358,31 +1380,7 @@ the state of the node (see figure \ref{fig:zipper}).
   cursor.
 \end{itemize}
 
-During computation, the subprocesses owned by the parent process are
-evaluated, and their iteration are then moved from the \hask{initials}
-set to the \hask{coiterations} set, with an intermediate stop in the
-\hask{iterations} set according to the values and strategies. These
-are further elaborated in the section on \hyperref[sec:antisthenis_ops]{the
-  section antisthenis operations}. The structure of \hask{iterator
-  set} is highly operator dependent and primarily geared towards
-efficiently evaluating the parent process, but fundamentally it does
-not compromise on the correctness of the operator. For example the if
-a process is combining elements of an abelian group (commutative,
-associative, invertible) and the bound has the same type as the result
--- as it is the case with addition -- the structure of the zipper is
-fairly straightforward:
-
-\begin{itemize}
-\item the partial result maintains the aggregation of all values and
-  bounds encountered
-\item When evaluating the cursor we add the result to the group and
-  remove the bound of the next cursor if we are popping from the
-  iteration set.
-\item The the partial result is precisely the bound of the final
-  value.
-\end{itemize}
-
-\begin{figure}[p]
+\begin{figure}[H]
 \begin{tikzdiagram}
   \tikzset{b/.style={circle,draw,minimum size=1cm}};
   \tikzset{m/.style={circle,draw,minimum size=1cm, fill=gray!10}};
@@ -1424,6 +1422,31 @@ fairly straightforward:
   process, and depending on the value the cursor process yields it is
   pushed to the iterations or the coiterations of the zipper.}
 \end{figure}
+
+During computation, the subprocesses owned by the parent process are
+evaluated, and their iteration are then moved from the \hask{initials}
+set to the \hask{coiterations} set, with an intermediate stop in the
+\hask{iterations} set according to the values and strategies. These
+are further elaborated in the section on \hyperref[sec:antisthenis_ops]{the
+  section antisthenis operations}. The structure of \hask{iterator
+  set} is highly operator dependent and primarily geared towards
+efficiently evaluating the parent process, but fundamentally it does
+not compromise on the correctness of the operator. For example the if
+a process is combining elements of an abelian group (commutative,
+associative, invertible) and the bound has the same type as the result
+-- as it is the case with addition -- the structure of the zipper is
+fairly straightforward:
+
+\begin{itemize}
+\item the partial result maintains the aggregation of all values and
+  bounds encountered
+\item When evaluating the cursor we add the result to the group and
+  remove the bound of the next cursor if we are popping from the
+  iteration set.
+\item The the partial result is precisely the bound of the final
+  value.
+\end{itemize}
+
 
 
 At the other end of the spectrum, a process evaluating a magma (a set
@@ -1699,8 +1722,11 @@ data MulTag p
 -- The witness type for logical And/Or
 data BoolTag op
 \end{haskellcode}
-  \caption{\label{lst:tag_types}Tags we implemented that are required
-    by FluiDB.}
+  \caption{\label{lst:tag_types}Tags are phantom types that define the
+    antisthenis operations. The tags themselves may be parameterized
+    using type parameter \hask{p}. For the needs of FluiDB we define
+    operations for addition, subtraction, multiplication and boolean
+    operations.}
 \end{code}
 
 The parametric part of the tags, especially for \hask{SumTag} and

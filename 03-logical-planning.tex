@@ -1,4 +1,4 @@
-\dictum[Zizek]{This is the ideological manipulation.}
+\dictum[Zizek]{Something about accumulating relationships.}
 
 \begin{summary}
 \item FluiDB expresses queries in relational algebra and defines
@@ -17,16 +17,16 @@
 FluiDB is focused on query optimization and planning when the queries
 in a workload being served can have common subqueries.  To exploit
 these similarities between queries, FLuiDB transforms them to
-bipartite graphs of subqueries and bidirectional operators, which it
-incrementally merges them into a global query DAG, which it then uses
-to enumerate the possible plans.  In this chapter, we will dive into
-how FluiDB processes and merges these graphs.
+bipartite graphs of subqueries and bidirectional operators, which she
+incrementally merges into a global query DAG, which it then uses to
+enumerate the possible plans.  In this chapter, we will dive into how
+FluiDB processes and merges these graphs.
 
-We will start by looking into what kinds of queries FluiDB
-can understand and how it processes them. Then we will look at how it relates
-the queries to each other to construct a tightly interrelated story
-of the workflow by looking at the basic query graph, the heart of
-FluiDB.
+We will start by looking into what kinds of queries FluiDB can
+understand and how she processes them. Then we will look at how she
+relates the queries to each other to construct a tightly interrelated
+story of the workflow by looking at the basic query graph, the heart
+of FluiDB.
 
 For manipulating a graph of queries, it is important that FluiDB can
 distinguish between semantically different queries and when they are
@@ -47,14 +47,16 @@ generator, described in later chapters.
 \label{sec:relational_algebra_semantics}
 
 Much like most other RDBMSs, FluiDB deals with queries expressed in
-terms of a \emph{relational algebra}.  Here we define the
-FluiDB relational algebra semantics, that is, the traditional relational
+terms of a \emph{relational algebra}.  Here we define the FluiDB
+relational algebra semantics, that is, the traditional relational
 algebra extended by unary operators for ordering \(s_e(X)\), limiting
-\(l_i(X)\) and aggregating \(\gamma_e(X)\), as listed in table \ref{tab:ra_sem}.
+\(l_i(X)\) and aggregating \(\gamma_e(X)\), as listed in table
+\ref{tab:ra_sem}.
 
 \begin{table}[H]
   \centering
   \caption{\label{tab:ra_sem}Correspondence between relational algebra expressions and SQL.}
+
   \begin{tabular}{lll}
     Description & RA & SQL\\
     \hline
@@ -205,65 +207,63 @@ listing \ref{lst:expr_types}.
 \label{sec:qdag}
 
 The operation of FluiDB revolves around an AND-OR graph of relations
-and algebraic operations, not unlike the ones commonly used in multiquery
-optimization literature. This graph encodes all plans that the query
-optimizer and planner will enumerate by means of traversal. Said graph is a bipartite
-graph where t-nodes (AND nodes in other literature) represent
-relational operations and n-nodes (OR nodes elsewhere) represent
-relations that will act as intermediate results.
-A set of extensions is introduced to the traditional AND-OR DAG to
-facilitate the operation of FluiDB. In the interest of motivating those
-extensions, we will take a very high level view of the operations on the QDAG
-before describing them in detail.
+and algebraic operations, not unlike the ones commonly used in
+multiquery optimization literature. This graph encodes all plans that
+the query optimizer and planner will enumerate by means of
+traversal. Said graph is a bipartite graph where t-nodes (AND nodes in
+other literature) represent relational operations and n-nodes (OR
+nodes elsewhere) represent relations that will act as intermediate
+results.  A set of extensions is introduced to the traditional AND-OR
+DAG to facilitate the operation of FluiDB. In the interest of
+motivating those extensions, we will take a very high level view of
+the operations on the QDAG before describing them in detail.
 
 There are multiple ways of composing relational operations to
-  materialize a certain relation. Each one is a relational algebraic
-  representation and we commonly refer to them as logical plans. Each
-  one represents a tree similar to an abstract syntax tree. These
-  trees are made of two kinds of nodes: operation nodes -- t-nodes, and
-  relation nodes -- n-nodes. For example, the query \(A \Join B \Join C\)
-  may be represented as \((A \Join B) \Join C\) or
-  \(A \Join (B \Join C)\) due to associativity of \(\Join\). Those two expressions
-  represent two tree forms where the join operators \(\Join\) are
-  represented as t-nodes and each of \(A\), \(B\), \(C\),
-  \(A \Join B\), \(B \Join C\) and \(A \Join B \Join C\) are
-  represented as n-nodes.
+materialize a certain relation. Each one is a relational algebraic
+representation and we commonly refer to them as logical plans. Each
+one represents a tree similar to an abstract syntax tree. These trees
+are made of two kinds of nodes: operation nodes -- t-nodes, and
+relation nodes -- n-nodes. For example, the query \(A \Join B \Join
+C\) may be represented as \((A \Join B) \Join C\) or \(A \Join (B
+\Join C)\) due to associativity of \(\Join\). Those two expressions
+represent two tree forms where the join operators \(\Join\) are
+represented as t-nodes and each of \(A\), \(B\), \(C\), \(A \Join B\),
+\(B \Join C\) and \(A \Join B \Join C\) are represented as n-nodes.
 
 Each n-node can be materialized by \emph{triggering} one of the input
-  t-nodes, by running a connected operation to which
-  said n-node is on the output. It is clear then where the name
-  OR-node found in other literature originates: any of the input nodes
-  may participate to a plan involving the OR-node (n-node for
-  us). Conversely, each t-node can be triggered \(\iff\) all of it's input
-  n-nodes are materialized. Because \emph{all} input nodes must be
-  materialized, t-nodes are elsewhere referred to as AND-nodes. We depart from
-  the standard nomenclature to avoid confusion in the presence of the extensions
-  introduced by FluiDB. The planning of a query amounts to searching for a sequence of t-nodes to be
-triggered that would result in the corresponding node being materialized.
+t-nodes, by running a connected operation to which said n-node is on
+the output. It is clear then where the name OR-node found in other
+literature originates: any of the input nodes may participate to a
+plan involving the OR-node (n-node for us). Conversely, each t-node
+can be triggered \(\iff\) all of it's input n-nodes are
+materialized. Because \emph{all} input nodes must be materialized,
+t-nodes are elsewhere referred to as AND-nodes. We depart from the
+standard nomenclature to avoid confusion in the presence of the
+extensions introduced by FluiDB. The planning of a query amounts to
+searching for a sequence of t-nodes to be triggered that would result
+in the corresponding node being materialized.
 
-The QDAG of a query is created by unifying all logical plans
-that would derive it by means of
-  merging n-nodes that are equivalent. For example the mentioned trees
-  \((A \Join B) \Join C\) and \(A \Join (B \Join C)\) shared the nodes
-  \(A \Join B \Join C\), \(A\), \(B\) and \(C\). A global QDAG is maintained by
-  unifying the QDAG of each query encountered into the global QDAG, again,
-  by merging equivalent n-nodes.
+The QDAG of a query is created by unifying all logical plans that
+would derive it by means of merging n-nodes that are equivalent. For
+example the mentioned trees \((A \Join B) \Join C\) and \(A \Join (B
+\Join C)\) shared the nodes \(A \Join B \Join C\), \(A\), \(B\) and
+\(C\). A global QDAG is maintained by unifying the QDAG of each query
+encountered into the global QDAG, again, by merging equivalent
+n-nodes.
 
-From a QDAG we can derive logical plans for queries. The
-  planner operates in terms of the global QDAG. It traverses the QDAG
-  searching for a plan (i.e., a sequence of t-node triggers) that will
-  cheaply materialize the requested node(s). This way, historical nodes can be
-  naturally considered. The problem of reusing materialized
-  intermediate results is thereby conceptualized as a graph traversal
-  problem.
+From a QDAG we can derive logical plans for queries. The planner
+operates in terms of the global QDAG. It traverses the QDAG searching
+for a plan (i.e., a sequence of t-node triggers) that will cheaply
+materialize the requested node(s). This way, historical nodes can be
+naturally considered. The problem of reusing materialized intermediate
+results is thereby conceptualized as a graph traversal problem.
 
-During this planning process, if storage space runs out, the
-  garbage collector (GC) is triggered. Garbage collection in this
-  context is the process of deleting materialized relations that are
-  not used for the query at hand. We shall say that an n-node is
-  \emph{deleted} when the garbage collector appends to the plan a delete
-  operation that removes the corresponding materialized relation
-  from storage.
+During this planning process, if storage space runs out, the garbage
+collector (GC) is triggered. Garbage collection in this context is the
+process of deleting materialized relations that are not used for the
+query at hand. We shall say that an n-node is \emph{deleted} when the
+garbage collector appends to the plan a delete operation that removes
+the corresponding materialized relation from storage.
 
 This technique is
 heavily inspired by multiquery optimization (MQO) approaches like
@@ -586,46 +586,49 @@ database schema. Then we do some processing and annotation on symbols
 referring to symbols:
 
 \begin{itemize}
-\item First \emph{remap unique sub-tuples}. Each intermediate result, and each
-  relation that we want to be able to reason about needs to have
-  uniquely identifiable rows. For each relation in the QDAG we are
-  keeping track of a set of columns, the unique sub-tuple, the
-  combination of which is unique among the tuples of the same
-  table. It is fairly easy to keep track of the unique subtuple for
-  most operations, e.g., the unique sub-tuple of a Cartesian product or
-  join is generally the concatenation of the unique sub-tuples of the
-  input tables, the unique sub-tuple in the case a selection is the
-  same as the unique sub-tuple of the input, in aggregations the
-  unique sub-tuple is the same as the columns on which we aggregate,
-  etc. The main problem is projections and, in a similar manner
-  aggregations, where it is possible that the operation does not
-  project on the entire unique sub-tuple. To mitigate this, we perform
-  a pre-processing step to rewrite the projections to expose the
-  entier unique sub-tuple. It is worth mentioning that there are cases
-  where there are more than one combinations of columns that form a
-  unique sub-tuple. We opt to keep track of all of them in order to
-  have more flexibility in this pre-processing step: ideally we want
-  to modify the projection as little as possible. In other words we
-  want to project as few extra columns as possible to keep the table
-  size as small as possible.
-\item Annotate each symbol referring to a column with the corresponding
-  primary table if there is one (named columns of projections do not
-  correspond to a primary table). This is useful both in determining possible joins
-  (as we will see in section \ref{sec:possible_joins}) and in determining the
-  types of columns.
-\item Infer and annotate the type of each column reference. This inference is
- sometimes trivial, for example, in the case of references to columns of primary tables,
- or when annotating literal values, but when references to columns of projections it is more complex.
- For example, in the query \(\sigma_{p(a)} \pi_{a \mapsto f(X)}\), we need to infer the type of \(a\).
- FluiDB will apply some very simple heuristics to fake proper type inference. This
- is usually enough to come up with accurate types as SQL's type system is basic.
+\item First \emph{remap unique sub-tuples}. Each intermediate result,
+and each relation that we want to be able to reason about needs to
+have uniquely identifiable rows. For each relation in the QDAG we are
+keeping track of a set of columns, the unique sub-tuple, the
+combination of which is unique among the tuples of the same table. It
+is fairly easy to keep track of the unique subtuple for most
+operations, e.g., the unique sub-tuple of a Cartesian product or join
+is generally the concatenation of the unique sub-tuples of the input
+tables, the unique sub-tuple in the case a selection is the same as
+the unique sub-tuple of the input, in aggregations the unique
+sub-tuple is the same as the columns on which we aggregate, etc. The
+main problem is projections and, in a similar manner aggregations,
+where it is possible that the operation does not project on the entire
+unique sub-tuple. To mitigate this, we perform a pre-processing step
+to rewrite the projections to expose the entier unique sub-tuple. It
+is worth mentioning that there are cases where there are more than one
+combinations of columns that form a unique sub-tuple. We opt to keep
+track of all of them in order to have more flexibility in this
+pre-processing step: ideally we want to modify the projection as
+little as possible. In other words we want to project as few extra
+columns as possible to keep the table size as small as possible.
+\item Annotate each symbol referring to a column with the
+corresponding primary table if there is one (named columns of
+projections do not correspond to a primary table). This is useful both
+in determining possible joins (as we will see in section
+\ref{sec:possible_joins}) and in determining the types of columns.
+
+\item Infer and annotate the type of each column reference. This
+inference is sometimes trivial, for example, in the case of references
+to columns of primary tables, or when annotating literal values, but
+when references to columns of projections it is more complex.  For
+example, in the query \(\sigma_{p(a)} \pi_{a \mapsto f(X)}\), we need
+to infer the type of \(a\).  FluiDB will apply some very simple
+heuristics to fake proper type inference. This is usually enough to
+come up with accurate types as SQL's type system is basic.
+
 \item Projection sharing is determined. As we will see in detail in
-    section \ref{sec:projection_algorithm} where we will be discussing
-    the implementation details of the projection algorithm and its reverse,
-    it is important that at least one unique tuple of a projection is shared
-    between a projection and its complement. At this stage, it is decided which
-    unique subtuple is to be shared and it is recorded in the RA expression
-    tree.
+section \ref{sec:projection_algorithm} where we will be discussing the
+implementation details of the projection algorithm and its reverse, it
+is important that at least one unique tuple of a projection is shared
+between a projection and its complement. At this stage, it is decided
+which unique subtuple is to be shared and it is recorded in the RA
+expression tree.
 \end{itemize}
 
 \subsection{Possible joins}
@@ -690,27 +693,28 @@ into a set of regular join trees, the Cartesian product of which will
 yieled the possible joins. We summarize the process as follows:
 
 \begin{itemize}
-\item We iterate over all pairs of sub-multisets into which the multiset
-  \(\{Q_0,Q_1,...,Q_k\}\) can be split. We follow each of the
+\item We iterate over all pairs of sub-multisets into which the
+  multiset \(\{Q_0,Q_1,...,Q_k\}\) can be split. We follow each of the
   following steps for each of the resulting sub-multisets.
 \item We split the \(p\) terms in three parts depending on which
   sub-multiset of relations their symbols refer to. One set are terms
-  where the columns mentioned refer \emph{only} to the left sub-multiset
-  (left \(p\)-terms), another set are terms where columns mentioned
-  refer \emph{only} to the right sub-multiset, and the rest (right
-  \(p\)-terms) must necessarily have references to columns of \emph{both}
-  sub-multisets. We call the latter category \emph{connector \(p\)-terms}.
+  where the columns mentioned refer \emph{only} to the left
+  sub-multiset (left \(p\)-terms), another set are terms where columns
+  mentioned refer \emph{only} to the right sub-multiset, and the rest
+  (right \(p\)-terms) must necessarily have references to columns of
+  \emph{both} sub-multisets. We call the latter category
+  \emph{connector \(p\)-terms}.
 \item We turn each side of the split into an SP-term by associating it
-  with the left and right \(p\)-term set. We repeat the
-  process of generating join trees out of each SP-term created and
-  connect them in an all-to-all fashion by creating theta joins using
-  the conjunction of the connector \(p\)-terms. In case the the set of
+  with the left and right \(p\)-term set. We repeat the process of
+  generating join trees out of each SP-term created and connect them
+  in an all-to-all fashion by creating theta joins using the
+  conjunction of the connector \(p\)-terms. In case the the set of
   connector \(p\)-terms is empty, that would mean that the connection
   of the join trees must be done with a Cartesian product. As
-  mentioned above, we want to avoid inserting Cartesian products in our
-  graph so we reject those cases outright. Optionally, we may even want
-  to reject all non-natural joins altogether, unless that would mean
-  not coming up with any plans at all.
+  mentioned above, we want to avoid inserting Cartesian products in
+  our graph so we reject those cases outright. Optionally, we may even
+  want to reject all non-natural joins altogether, unless that would
+  mean not coming up with any plans at all.
 \end{itemize}
 
 \todo{maybe omit this paragraph}
@@ -823,14 +827,14 @@ where \(\zeta \in \{\pi,\gamma\}\).
 
 \subsection{QNF Structure}
 
-FluiDBs Query Normal Forms are highly polymorphic data structures separate from
-RA data structures. The general QNF form can encapsulate one
-of several special forms, all of which strive to abstract away as many
-valid RA rewrites as possible, and ideally achieve a one-to-one correspondence
-between a QNF and a table. While the QNF in its general form (listing
-\ref{lst:qnf_struct}) is specialized to represent several different forms
-internally to the QNF subsystem, outside of it there are two main
-objects:
+FluiDB's Query Normal Forms are highly polymorphic data structures
+separate from RA data structures. The general QNF form can encapsulate
+one of several special forms, all of which strive to abstract away as
+many valid RA rewrites as possible, and ideally achieve a one-to-one
+correspondence between a QNF and a table. While the QNF in its general
+form (listing \ref{lst:qnf_struct}) is specialized to represent
+several different forms internally to the QNF subsystem, outside of it
+there are two main objects:
 
 \begin{itemize}
 \item The normal form of a relational algebra query
@@ -919,14 +923,15 @@ A name in the context of QNFs can be one of three different
 kinds:
 
 \begin{itemize}
-\item \textbf{A column of a nonprimary relation.} This relation \emph{must} be
-  a member of the \hask{cnfProduct} collection of the QNF structure where the name appears.
-  Because there may be more than one equivalent query in the product collection, we index the
+\item \textbf{A column of a nonprimary relation.} This relation
+  \emph{must} be a member of the \hask{cnfProduct} collection of the
+  QNF structure where the name appears.  Because there may be more
+  than one equivalent query in the product collection, we index the
   columns with an integer.
-\item \textbf{A column of a primary table}. These columns have a name and are
-  associated with a table (\hask{s}) which needs to be in the product
-  collection like in the case of nonprimary columns. It is indexed
-  much like the nonprimary relation.
+\item \textbf{A column of a primary table}. These columns have a name
+  and are associated with a table (\hask{s}) which needs to be in the
+  product collection like in the case of nonprimary columns. It is
+  indexed much like the nonprimary relation.
 \item \textbf{A literal value}
 \end{itemize}
 
@@ -1135,32 +1140,33 @@ former method to yield a false positive for equality.
 In this subsection we will look at a few parts of the QNF building
 process that are maybe less than obvious.
 
-QNFs are built bottom up from the leaves to the top.
-Building the QNF we apply the operations incrementally to a named QNFs (NQNF).
-Applyig the operator \(\sigma_p\) to a QNF \(A\) we need to be able to
-to relate the symbols appearing in \(p\) with the columns of the QNF \(A\). To
-mitigate this define a \emph{named QNF} which is simply a tuple of a
-QNF along with a mapping between symbols and columns of that QNF.
-For example, the name map in the NQNF derived from the query
-\(\pi_{n \mapsto f(a)} A\) would map the symbol \(n\) to a column
-with the elements \(\{f(a) | a \in A\}\).
+QNFs are built bottom up from the leaves to the top.  Building the QNF
+we apply the operations incrementally to a named QNFs (NQNF).  Applyig
+the operator \(\sigma_p\) to a QNF \(A\) we need to be able to to
+relate the symbols appearing in \(p\) with the columns of the QNF
+\(A\). To mitigate this define a \emph{named QNF} which is simply a
+tuple of a QNF along with a mapping between symbols and columns of
+that QNF.  For example, the name map in the NQNF derived from the
+query \(\pi_{n \mapsto f(a)} A\) would map the symbol \(n\) to a
+column with the elements \(\{f(a) | a \in A\}\).
 
-The entire process of computing QNFs works within a monad stack with the following features:
+The entire process of computing QNFs works within a monad stack with
+the following features:
 
 \begin{itemize}
-\item A \hask{ListT} monad allows for non-deterministic computation in order to
-  account for the different possible column index assignments
-  described in subsection \ref{sec:qnf_proj_aggr} on QNF projections/aggregation.
-\item  Since the resulting QNF is a
-  highly self referential structure, it is to be expected that a lot
-  of the computation might be duplicated. The cache object is also
-  shared between different QNF building processes that we know are
-  likely to have have a
-  lot of overlap, for example, when inserting nodes into the graph
-  without shared caching FluiDB would be repeatedly computing the QNF
-  of the same RA subqueries.
-\item The process of building a QNF can fail when processing malformed RA
-  forms.
+\item A \hask{ListT} monad allows for non-deterministic computation in
+  order to account for the different possible column index assignments
+  described in subsection \ref{sec:qnf_proj_aggr} on QNF
+  projections/aggregation.
+\item Since the resulting QNF is a highly self referential structure,
+  it is to be expected that a lot of the computation might be
+  duplicated. The cache object is also shared between different QNF
+  building processes that we know are likely to have have a lot of
+  overlap, for example, when inserting nodes into the graph without
+  shared caching FluiDB would be repeatedly computing the QNF of the
+  same RA subqueries.
+\item The process of building a QNF can fail when processing malformed
+  RA forms.
 \end{itemize}
 
 These characteristics are encoded in the monad within which we build
@@ -1266,11 +1272,12 @@ form \(\sigma_{a_0=1 \land a_1=2} (A_0 \times A_1)\) and also
 
 \subsection{Pragmatism of QNFs}
 
-As mentioned, query equivalence is an NP-complete problem. QNF is only a heuristic
-that does fail to identify many cases of equivalent RA queries.
-For example, our design of QNFs does not capture the equivalence
-\(\sigma_p A \cup \sigma_{\neg p} A = A\). It captures enough rewrite rules, however to be
-useful in most common cases. In particular, it covers the following RA properties:
+As mentioned, query equivalence is an NP-complete problem. QNF is only
+a heuristic that does fail to identify many cases of equivalent RA
+queries.  For example, our design of QNFs does not capture the
+equivalence \(\sigma_p A \cup \sigma_{\neg p} A = A\). It captures
+enough rewrite rules, however to be useful in most common cases. In
+particular, it covers the following RA properties:
 
 - \(\sigma_p \sigma_q A = \sigma_{p \land q} A\)
 - \(\pi_m \pi_{n} A = \pi_{m \circ n} A\)
@@ -1338,25 +1345,25 @@ refer to different columns but they are transformations of the same
 column, i.e., they would be represented by the same in a normal
 relational algebraic setting.
 
-In particular, each materialized n-node must have a precise
-schema that represents the order of columns. The identities of these
-columns must be agnostic to the particular names decided by the user,
-the decorellating subsystem, or any other query processor. Otherwise it
+In particular, each materialized n-node must have a precise schema
+that represents the order of columns. The identities of these columns
+must be agnostic to the particular names decided by the user, the
+decorellating subsystem, or any other query processor. Otherwise it
 would be impossible for two clusters to share an input/output n-node
 would both be able to interact with it only in the case that they
 happen to be in total agreement about the column names of the relation
 that the n-node represents.
 
-Thus, to interact with the nodes inserted in the graph
-previously and to allow future queries to match the nodes we insert we
-split it's symbols' representation in two notions.
+Thus, to interact with the nodes inserted in the graph previously and
+to allow future queries to match the nodes we insert we split it's
+symbols' representation in two notions.
 
 \begin{itemize}
 \item A local notion of a symbol is subject to the names given by the
   circumstances of its creation (user defined names,generated
   symbols,etc)
-\item a global notion that is a symbol representation dependent only in
-  the column itself.
+\item a global notion that is a symbol representation dependent only
+  in the column itself.
 \end{itemize}
 
 The local symbol is useful to find provenance equality
@@ -1432,12 +1439,12 @@ We define are three different kinds of clusters and a unified type
   has two slots in the output position, one slot in input position, no
   intermediate n-nodes and a single t-node slot \ref{fig:unclust}.
 \item \hask{BinClust} is a cluster corresponding to a non-join binary
-  RA operation. It has one output slot, two input n-node slots and a t-node
-  slot \ref{fig:binclust}.
+  RA operation. It has one output slot, two input n-node slots and a
+  t-node slot \ref{fig:binclust}.
 \item \hask{JoinClust} augments the \hask{BinClust} with two
-  intermediate n-nodes, two extra output n-nodes, and two input t-nodes to
-  facilitate the antijoin results of a FluiDB join operation
-  \ref{fig:joinclust}.
+  intermediate n-nodes, two extra output n-nodes, and two input
+  t-nodes to facilitate the antijoin results of a FluiDB join
+  operation \ref{fig:joinclust}.
 \end{itemize}
 
 Every cluster must always be hashable and the hash is cached inside
@@ -1563,8 +1570,9 @@ the shape of the result of query.
     deriving (Show,Generic)
 \end{haskellcode}
 
-A shape contains all combinations of columns that comprise a unique subtuple.
-This is useful, among other things, to determine foreign key joins. The expression
+A shape contains all combinations of columns that comprise a unique
+subtuple.  This is useful, among other things, to determine foreign
+key joins. The expression
 
 \[Q_1 := A \Join_{bId_A = id_B \land cId_A = id_C} (B \times C)\]
 
@@ -1572,32 +1580,35 @@ behaves like a foreign key join while the join
 
 \[Q_2 := A \Join_{bId_A = id_B} (B \times C)\]
 
-does not because for the expression\(B \times C\) neither \(id_B\) nor \(id_C\) are unique on their own.
-Their combination is. Therefore, the cardinality \(|Q_1|\) is at most the size of \(A\) because
-each row of \(A\) matches at most one row of \(B \times C\).
+does not because for the expression\(B \times C\) neither \(id_B\) nor
+\(id_C\) are unique on their own.  Their combination is. Therefore,
+the cardinality \(|Q_1|\) is at most the size of \(A\) because each
+row of \(A\) matches at most one row of \(B \times C\).
 
 So the unique subtuples are computed using the following rules:
 
 \begin{itemize}
-\item In general the set of unique subtuples of \(A \Join B\) is computed by
-  concatenating all combinations of the unique subtuples of \(A\) and \(B\).
+\item In general the set of unique subtuples of \(A \Join B\) is
+  computed by concatenating all combinations of the unique subtuples
+  of \(A\) and \(B\).
 \item The unique subtuples of a selection, semijoin, antijoin, and limit are the same as the unique
   subtuples of the underlying relation.
-\item The unique subtuples of a projection are the unique subtuples of the input that are entirely exposed.
-  The reader is reminded that FluiDB's notion of RA requires that there is at least one
-  such unique subtuple.
+\item The unique subtuples of a projection are the unique subtuples of
+  the input that are entirely exposed.  The reader is reminded that
+  FluiDB's notion of RA requires that there is at least one such
+  unique subtuple.
 \end{itemize}
 
 \subsection{Shape propagators}
 \label{sec:shape_propagators}
 
 Shape propagators are based on the the idea of the propagator as first
-introduced in \cite{sussmanArtPropagator2009} and analyzed more in depth in
-\cite{hansonSoftwareDesignFlexibility2021a}. Very briefly, a propagator
-network is a hypergraph of cells containing mutable state and
-hyperedges as multi-directional functions that, when triggered, update
-the state of the connected cells so they are consistent with each
-other. The state of each cell represents some information about a
+introduced in \cite{sussmanArtPropagator2009} and analyzed more in
+depth in \cite{hansonSoftwareDesignFlexibility2021a}. Very briefly, a
+propagator network is a hypergraph of cells containing mutable state
+and hyperedges as multi-directional functions that, when triggered,
+update the state of the connected cells so they are consistent with
+each other. The state of each cell represents some information about a
 value (like a bound or a value paired with a certainty metric), and
 the propagator takes into account the state of each cell and
 propagates that information to the other cells (for example tightening
@@ -1619,16 +1630,15 @@ correspond each cluster to a propagator to form a propagator network
 that computes the shapes of the relations corresponding to n-nodes.
 
 Intuitively, we model a propagator as a partial function that changes
-the values at the edges of a cluster. Each cluster
-is equipped with a propagator which, when
-triggered synchronizes the values at the edges of the cluster. The
-partiality of the function stems from the fact that it might detect
-irreconcilable inconsistencies between the cells (see listing
-\ref{lst:acpropagator}). This conception of the propagator departs slightly
-form the conception described in the paper in that it clearly
-separates the \emph{cluster} as a datastructure that holds a fixed
-number of interdependent values, and the function that updates the
-values in that cluster.
+the values at the edges of a cluster. Each cluster is equipped with a
+propagator which, when triggered synchronizes the values at the edges
+of the cluster. The partiality of the function stems from the fact
+that it might detect irreconcilable inconsistencies between the cells
+(see listing \ref{lst:acpropagator}). This conception of the
+propagator departs slightly form the conception described in the paper
+in that it clearly separates the \emph{cluster} as a datastructure
+that holds a fixed number of interdependent values, and the function
+that updates the values in that cluster.
 
 \begin{code}
   \begin{haskellcode}
@@ -1647,43 +1657,44 @@ values in that cluster.
 \end{code}
 
 Given a cluster with n-nodes at the edges, we lookup the shape of each
-node and add that to the cluster edge.
-Once a cluster is triggered and the values synchronized those values
-are checked against the old ones and for the ones that were updated we
-find the clusters in which they participate and run the same
-process. The convergence of this process is justified in \cite{kuperLVarsLatticebasedData2013}.
+node and add that to the cluster edge.  Once a cluster is triggered
+and the values synchronized those values are checked against the old
+ones and for the ones that were updated we find the clusters in which
+they participate and run the same process. The convergence of this
+process is justified in \cite{kuperLVarsLatticebasedData2013}.
 
 \subsection{Defaulting functor}
 
 While discussing propagators, we mentioned that the cells of a
 propagator involve more structure than raw values. Indeed, FluiDB
 wraps these values in a functor that we dub as \emph{defaulting
-  functor} to reason about the consistency of the relation shape. In
+functor} to reason about the consistency of the relation shape. In
 particular we require that the cell can handle cases where
 \begin{itemize}
 \item The value for the shape is not computed yet
-\item The shape is inferred via the propagator network and is therefore subject to change and
-\item The shape stored in the cell corresponds to a materialized node and other
-parts of the FluiDB's internal state depend on it.
+\item The shape is inferred via the propagator network and is
+therefore subject to change and
+\item The shape stored in the cell corresponds to a materialized node
+and other parts of the FluiDB's internal state depend on it.
 \end{itemize}
 
-The latter point is salient. Different logical plans can lead to different, yet
-semantically equivalent as per the FluiDB RA.
+The latter point is salient. Different logical plans can lead to
+different, yet semantically equivalent as per the FluiDB RA.
 
 The defaulting functor (DF) may hold up to two values (see listing
 \ref{lst:defaulting_functor}).
 
 \begin{itemize}
 \item An empty DF means we have no information about the value.
-\item A single value (the "default" value) corresponds to a derived shape
-  that was computed using the propagator network. The default value is
-  updated when propagators are triggered.
+\item A single value (the "default" value) corresponds to a derived
+  shape that was computed using the propagator network. The default
+  value is updated when propagators are triggered.
 \item A full value exists alongside a default value and is constant
   through its lifetime as it matches the value of some state that is
   external to the propagator network, in our particular application it
   represents the shape of a materialized relation. Until that relation
-  is deleted, and the full propagator is demoted to a defaulting one, the
-  registered shape is not allowed to change.
+  is deleted, and the full propagator is demoted to a defaulting one,
+  the registered shape is not allowed to change.
 \end{itemize}
 
 \begin{code}
@@ -1709,16 +1720,18 @@ the properties of the semilattice which is required to commutative and
 associative. In general, the semigroup implemented by the underlying
 type of the DF is taken to mean \hask{better <> backup}, i.e. keep as
 much of the left operand as possible unless the right operand is found
-to be "better" for some definition of better. For example, when calculating
-the cardinality we include a value of certainty between \(\left[0,1\right]\).
-A more certain right-hand cardinality is preferred over a less certain left-hand side.
+to be "better" for some definition of better. For example, when
+calculating the cardinality we include a value of certainty between
+\(\left[0,1\right]\).  A more certain right-hand cardinality is
+preferred over a less certain left-hand side.
 
 Bringing our attention to the implementation of the \hask{Def <> Full}
-combination in the semigroup definition \ref{lst:defaulting_semigroup}:
-it inverts the order of the combination of the default
-values. The reason we do this is to give priority the the full valued
-(materialized) nodes when propagating to their immediate neighbors. We
-need this when committing an operator to the code generation.
+combination in the semigroup definition
+\ref{lst:defaulting_semigroup}: it inverts the order of the
+combination of the default values. The reason we do this is to give
+priority the the full valued (materialized) nodes when propagating to
+their immediate neighbors. We need this when committing an operator to
+the code generation.
 
 \begin{code}
   \begin{haskellcode}
@@ -1757,10 +1770,10 @@ fill both fields of the \hask{FullDefaulting} constructor, we trigger
 the propagator to enforce full consistency between the defaultvalues.
 
 The full part and the default part of the the defaulting value are not
-necessarily structurally synchronized. We \emph{internally synchronise} a
-cell before triggering the propagator to make sure we maintain the
-consistency of the newly promoted cells with the already existing full
-cells.
+necessarily structurally synchronized. We \emph{internally
+synchronise} a cell before triggering the propagator to make sure we
+maintain the consistency of the newly promoted cells with the already
+existing full cells.
 
 It is notable that there is no formal guarantee that the propagator
 will be able to create structurally consistent cells. In that case the
@@ -1768,9 +1781,9 @@ propagator will fail. Handling of this failure is beyond the current
 scope of this work.
 
 When an n-node is to be materialized, the corresponding defaulting
-functor containing the value is \emph{promoted}.  Promotion of propagators
-is copying the default value of a non-full prpagator to the full
-state (listing \ref{lst:promote_defaulting}).
+functor containing the value is \emph{promoted}.  Promotion of
+propagators is copying the default value of a non-full prpagator to
+the full state (listing \ref{lst:promote_defaulting}).
 
 
 \begin{code}

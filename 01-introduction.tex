@@ -1,11 +1,13 @@
+\dictum[Author]{Something about the beginning of a journey.}
+
 \begin{summary}
 \item FluiDB is an in-memory RDBMs optimizes data layout for space
   efficiency w.r.t. the workload
 \item The main novelty relates to the introduction of reversible
   relational operations which affords a new perspective on query
   planning and view selection.
-\item It materializes all intermediate nodes and deletes garbage
-  collects when it runs out of space.
+\item She materializes all intermediate nodes and deletes garbage
+  collects when she runs out of space.
 \end{summary}
 
 % Nagel plan:
@@ -131,7 +133,7 @@ following template:
 
 It is clear in this case that it would be beneficial if the workload
 is large enough for the cost of
-\(lineitem \Join order \Join customer \Join nation\) to be amortized
+\(\li \Join \ord \Join \cust \Join \nation\) to be amortized
 we would like to materialize the large join and only run
 \(\gamma \sigma\) for each query attached as show in figure
 \ref{fig:multi_plan}.
@@ -177,58 +179,58 @@ moment. Both these sets are taken into account during planning to
 produce a plan that will likely minimize the amortized cost of the
 workload. After the query is planned the sets are updated. A
 limitation of such an approach is that when dealing with relations
-like \(lineitem \Join order\) in budget restricted settings,
-materialized view storage can quickly become a scarce resource.
+like \(\li \Join \ord\) in budget restricted settings, materialized
+view storage can quickly become a scarce resource.
 
 There is an opportunity to reduce the effect of this problem by
 exploiting another common workload attribute: certain tables are
 frequently subsumed by the same intermediate result. In our example
-workload \(lineitem\) is fully subsumed by \(lineitem \Join order\),
-\(lineitem \Join order \Join customer\), and
-\(lineitem \Join order \Join customer \Join nation\). Similarly
-\(opreder\), \(customer\), and \(nation\) are fully or partially
-subsumed by these relations. It seems wasteful to always keep the rows
-of all primary tables separately \emph{and} concatenated in the rows
-\(lineitem \Join order \Join customer \Join nation\).
+workload \(\li\) is fully subsumed by \(\li \Join \ord\),
+\(\li \Join \ord \Join \cust\), and
+\(\li \Join \ord \Join \cust \Join \nation\). Similarly \(opreder\),
+\(\cust\), and \(\nation\) are fully or partially subsumed by these
+relations. It seems wasteful to always keep the rows of all primary
+tables separately \emph{and} concatenated in the rows
+\(\li \Join \ord \Join \cust \Join \nation\).
 
-In particular we can retrieve the rows of \(lineitem\) by projecting
+In particular we can retrieve the rows of \(\li\) by projecting
 on the latter relation and deduplicating the resulting rows we can
 obtain any of the former. In this -- contrived yet demonstrative --
 example a plan taking into account amortized costs could be:
 
 \begin{figure}[H]
 \begin{minted}[escapeinside=||,mathescape=true]{trace-lexer.py:TraceLexer -x}
-    Query |\(\gamma \sigma_{p_0}(lineitem \Join order \Join customer \Join nation)\)| {
-      |\(Q_0\)| := Materialize[|\(lineitem \Join order\)|]
-      |\(Q_1\)| := Materialize[|\(customer \Join Q_0\)|]
-      |\(Q_2\)| := Materialize[|\(nation \Join Q_1\)|]
+    Query |\(\gamma \sigma_{p_0}(\li \Join \ord \Join \cust \Join \nation)\)| {
+      |\(Q_0\)| := Materialize[|\(\li \Join \ord\)|]
+      |\(Q_1\)| := Materialize[|\(\cust \Join Q_0\)|]
+      |\(Q_2\)| := Materialize[|\(\nation \Join Q_1\)|]
       # Not enough space to continue. Delete relations that we can rebuild.
       GC {
-        Delete[|\(lineitem\)|]
+        Delete[|\(\li\)|]
         Delete[|\(Q_0\)|]
       }
       |\(Q_3\)| := Materialize[|\(\sigma_{p_0} Q_2\)|]
       |\(Q_4\)| := Materialize[|\(\gamma Q_3\)|]
     }
-    Query |\(\gamma \sigma_{p_1}(lineitem \Join order \Join customer \Join nation)\)| {
+    Query |\(\gamma \sigma_{p_1}(\li \Join \ord \Join \cust \Join \nation)\)| {
       GC {
         Delete[|\(Q_1\)|]
       }
       |\(Q_5\)| := Materialize[|\(\sigma_{p_1} Q_2\)|]
       |\(Q_6\)| := Materialize[|\(\gamma Q_5\)|]
     }
-    Query |\(\gamma \sigma_{p_2}(lineitem \Join order \Join customer \Join nation)\)| {
+    Query |\(\gamma \sigma_{p_2}(\li \Join \ord \Join \cust \Join \nation)\)| {
        GC {
-        Delete[|\(customer\)|]
+        Delete[|\(\cust\)|]
        }
       |\(Q_7\)| := Materialize[|\(\sigma_{p_2} Q_2\)|]
       |\(Q_8\)| := Materialize[|\(\gamma Q_7\)|]
     }
     ...
-    # Since the large join has all the columns of lineitem we should be able
+    # Since the large join has all the columns of \li we should be able
     # to create it by simply getting slicing and deduplicating
-    Query |\(lineitem\)| {
-      |\(lineitem\)| := Materialize[|\(uniq\{\pi_{cols(lineitem)} Q_2\}\)|]
+    Query |\(\li\)| {
+      |\(\li\)| := Materialize[|\(uniq\{\pi_{cols(\li)} Q_2\}\)|]
     }
 \end{minted}
   \caption{\label{fig:amortized_plan}A sequence of plans optimizing
@@ -270,11 +272,11 @@ simplified version of our system's functionality.
 
 In figure \ref{fig:intro_selectexample} we provide representation of a
 subsumption graph that our RDBMS might create after witnessing
-selections on \(lineitem\). For brevity let
+selections on \(\li\). For brevity let
 \(p:=shipdate > 10-11-2015\), \(q:=quantity < 24\) and
 \(r:=discount < .06\). The RDBMS has encountered
-\(\sigma_{p}(lineitem)\), \(\sigma_{q}(lineitem)\) and
-\(\sigma_{q} \sigma_{r} (lineitem)\).
+\(\sigma_{p}(\li)\), \(\sigma_{q}(\li)\) and
+\(\sigma_{q} \sigma_{r} (\li)\).
 
 
 \begin{figure}[H]
@@ -290,72 +292,72 @@ selections on \(lineitem\). For brevity let
     \newcommand{\n}[1]{node {\(#1\)}}
     \newcommand{\bn}[1]{node[mat] {\(#1\)}}
 
-    \node {\(lineitem\)} % lineitem
-    child { \bn{\sigma_{q}(lineitem)}} % σ_q
-    child { \bn{\sigma_{\neg q}(lineitem)}} % σ_nq
-    child { \n{\sigma_{\neg p}(lineitem)}}  % σ_np
+    \node {\(\li\)} % \li
+    child { \bn{\sigma_{q}(\li)}} % σ_q
+    child { \bn{\sigma_{\neg q}(\li)}} % σ_nq
+    child { \n{\sigma_{\neg p}(\li)}}  % σ_np
     child {
-      \n{\sigma_{p}(lineitem)} % σ_p
-      child {\n{\sigma_{p \land r}(lineitem)} } % σ_pq
-      child {\n{\sigma_{p \land \neg r}(lineitem) }} % σ_rpq
+      \n{\sigma_{p}(\li)} % σ_p
+      child {\n{\sigma_{p \land r}(\li)} } % σ_pq
+      child {\n{\sigma_{p \land \neg r}(\li) }} % σ_rpq
     } ;
 \end{tikzdiagram}
 \caption{\label{fig:intro_selectexample}The materialized relations are
   marked with grey. Assuming the absense of null values and assuming
   set semantics
-  \(lineitem = \sigma_p lineitem \cup \sigma_{\neg p} lineitem\).
+  \(\li = \sigma_p \li \cup \sigma_{\neg p} \li\).
   FluiDB can find a plan to generate any of the relations in the graph
-  from \(\sigma_p lineitem\) and \(\sigma_{\neg p} lineitem\).  }
+  from \(\sigma_p \li\) and \(\sigma_{\neg p} \li\).  }
 \end{figure}
 
 
 The query that we are planning is
-\(\sigma_{quantity < 24} \sigma_{discount < .06} (lineitem)\), which
-is denoted in the figure as \(\sigma_{q \land r}(lineitem)\). Our
+\(\sigma_{quantity < 24} \sigma_{discount < .06} (\li)\), which
+is denoted in the figure as \(\sigma_{q \land r}(\li)\). Our
 total size budget is 2.5.
 
 Following the edges in the graph, to plan
-\(\sigma_{q \land r}(lineitem)\) we need \(\sigma_{q}(lineitem)\) and
-for that we need \(lineitem\). So first the union:
+\(\sigma_{q \land r}(\li)\) we need \(\sigma_{q}(\li)\) and
+for that we need \(\li\). So first the union:
 
 \[
-  \sigma_{\neg p}(lineitem) \cup \sigma_{p}(lineitem) \rightarrow lineitem
+  \sigma_{\neg p}(\li) \cup \sigma_{p}(\li) \rightarrow \li
 \]
 
-Then we need \(\sigma_{q}(lineitem)\) but we are now using 2 units of
+Then we need \(\sigma_{q}(\li)\) but we are now using 2 units of
 space and adding .6 more would exceed our space budget of
-2.5. \(lineitem\) is the least beneficial of our materialized views
+2.5. \(\li\) is the least beneficial of our materialized views
 but it is required for our next step, ie. creating
-\(\sigma_{q}(lineitem)\) . \(\sigma_{\neg p}(lineitem)\) is deleted
-since it's derivable from \(lineitem\) and is least beneficial. Then
-\(\sigma_{q}(lineitem)\) is created and now we are using 2.1 units of
+\(\sigma_{q}(\li)\) . \(\sigma_{\neg p}(\li)\) is deleted
+since it's derivable from \(\li\) and is least beneficial. Then
+\(\sigma_{q}(\li)\) is created and now we are using 2.1 units of
 space.
 
 \[
-  lineitem \rightarrow \sigma_{q}(lineitem)
+  \li \rightarrow \sigma_{q}(\li)
 \]
 
 Finally we need to create the final relation \(\sigma_{q \land
-  r}(lineitem)\) . However it's space requirement is .5 and we we would
-be exceeding our budget. We can't delete \(lineitem\) even though it
+  r}(\li)\) . However it's space requirement is .5 and we we would
+be exceeding our budget. We can't delete \(\li\) even though it
 is our least beneficial table because we would have no way of
 recreating it.
 
 Here we have two options. One is to delete \(\sigma_{\neg
-  p}(lineitem)\), our most benefit al table. The other, which is the one
+  p}(\li)\), our most benefit al table. The other, which is the one
 that the system should opt for, is to backtrack. When we created
-\(\sigma_{q}(lineitem)\), instead we create both
-\(\sigma_{q}(lineitem)\) and \(\sigma_{\neg q}(lineitem)\).
+\(\sigma_{q}(\li)\), instead we create both
+\(\sigma_{q}(\li)\) and \(\sigma_{\neg q}(\li)\).
 
 \[
-  lineitem \rightarrow \{\sigma_{q}(lineitem), \sigma_{\neg q}(lineitem)\}
+  \li \rightarrow \{\sigma_{q}(\li), \sigma_{\neg q}(\li)\}
 \]
 
 Once both those tables are materialized we can safely delete
-\(lineitem\). Now our space usage is 1.1 and we can safely
+\(\li\). Now our space usage is 1.1 and we can safely
 
 \[
-  \sigma_{q}(lineitem) \rightarrow \sigma_{q \land r} (lineitem)
+  \sigma_{q}(\li) \rightarrow \sigma_{q \land r} (\li)
 \]
 
 Which is the requested query and, in summary, the final can be
@@ -365,15 +367,15 @@ represented as:
 \begin{figure}[H]
 \begin{minted}[escapeinside=||,mathescape=true]{trace-lexer.py:TraceLexer -x}
     Inventory {
-       Q_0 := |\(\sigma_{\neg p}(lineitem)\)|
-       Q_1 := |\(\sigma_{p}(lineitem)\)|
+      |\(Q_0\)| := |\(\sigma_{\neg p}(\li)\)|
+      |\(Q_1\)| := |\(\sigma_{p}(\li)\)|
     }
-    Query _ {
-      |\(lineitem\)| := Materialize[|\(Q_0 \cup  Q_1\)|]
+    Query |\(\sigma_{q \land r} \mathit{\li}\)| {
+      |\(\li\)| := Materialize[|\(Q_0 \cup  Q_1\)|]
       GC { Delete[|\(Q_0\)|] }
-      |\(Q_2\)|,|\(Q_3\)| := Materialize[|\(\{\sigma_{q}(lineitem), \sigma_{\neg q}(lineitem)\}\)|]
-      GC { Delete[|\(lineitem\)|] }
-      |\(Q_4\)| := Materialize[|\(\sigma_{r} Q_3\)|]
+      |\(Q_2\)|,|\(Q_3\)| := Materialize[|\(\{\sigma_{q}(\li), \sigma_{\neg q}(\li)\}\)|]
+      GC { Delete[|\(\li\)|] }
+      |\(Q_4\)| := Materialize[|\(\sigma_{r} Q_2\)|]
     }
 \end{minted}
   \caption{\label{fig:reverse_operations}A sequence of plans optimizing

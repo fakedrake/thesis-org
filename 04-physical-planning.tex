@@ -1,12 +1,16 @@
+\dictum[Someone]{It's time to get physical, physical.}
+
 \begin{summary}
-\item We define a novel functional method of weighted backtracking search
-  that supports \emph{once} and \emph{fallback}, two cut-like operations.
+\item We introduce a monad-based functional method of weighted
+  backtracking search that supports \emph{once} and \emph{fallback},
+  two cut-like operations.
 \item The FluiDB query planner follows an A*-like method for seaching plans
   plans are searched in a top-down fashion, guided by a cost model that
   takes into account the cost historical queries.
-\item The query planner can make use of \emph{forward} or \emph{reverse}
-\item The garbage collector clears up space on-demand maintaining the materializability
-  of all the nodes in the graph.
+\item The query planner can make use of \emph{forward} or
+  \emph{reverse} triggering of operators.
+\item The garbage collector clears up space on-demand maintaining the
+  materializability of all the nodes in the graph.
 \end{summary}
 
 This chapter goes in detail about the architecture of the logical
@@ -19,6 +23,7 @@ way the graph is traversed. We move on to discussing the garbage
 collection that generates plan fragments that allow the plan to free
 up space in the underlying storage. Finally we talk about the cost
 model that guides the evolution of the plan.
+
 \section{HCntT logic monad}
 
 The FluiDB planner is designed in terms of a backtracking search
@@ -74,19 +79,20 @@ reflect Just (a,as) = pure a <|> as
 \end{code}
 
 In \cite{kiselyovBacktrackingInterleavingTerminating}, on top of this
-framework they build an interleave and a monadic bind operator that
-works with it to make computation be slightly more "fair".
-Interleaving is fair between two computations, when more than two are
-involved, half the time goes to the first computation, out of the half
-that is left, half (\(1/4\) of the total) goes to the second, out of the
-\(1/4\) left, half (\(1/8\)) goes to the third and so on. While this
-powerseries that describes the way the way resources are allocated to
-branches may seem arbitrary, in practice it may mean the difference
-between terminating and non-terminating computations. For example the
-code in listing \ref{lst:list_logic_example} can be translated to something like the
-code in listing \ref{lst:interl_logic_example} which does terminates due to the fact that
-while it does not give the same change to all the branches it does not
-completely starve any of them.
+framework they build an \hask{interleave} and a monadic bind
+(\hask{>>-}) operator that works with it to make computation be
+slightly more "fair".  Interleaving is fair between two computations,
+when more than two are involved, half the time goes to the first
+computation, out of the half that is left, half (\(1/4\) of the total)
+goes to the second, out of the \(1/4\) left, half (\(1/8\)) goes to
+the third and so on. While this powerseries that describes the way the
+way resources are allocated to branches may seem arbitrary, in
+practice it may mean the difference between terminating and
+non-terminating computations. For example, the code in listing
+\ref{lst:list_logic_example} can be translated to something like the
+code in listing \ref{lst:interl_logic_example} which does terminates
+due to the fact that while it does not give the same change to all the
+branches it does not completely starve any of them.
 
 \begin{code}
 \begin{haskellcode}
@@ -515,8 +521,8 @@ There are some optimizations that can be implemented to avoid too many
 lookups in the fallback table in the case of deep eitherl nesting that
 take advantage of the fact that new markers for outer fallbacks may
 only be created when new markers for inner fallbacks are
-created. However, for FluiDB we did not find \hask{CntT} to be too bad of a
-performance bottleneck so we leave it for future work.
+created. However, for FluiDB we did not find \hask{CntT} to be too bad
+of a performance bottleneck so we leave it for a future iteration.
 
 
 \subsubsection{Once}
@@ -750,6 +756,7 @@ meaning that when that process succeeds the \hask{MataOp} under
 consideration will be triggerable.
 
 \subsection{Garbage collection}
+\label{sec:gc}
 
 One of the fundamental design decisions of FluiDB is that it is
 commited to materializing all intermediate nodes and keeping them

@@ -3,6 +3,7 @@
 
 \RequirePackage[inline]{enumitem}
 \RequirePackage{graphicx}
+\RequirePackage{mdframed}
 \RequirePackage{color}
 \RequirePackage{xcolor}
 \RequirePackage[T1]{fontenc}                    % T1 encoding stops some errors
@@ -292,5 +293,10 @@
 \RedeclareSectionCommand[beforeskip=0pt,afterskip=8\baselineskip]{chapter}
 
 \RequirePackage{array}
+
+\newcommand{\li}{\mathit{lineitem}}
+\newcommand{\ord}{\mathit{order}}
+\newcommand{\cust}{\mathit{customer}}
+\newcommand{\nation}{\mathit{nation}}
 
 \message{Hello world thesis!}

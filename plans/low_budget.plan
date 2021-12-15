@@ -1,0 +1,258 @@
+SSB query: 1 0
+Transitions: [
+ Trigger [N1] N0 [N5,N6],
+ Trigger [N0,N5] N2 [N7,N10],
+ Trigger [N0,N5] N3 [N9,N11],
+ Trigger [N10,N11] N1 [N8],
+ Trigger [N8] N4 [N12,N13],
+ Trigger [N12] N5 [N12,N14]]
+
+SSB query: 2 1
+Transitions: [
+ Trigger [N1] N6 [N15,N16],
+ Trigger [N0,N15] N8 [N17,N20],
+ Trigger [N0,N15] N9 [N19,N21],
+ Trigger [N20,N21] N7 [N18],
+ Trigger [N18] N10 [N22,N23],
+ Trigger [N22] N11 [N22,N24]]
+
+SSB query: 3 2
+Transitions: [
+ ]
+
+SSB query: 4 3
+Transitions: [
+ Trigger [N1] N12 [N25,N26],
+ Trigger [N0,N25] N14 [N27,N30],
+ Trigger [N0,N25] N15 [N29,N31],
+ Trigger [N30,N31] N13 [N28],
+ Trigger [N28] N16 [N32,N33],
+ Trigger [N32] N17 [N32,N34]]
+
+SSB query: 5 4
+Transitions: [
+ Trigger [N0,N3] N19 [N35,N38],
+ Trigger [N0,N3] N20 [N37,N39],
+ Trigger [N38,N39] N18 [N36],
+ Trigger [N1,N36] N22 [N40,N43],
+ Trigger [N1,N36] N23 [N42,N44],
+ Trigger [N43,N44] N21 [N41],
+ Trigger [N2,N41] N25 [N45,N48],
+ Trigger [N2,N41] N26 [N47,N49],
+ Trigger [N48,N49] N24 [N46],
+ Trigger [N46] N27 [N50,N51],
+ Trigger [N50] N53 [N50,N90],
+ Trigger [N90] N54 [N90,N91]]
+
+SSB query: 6 5
+Transitions: [
+ DelNode N10,
+ DelNode N11,
+ DelNode N20,
+ DelNode N21,
+ DelNode N30,
+ DelNode N31,
+ DelNode N38,
+ DelNode N39,
+ DelNode N43,
+ DelNode N44,
+ DelNode N48,
+ DelNode N49,
+ Trigger [N46] N55 [N92,N93],
+ Trigger [N92] N72 [N92,N118],
+ Trigger [N118] N73 [N118,N119]]
+
+SSB query: 7 6
+Transitions: [
+ Trigger [N46] N74 [N120,N121],
+ Trigger [N120] N91 [N120,N146],
+ Trigger [N146] N92 [N146,N147]]
+
+SSB query: 8 7
+Transitions: [
+ RTrigger [N41] N21 [N43,N44],
+ RTrigger [N42,N44] N23 [N1],
+ DelNode N43,
+ DelNode N44,
+ Trigger [N4,N36] N118 [N187,N190],
+ Trigger [N4,N36] N119 [N189,N191],
+ Trigger [N190,N191] N117 [N188],
+ Trigger [N1,N188] N121 [N192,N194],
+ Trigger [N1,N188] N122 [N193,N195],
+ Trigger [N194,N195] N120 [N159],
+ DelNode N190,
+ DelNode N191,
+ DelNode N194,
+ DelNode N195,
+ Trigger [N159] N102 [N163,N164],
+ Trigger [N163] N128 [N163,N203],
+ Trigger [N203] N129 [N203,N204],
+ Trigger [N204] N130 [N204,N205]]
+
+SSB query: 9 8
+Transitions: [
+ Trigger [N159] N131 [N206,N207],
+ Trigger [N206] N140 [N206,N219],
+ Trigger [N219] N141 [N219,N220],
+ Trigger [N220] N142 [N220,N221]]
+
+SSB query: 10 9
+Transitions: [
+ Trigger [N159] N143 [N222,N223],
+ Trigger [N222] N152 [N222,N235],
+ Trigger [N235] N153 [N235,N236],
+ Trigger [N236] N154 [N236,N237]]
+
+SSB query: 11 10
+Transitions: [
+ Trigger [N159] N155 [N238,N239],
+ Trigger [N238] N175 [N238,N269],
+ Trigger [N269] N176 [N269,N270],
+ Trigger [N270] N177 [N270,N271]]
+
+SSB query: 12 11
+Transitions: [
+ Trigger [N2,N159] N191 [N289,N292],
+ Trigger [N2,N159] N192 [N291,N293],
+ Trigger [N292,N293] N190 [N290],
+ DelNode N292,
+ DelNode N293,
+ Trigger [N290] N193 [N294,N295],
+ Trigger [N294] N213 [N294,N325],
+ Trigger [N325] N214 [N325,N326]]
+
+SSB query: 1 12
+Transitions: [
+ RTrigger [N159] N120 [N194,N195],
+ RTrigger [N192,N194] N121 [N1],
+ Trigger [N1] N0 [N5,N6],
+ Trigger [N0,N5] N2 [N7,N10],
+ Trigger [N0,N5] N3 [N9,N11],
+ Trigger [N10,N11] N1 [N8],
+ DelNode N10,
+ DelNode N11,
+ DelNode N194,
+ DelNode N195,
+ Trigger [N8] N4 [N12,N13],
+ Trigger [N12] N5 [N12,N14]]
+
+SSB query: 2 13
+Transitions: [
+ Trigger [N1] N6 [N15,N16],
+ Trigger [N0,N15] N8 [N17,N20],
+ Trigger [N0,N15] N9 [N19,N21],
+ Trigger [N20,N21] N7 [N18],
+ DelNode N20,
+ DelNode N21,
+ Trigger [N18] N10 [N22,N23],
+ Trigger [N22] N11 [N22,N24]]
+
+SSB query: 3 14
+Transitions: [
+ Trigger [N1] N0 [N5,N6],
+ Trigger [N0,N5] N2 [N7,N10],
+ Trigger [N0,N5] N3 [N9,N11],
+ Trigger [N10,N11] N1 [N8],
+ DelNode N10,
+ DelNode N11,
+ Trigger [N8] N4 [N12,N13],
+ Trigger [N12] N5 [N12,N14]]
+
+SSB query: 4 15
+Transitions: [
+ Trigger [N1] N12 [N25,N26],
+ Trigger [N0,N25] N14 [N27,N30],
+ Trigger [N0,N25] N15 [N29,N31],
+ Trigger [N30,N31] N13 [N28],
+ DelNode N30,
+ DelNode N31,
+ Trigger [N28] N16 [N32,N33],
+ Trigger [N32] N17 [N32,N34]]
+
+SSB query: 5 16
+Transitions: [
+ Trigger [N46] N27 [N50,N51],
+ Trigger [N50] N53 [N50,N90],
+ Trigger [N90] N54 [N90,N91]]
+
+SSB query: 6 17
+Transitions: [
+ Trigger [N46] N55 [N92,N93],
+ Trigger [N92] N72 [N92,N118],
+ Trigger [N118] N73 [N118,N119]]
+
+SSB query: 7 18
+Transitions: [
+ Trigger [N46] N74 [N120,N121],
+ Trigger [N120] N91 [N120,N146],
+ Trigger [N146] N92 [N146,N147]]
+
+SSB query: 8 19
+Transitions: [
+ Trigger [N159] N102 [N163,N164],
+ Trigger [N163] N128 [N163,N203],
+ Trigger [N203] N129 [N203,N204],
+ Trigger [N204] N130 [N204,N205]]
+
+SSB query: 9 20
+Transitions: [
+ Trigger [N159] N131 [N206,N207],
+ Trigger [N206] N140 [N206,N219],
+ Trigger [N219] N141 [N219,N220],
+ Trigger [N220] N142 [N220,N221]]
+
+SSB query: 10 21
+Transitions: [
+ Trigger [N159] N143 [N222,N223],
+ Trigger [N222] N152 [N222,N235],
+ Trigger [N235] N153 [N235,N236],
+ Trigger [N236] N154 [N236,N237]]
+
+SSB query: 11 22
+Transitions: [
+ Trigger [N159] N155 [N238,N239],
+ Trigger [N238] N175 [N238,N269],
+ Trigger [N269] N176 [N269,N270],
+ Trigger [N270] N177 [N270,N271]]
+
+SSB query: 12 23
+Transitions: [
+ Trigger [N325] N214 [N325,N326]]
+
+SSB query: 1 24
+Transitions: [
+ RTrigger [N28] N13 [N30,N31],
+ RTrigger [N27,N30] N14 [N25],
+ RTrigger [N25,N26] N12 [N1],
+ Trigger [N1] N0 [N5,N6],
+ DelNode N30,
+ DelNode N31,
+ Trigger [N0,N5] N2 [N7,N10],
+ Trigger [N0,N5] N3 [N9,N11],
+ Trigger [N10,N11] N1 [N8],
+ DelNode N10,
+ DelNode N11,
+ Trigger [N8] N4 [N12,N13],
+ Trigger [N12] N5 [N12,N14]]
+
+SSB query: 2 25
+Transitions: [
+ Trigger [N1] N6 [N15,N16],
+ Trigger [N0,N15] N8 [N17,N20],
+ Trigger [N0,N15] N9 [N19,N21],
+ Trigger [N20,N21] N7 [N18],
+ DelNode N20,
+ DelNode N21,
+ Trigger [N18] N10 [N22,N23],
+ Trigger [N22] N11 [N22,N24]]
+
+SSB query: 3 26
+Transitions: [
+ Trigger [N1] N0 [N5,N6],
+ Trigger [N0,N5] N2 [N7,N10],
+ Trigger [N0,N5] N3 [N9,N11],
+ Trigger [N10,N11] N1 [N8],
+ DelNode N10,
+ DelNode N11,
+ Trigger [N8] N4 [N12,N13],
+ Trigger [N12] N5 [N12,N14]]

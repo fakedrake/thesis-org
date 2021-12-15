@@ -1,0 +1,494 @@
+mat nodes: [(N0,1880),(N1,1),(N2,77),(N3,1),(N4,11)]
+Running query: 1
+[Before] setNodeMaterialized N14
+Transitions: [Trigger [N1] N0 [N5,N6],
+ Trigger [N0,N5] N2 [N7,N10],
+ Trigger [N0,N5] N3 [N9,N11],
+ Trigger [N10,N11] N1 [N8],
+ Trigger [N8] N4 [N12,N13],
+ Trigger [N12] N5 [N12,N14]]
+
+Running query: 2
+[Before] setNodeMaterialized N14
+Transitions: [Trigger [N1] N0 [N5,N6],
+ Trigger [N0,N5] N2 [N7,N10],
+ Trigger [N0,N5] N3 [N9,N11],
+ Trigger [N10,N11] N1 [N8],
+ Trigger [N8] N4 [N12,N13],
+ Trigger [N12] N5 [N12,N14]]
+
+Running query: 3
+[Before] setNodeMaterialized N14
+Transitions: [Trigger [N1] N0 [N5,N6],
+ Trigger [N0,N5] N2 [N7,N10],
+ Trigger [N0,N5] N3 [N9,N11],
+ Trigger [N10,N11] N1 [N8],
+ Trigger [N8] N4 [N12,N13],
+ Trigger [N12] N5 [N12,N14]]
+
+Running query: 4
+[Before] setNodeMaterialized N14
+Transitions: [Trigger [N1] N0 [N5,N6],
+ Trigger [N0,N5] N2 [N7,N10],
+ Trigger [N0,N5] N3 [N9,N11],
+ Trigger [N10,N11] N1 [N8],
+ Trigger [N8] N4 [N12,N13],
+ Trigger [N12] N5 [N12,N14]]
+
+Running query: 5
+[Before] setNodeMaterialized N61
+Transitions: [Trigger [N3] N12 [N26,N27],
+ Trigger [N0,N26] N14 [N28,N30],
+ Trigger [N0,N26] N15 [N29,N31],
+ Trigger [N30,N31] N13 [N24],
+ Trigger [N1,N24] N17 [N32,N34],
+ Trigger [N1,N24] N18 [N33,N35],
+ Trigger [N34,N35] N16 [N22],
+ Trigger [N2,N22] N20 [N36,N39],
+ Trigger [N2,N22] N21 [N38,N40],
+ Trigger [N39,N40] N19 [N37],
+ DelNode N30,
+ DelNode N31,
+ DelNode N34,
+ DelNode N35,
+ DelNode N39,
+ DelNode N40,
+ DelNode N27,
+ DelNode N28,
+ DelNode N0,
+ DelNode N26,
+ DelNode N32,
+ DelNode N33,
+ DelNode N22,
+ Trigger [N37] N22 [N20],
+ Trigger [N20] N35 [N20,N60],
+ Trigger [N60] N36 [N60,N61]]
+
+Running query: 6
+[Before] setNodeMaterialized N61
+Transitions: [Trigger [N3] N12 [N26,N27],
+ Trigger [N0,N26] N14 [N28,N30],
+ Trigger [N0,N26] N15 [N29,N31],
+ Trigger [N30,N31] N13 [N24],
+ Trigger [N1,N24] N17 [N32,N34],
+ Trigger [N1,N24] N18 [N33,N35],
+ Trigger [N34,N35] N16 [N22],
+ Trigger [N2,N22] N20 [N36,N39],
+ Trigger [N2,N22] N21 [N38,N40],
+ Trigger [N39,N40] N19 [N37],
+ DelNode N30,
+ DelNode N31,
+ DelNode N34,
+ DelNode N35,
+ DelNode N39,
+ DelNode N40,
+ DelNode N27,
+ DelNode N28,
+ DelNode N0,
+ DelNode N26,
+ DelNode N32,
+ DelNode N33,
+ DelNode N22,
+ Trigger [N37] N22 [N20],
+ Trigger [N20] N35 [N20,N60],
+ Trigger [N60] N36 [N60,N61]]
+
+Running query: 7
+[Before] setNodeMaterialized N61
+Transitions: [Trigger [N3] N12 [N26,N27],
+ Trigger [N0,N26] N14 [N28,N30],
+ Trigger [N0,N26] N15 [N29,N31],
+ Trigger [N30,N31] N13 [N24],
+ Trigger [N1,N24] N17 [N32,N34],
+ Trigger [N1,N24] N18 [N33,N35],
+ Trigger [N34,N35] N16 [N22],
+ Trigger [N2,N22] N20 [N36,N39],
+ Trigger [N2,N22] N21 [N38,N40],
+ Trigger [N39,N40] N19 [N37],
+ DelNode N30,
+ DelNode N31,
+ DelNode N34,
+ DelNode N35,
+ DelNode N39,
+ DelNode N40,
+ DelNode N27,
+ DelNode N28,
+ DelNode N0,
+ DelNode N26,
+ DelNode N32,
+ DelNode N33,
+ DelNode N22,
+ Trigger [N37] N22 [N20],
+ Trigger [N20] N35 [N20,N60],
+ Trigger [N60] N36 [N60,N61]]
+
+Running query: 8
+[Before] setNodeMaterialized N66
+Transitions: [Trigger [N0,N1] N1 [N5,N8],
+ Trigger [N0,N1] N2 [N7,N9],
+ Trigger [N8,N9] N0 [N6],
+ Trigger [N4,N6] N4 [N10,N13],
+ Trigger [N4,N6] N5 [N12,N14],
+ Trigger [N13,N14] N3 [N11],
+ Trigger [N11] N10 [N22,N23],
+ Trigger [N3,N22] N21 [N38,N41],
+ Trigger [N3,N22] N22 [N40,N42],
+ Trigger [N41,N42] N20 [N39],
+ DelNode N8,
+ DelNode N9,
+ DelNode N13,
+ DelNode N14,
+ DelNode N41,
+ DelNode N42,
+ DelNode N5,
+ DelNode N7,
+ DelNode N38,
+ DelNode N3,
+ DelNode N22,
+ DelNode N10,
+ DelNode N12,
+ DelNode N6,
+ Trigger [N39] N23 [N20,N43],
+ Trigger [N20] N38 [N20,N65],
+ Trigger [N65] N39 [N65,N66]]
+
+Running query: 9
+[Before] setNodeMaterialized N66
+Transitions: [Trigger [N0,N1] N1 [N5,N8],
+ Trigger [N0,N1] N2 [N7,N9],
+ Trigger [N8,N9] N0 [N6],
+ Trigger [N4,N6] N4 [N10,N13],
+ Trigger [N4,N6] N5 [N12,N14],
+ Trigger [N13,N14] N3 [N11],
+ Trigger [N11] N10 [N22,N23],
+ Trigger [N3,N22] N21 [N38,N41],
+ Trigger [N3,N22] N22 [N40,N42],
+ Trigger [N41,N42] N20 [N39],
+ DelNode N8,
+ DelNode N9,
+ DelNode N13,
+ DelNode N14,
+ DelNode N41,
+ DelNode N42,
+ DelNode N5,
+ DelNode N7,
+ DelNode N38,
+ DelNode N3,
+ DelNode N22,
+ DelNode N10,
+ DelNode N12,
+ DelNode N6,
+ Trigger [N39] N23 [N20,N43],
+ Trigger [N20] N38 [N20,N65],
+ Trigger [N65] N39 [N65,N66]]
+
+Running query: 10
+[Before] setNodeMaterialized N66
+Transitions: [Trigger [N0,N1] N1 [N5,N8],
+ Trigger [N0,N1] N2 [N7,N9],
+ Trigger [N8,N9] N0 [N6],
+ Trigger [N4,N6] N4 [N10,N13],
+ Trigger [N4,N6] N5 [N12,N14],
+ Trigger [N13,N14] N3 [N11],
+ Trigger [N11] N10 [N22,N23],
+ Trigger [N3,N22] N21 [N38,N41],
+ Trigger [N3,N22] N22 [N40,N42],
+ Trigger [N41,N42] N20 [N39],
+ DelNode N8,
+ DelNode N9,
+ DelNode N13,
+ DelNode N14,
+ DelNode N41,
+ DelNode N42,
+ DelNode N5,
+ DelNode N7,
+ DelNode N38,
+ DelNode N3,
+ DelNode N22,
+ DelNode N10,
+ DelNode N12,
+ DelNode N6,
+ Trigger [N39] N23 [N20,N43],
+ Trigger [N20] N38 [N20,N65],
+ Trigger [N65] N39 [N65,N66]]
+Building individuals...
+Inspect the query at: /run/user/1000/fluidb_temps/graph_render-4dc31e303494367f/graph.query
+Inspect the graph at: /run/user/1000/fluidb_temps/graph_render-4dc31e303494367f/graph.svg
+The raw graph at: /run/user/1000/fluidb_temps/graph_render-4dc31e303494367f/graph.graph
+The reperoire of intermediates: /run/user/1000/fluidb_temps/graph_render-4dc31e303494367f/graph.interm
+[Trigger [N1] N0 [N5,N6],
+ Trigger [N0,N5] N2 [N7,N10],
+ Trigger [N0,N5] N3 [N9,N11],
+ Trigger [N10,N11] N1 [N8],
+ Trigger [N8] N4 [N12,N13],
+ Trigger [N12] N5 [N12,N14]]
+[0.0000003120003384537995 sec]Wrote C++ code for query 1 in: /run/user/1000/fluidb-data/workload-indiv/query1.cpp
+Pages used: 9057
+Inspect the query at: /run/user/1000/fluidb_temps/graph_render-870585fd734b53b3/graph.query
+Inspect the graph at: /run/user/1000/fluidb_temps/graph_render-870585fd734b53b3/graph.svg
+The raw graph at: /run/user/1000/fluidb_temps/graph_render-870585fd734b53b3/graph.graph
+The reperoire of intermediates: /run/user/1000/fluidb_temps/graph_render-870585fd734b53b3/graph.interm
+[Trigger [N1] N0 [N5,N6],
+ Trigger [N0,N5] N2 [N7,N10],
+ Trigger [N0,N5] N3 [N9,N11],
+ Trigger [N10,N11] N1 [N8],
+ Trigger [N8] N4 [N12,N13],
+ Trigger [N12] N5 [N12,N14]]
+[0.08112121099838987 sec]Wrote C++ code for query 2 in: /run/user/1000/fluidb-data/workload-indiv/query2.cpp
+Pages used: 9057
+Inspect the query at: /run/user/1000/fluidb_temps/graph_render-4dca03f05306d5ac/graph.query
+Inspect the graph at: /run/user/1000/fluidb_temps/graph_render-4dca03f05306d5ac/graph.svg
+The raw graph at: /run/user/1000/fluidb_temps/graph_render-4dca03f05306d5ac/graph.graph
+The reperoire of intermediates: /run/user/1000/fluidb_temps/graph_render-4dca03f05306d5ac/graph.interm
+[Trigger [N1] N0 [N5,N6],
+ Trigger [N0,N5] N2 [N7,N10],
+ Trigger [N0,N5] N3 [N9,N11],
+ Trigger [N10,N11] N1 [N8],
+ Trigger [N8] N4 [N12,N13],
+ Trigger [N12] N5 [N12,N14]]
+[0.16305014899990056 sec]Wrote C++ code for query 3 in: /run/user/1000/fluidb-data/workload-indiv/query3.cpp
+Pages used: 9057
+Inspect the query at: /run/user/1000/fluidb_temps/graph_render-37e7a2ee4dd8db45/graph.query
+Inspect the graph at: /run/user/1000/fluidb_temps/graph_render-37e7a2ee4dd8db45/graph.svg
+The raw graph at: /run/user/1000/fluidb_temps/graph_render-37e7a2ee4dd8db45/graph.graph
+The reperoire of intermediates: /run/user/1000/fluidb_temps/graph_render-37e7a2ee4dd8db45/graph.interm
+[Trigger [N1] N0 [N5,N6],
+ Trigger [N0,N5] N2 [N7,N10],
+ Trigger [N0,N5] N3 [N9,N11],
+ Trigger [N10,N11] N1 [N8],
+ Trigger [N8] N4 [N12,N13],
+ Trigger [N12] N5 [N12,N14]]
+[0.24866345599730266 sec]Wrote C++ code for query 4 in: /run/user/1000/fluidb-data/workload-indiv/query4.cpp
+Pages used: 9057
+Inspect the query at: /run/user/1000/fluidb_temps/graph_render-b4500eb5ecdfa82d/graph.query
+Inspect the graph at: /run/user/1000/fluidb_temps/graph_render-b4500eb5ecdfa82d/graph.svg
+The raw graph at: /run/user/1000/fluidb_temps/graph_render-b4500eb5ecdfa82d/graph.graph
+The reperoire of intermediates: /run/user/1000/fluidb_temps/graph_render-b4500eb5ecdfa82d/graph.interm
+[Trigger [N3] N12 [N26,N27],
+ Trigger [N0,N26] N14 [N28,N30],
+ Trigger [N0,N26] N15 [N29,N31],
+ Trigger [N30,N31] N13 [N24],
+ Trigger [N1,N24] N17 [N32,N34],
+ Trigger [N1,N24] N18 [N33,N35],
+ Trigger [N34,N35] N16 [N22],
+ Trigger [N2,N22] N20 [N36,N39],
+ Trigger [N2,N22] N21 [N38,N40],
+ Trigger [N39,N40] N19 [N37],
+ DelNode N30,
+ DelNode N31,
+ DelNode N34,
+ DelNode N35,
+ DelNode N39,
+ DelNode N40,
+ DelNode N27,
+ DelNode N28,
+ DelNode N0,
+ DelNode N26,
+ DelNode N32,
+ DelNode N33,
+ DelNode N22,
+ Trigger [N37] N22 [N20],
+ Trigger [N20] N35 [N20,N60],
+ Trigger [N60] N36 [N60,N61]]
+[0.5092274060007185 sec]Wrote C++ code for query 5 in: /run/user/1000/fluidb-data/workload-indiv/query5.cpp
+Pages used: 17026
+Inspect the query at: /run/user/1000/fluidb_temps/graph_render-435423ed3ec1759e/graph.query
+Inspect the graph at: /run/user/1000/fluidb_temps/graph_render-435423ed3ec1759e/graph.svg
+The raw graph at: /run/user/1000/fluidb_temps/graph_render-435423ed3ec1759e/graph.graph
+The reperoire of intermediates: /run/user/1000/fluidb_temps/graph_render-435423ed3ec1759e/graph.interm
+[Trigger [N3] N12 [N26,N27],
+ Trigger [N0,N26] N14 [N28,N30],
+ Trigger [N0,N26] N15 [N29,N31],
+ Trigger [N30,N31] N13 [N24],
+ Trigger [N1,N24] N17 [N32,N34],
+ Trigger [N1,N24] N18 [N33,N35],
+ Trigger [N34,N35] N16 [N22],
+ Trigger [N2,N22] N20 [N36,N39],
+ Trigger [N2,N22] N21 [N38,N40],
+ Trigger [N39,N40] N19 [N37],
+ DelNode N30,
+ DelNode N31,
+ DelNode N34,
+ DelNode N35,
+ DelNode N39,
+ DelNode N40,
+ DelNode N27,
+ DelNode N28,
+ DelNode N0,
+ DelNode N26,
+ DelNode N32,
+ DelNode N33,
+ DelNode N22,
+ Trigger [N37] N22 [N20],
+ Trigger [N20] N35 [N20,N60],
+ Trigger [N60] N36 [N60,N61]]
+[0.7760597689994029 sec]Wrote C++ code for query 6 in: /run/user/1000/fluidb-data/workload-indiv/query6.cpp
+Pages used: 17026
+Inspect the query at: /run/user/1000/fluidb_temps/graph_render-dca2388499f3f6a9/graph.query
+Inspect the graph at: /run/user/1000/fluidb_temps/graph_render-dca2388499f3f6a9/graph.svg
+The raw graph at: /run/user/1000/fluidb_temps/graph_render-dca2388499f3f6a9/graph.graph
+The reperoire of intermediates: /run/user/1000/fluidb_temps/graph_render-dca2388499f3f6a9/graph.interm
+[Trigger [N3] N12 [N26,N27],
+ Trigger [N0,N26] N14 [N28,N30],
+ Trigger [N0,N26] N15 [N29,N31],
+ Trigger [N30,N31] N13 [N24],
+ Trigger [N1,N24] N17 [N32,N34],
+ Trigger [N1,N24] N18 [N33,N35],
+ Trigger [N34,N35] N16 [N22],
+ Trigger [N2,N22] N20 [N36,N39],
+ Trigger [N2,N22] N21 [N38,N40],
+ Trigger [N39,N40] N19 [N37],
+ DelNode N30,
+ DelNode N31,
+ DelNode N34,
+ DelNode N35,
+ DelNode N39,
+ DelNode N40,
+ DelNode N27,
+ DelNode N28,
+ DelNode N0,
+ DelNode N26,
+ DelNode N32,
+ DelNode N33,
+ DelNode N22,
+ Trigger [N37] N22 [N20],
+ Trigger [N20] N35 [N20,N60],
+ Trigger [N60] N36 [N60,N61]]
+[1.0409898040015833 sec]Wrote C++ code for query 7 in: /run/user/1000/fluidb-data/workload-indiv/query7.cpp
+Pages used: 17026
+Inspect the query at: /run/user/1000/fluidb_temps/graph_render-c767f77b2e90a4cd/graph.query
+Inspect the graph at: /run/user/1000/fluidb_temps/graph_render-c767f77b2e90a4cd/graph.svg
+The raw graph at: /run/user/1000/fluidb_temps/graph_render-c767f77b2e90a4cd/graph.graph
+The reperoire of intermediates: /run/user/1000/fluidb_temps/graph_render-c767f77b2e90a4cd/graph.interm
+[Trigger [N0,N1] N1 [N5,N8],
+ Trigger [N0,N1] N2 [N7,N9],
+ Trigger [N8,N9] N0 [N6],
+ Trigger [N4,N6] N4 [N10,N13],
+ Trigger [N4,N6] N5 [N12,N14],
+ Trigger [N13,N14] N3 [N11],
+ Trigger [N11] N10 [N22,N23],
+ Trigger [N3,N22] N21 [N38,N41],
+ Trigger [N3,N22] N22 [N40,N42],
+ Trigger [N41,N42] N20 [N39],
+ DelNode N8,
+ DelNode N9,
+ DelNode N13,
+ DelNode N14,
+ DelNode N41,
+ DelNode N42,
+ DelNode N5,
+ DelNode N7,
+ DelNode N38,
+ DelNode N3,
+ DelNode N22,
+ DelNode N10,
+ DelNode N12,
+ DelNode N6,
+ Trigger [N39] N23 [N20,N43],
+ Trigger [N20] N38 [N20,N65],
+ Trigger [N65] N39 [N65,N66]]
+[1.329439788001764 sec]Wrote C++ code for query 8 in: /run/user/1000/fluidb-data/workload-indiv/query8.cpp
+Pages used: 19584
+Inspect the query at: /run/user/1000/fluidb_temps/graph_render-c976f829d210a93c/graph.query
+Inspect the graph at: /run/user/1000/fluidb_temps/graph_render-c976f829d210a93c/graph.svg
+The raw graph at: /run/user/1000/fluidb_temps/graph_render-c976f829d210a93c/graph.graph
+The reperoire of intermediates: /run/user/1000/fluidb_temps/graph_render-c976f829d210a93c/graph.interm
+[Trigger [N0,N1] N1 [N5,N8],
+ Trigger [N0,N1] N2 [N7,N9],
+ Trigger [N8,N9] N0 [N6],
+ Trigger [N4,N6] N4 [N10,N13],
+ Trigger [N4,N6] N5 [N12,N14],
+ Trigger [N13,N14] N3 [N11],
+ Trigger [N11] N10 [N22,N23],
+ Trigger [N3,N22] N21 [N38,N41],
+ Trigger [N3,N22] N22 [N40,N42],
+ Trigger [N41,N42] N20 [N39],
+ DelNode N8,
+ DelNode N9,
+ DelNode N13,
+ DelNode N14,
+ DelNode N41,
+ DelNode N42,
+ DelNode N5,
+ DelNode N7,
+ DelNode N38,
+ DelNode N3,
+ DelNode N22,
+ DelNode N10,
+ DelNode N12,
+ DelNode N6,
+ Trigger [N39] N23 [N20,N43],
+ Trigger [N20] N38 [N20,N65],
+ Trigger [N65] N39 [N65,N66]]
+[1.618161942998995 sec]Wrote C++ code for query 9 in: /run/user/1000/fluidb-data/workload-indiv/query9.cpp
+Pages used: 19584
+
+Running query: 11
+[Before] setNodeMaterialized N66
+Transitions: [Trigger [N0,N1] N1 [N5,N8],
+ Trigger [N0,N1] N2 [N7,N9],
+ Trigger [N8,N9] N0 [N6],
+ Trigger [N4,N6] N4 [N10,N13],
+ Trigger [N4,N6] N5 [N12,N14],
+ Trigger [N13,N14] N3 [N11],
+ Trigger [N11] N10 [N22,N23],
+ Trigger [N3,N22] N21 [N38,N41],
+ Trigger [N3,N22] N22 [N40,N42],
+ Trigger [N41,N42] N20 [N39],
+ DelNode N8,
+ DelNode N9,
+ DelNode N13,
+ DelNode N14,
+ DelNode N41,
+ DelNode N42,
+ DelNode N5,
+ DelNode N7,
+ DelNode N38,
+ DelNode N3,
+ DelNode N22,
+ DelNode N10,
+ DelNode N12,
+ DelNode N6,
+ Trigger [N39] N23 [N20,N43],
+ Trigger [N20] N38 [N20,N65],
+ Trigger [N65] N39 [N65,N66]]
+
+Running query: 12
+[Before] setNodeMaterialized N73
+Transitions: [Trigger [N0,N1] N1 [N5,N8],
+ Trigger [N0,N1] N2 [N7,N9],
+ Trigger [N8,N9] N0 [N6],
+ Trigger [N3,N6] N4 [N10,N13],
+ Trigger [N3,N6] N5 [N12,N14],
+ Trigger [N13,N14] N3 [N11],
+ Trigger [N11] N23 [N43,N44],
+ Trigger [N4,N43] N25 [N45,N48],
+ Trigger [N4,N43] N26 [N47,N49],
+ Trigger [N48,N49] N24 [N46],
+ DelNode N8,
+ DelNode N9,
+ DelNode N13,
+ DelNode N14,
+ DelNode N48,
+ DelNode N49,
+ DelNode N5,
+ DelNode N7,
+ DelNode N45,
+ DelNode N4,
+ DelNode N43,
+ DelNode N10,
+ DelNode N3,
+ DelNode N6,
+ Trigger [N46] N27 [N41],
+ Trigger [N2,N41] N39 [N66,N69],
+ Trigger [N2,N41] N40 [N68,N70],
+ Trigger [N69,N70] N38 [N67],
+ DelNode N69,
+ DelNode N70,
+ DelNode N66,
+ DelNode N2,
+ DelNode N41,
+ DelNode N44,
+ Trigger [N67] N41 [N39],
+ Trigger [N39] N42 [N39,N72],
+ Trigger [N72] N43 [N72,N73]]
