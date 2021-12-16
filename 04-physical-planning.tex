@@ -789,6 +789,17 @@ hard constraints:
 Selecting a subset of nodes is not an easy problem so we follow a
 simple heuristic and leave a proper solution for future work.
 
+% Initial impl: <the below>
+%
+% Why this fails: We have antijoin, join, antijoin: delete the
+% antijoin only => we are locked.
+%
+% How it actually works:
+%   Group by siblings
+%   Order ascending
+%   expand subgroups
+%   flatten the list
+%   Delete in order checking that correctess does not break.
 Large nodes are costly to create and therefore the larger the node,
 the less inclined the planner is to create it, and the more useful it
 is likely to be. With that in mind the heuristic we follow is for the
@@ -804,6 +815,8 @@ them can be materialized from the others and therefore all of them are
 marked as deletable. If the GC deletes \(\sigma_p A\) first the other
 two are no longer materializable as they depended on \(A\) to be
 materializable.
+% end
+
 
 Nodes that are established as non-deletable in this way are switched
 from \hask{Initial} to \hask{Concrete} to avoid re-calculating their

@@ -443,6 +443,7 @@ subexpression schemata, are implicit in the logical plan.
 \hask{CodeBuilderT} is then equipped with operations to insert unique
 declarations of functions and structs.
 
+\begin{comment}
 \subsection{AST to literal code}
 
 In fludb the C++ AST is converted to a literal code string. This is
@@ -462,22 +463,23 @@ can be directly converted into a string of C++ code. For now consider
 that IsCode only refers to normal strings. In this section we will
 look at the transformation of a valid AST into code.
 
-\subsubsection{Code hygene}
+  \subsubsection{Code hygene}
 
-A major concern in any transpiler, or code generation system generally,
-is the generation of unique symbols. The problem is similar to the one
-regarding scheme’s hygienic macros, although the problems for those
-are much more complex than our particular case. This is mostly because
-our plans expand to a different language and expansion happens exactly
-once. Consider the following C++ AST that we want to transform into
-code.
+  A major concern in any transpiler, or code generation system generally,
+  is the generation of unique symbols. The problem is similar to the one
+  regarding scheme’s hygienic macros, although the problems for those
+  are much more complex than our particular case. This is mostly because
+  our plans expand to a different language and expansion happens exactly
+  once. Consider the following C++ AST that we want to transform into
+  code.
 
-\[
-  R_1 \Join_{\theta} R_2
-\]
+  \[
+    R_1 \Join_{\theta} R_2
+  \]
 
-The most naive and straightforward way is to convert it directly into
-a C++ string.
+  The most naive and straightforward way is to convert it directly into
+  a C++ string generating symbols deterministically based on the symbols
+  used in the query.
 
 \begin{cppcode}
 struct R1 {...};
@@ -495,11 +497,13 @@ int main () {
 \end{cppcode}
 
 
-This approach works for a very narrow class of cases where the names
-\cpp{theta}, \cpp{R1}, and \cpp{R2} do not collide with any other
-names in the program. The obvious approach would be the Common Lisp
-approach to ``hygene'' where we generate a new symbol for each
-identifier. The naive and obviously wrong way to do that would be
+  This approach works for a narrow class of cases where the names
+  \cpp{theta}, \cpp{R1}, and \cpp{R2} do not collide with any other
+  names in the program and where they are referred to anywhere outside
+  of the scope of the particular block. The obvious approach would be
+  the Common Lisp approach to ``hygene'' where we generate a new symbol
+  for each identifier. The naive and obviously wrong way to do that
+  would be
 
 \begin{cppcode}
 struct R1_1 {...};
@@ -516,34 +520,43 @@ int main () {
 }
 \end{cppcode}
 
-This goes too far and discriminates between names that we need to
-match.
+  This goes too far disconnecting the names used in the declarations
+  from the symbols themselves. This is fixable by discriminating between
+  declarations:
 
-\begin{code}
+
+\begin{cppcode}
+struct R1_1 {...};
+struct R2_2 {...};
+
+bool theta_3 (R1_4 r1, R2_5 r2) {
+  ...
+}
+
+int main () {
+  ...
+  auto op = Join<R1_1,R2_2>(theta_3,"R1.dat", "R2.dat");
+  op.run();
+}
+\end{cppcode}
+
+  New problems arise if we want to concatenate different code
+  snippets.
+
+  \begin{code}
 \begin{haskellcode}
 -- todo
 \end{haskellcode}
-\caption{Consistently unique symbols}
-\end{code}
+    \caption{Variable reuse}
+  \end{code}
 
-New problems arise if we want to concatenate different code
-snippets. Consider thecase
+  If these generated code snippets uniquify their variables separately
+  the variable name a will be re-declared making the compiler
+  unhappy. We resolved this issue by introducing the SoftUNameCode
+  functor. SoftUNameCode a implements the IsCode interface as long as a
+  implements it as well.
 
-
-\begin{code}
-\begin{haskellcode}
--- todo
-\end{haskellcode}
-\caption{Variable reuse}
-\end{code}
-
-If these generated code snippets uniquify their variables separately
-the variable name a will be re-declared making the compiler
-unhappy. We resolved this issue by introducing the SoftUNameCode
-functor. SoftUNameCode a implements the IsCode interface as long as a
-implements it as well.
-
-\begin{code}
+  \begin{code}
 \begin{haskellcode}
 data SoftUNameCode a = SoftUNameCode {
   uCodeTail :: Maybe (UniqueSymbol,SoftUNameCode a),
@@ -556,29 +569,30 @@ data UniueSymbol a = UniqueSymbol {
   symbolMkName :: UId -> a
   }
 \end{haskellcode}
-\caption{Variable reuse}
-\end{code}
+    \caption{Variable reuse}
+  \end{code}
 
-What this amounts to is a list of code objects interleaved with unique
-symbol names. Each unique symbol name is a combination of an unique id
-and a function that would generate a unique string of code based on
-that id. This unique id must be incrementable.
+  What this amounts to is a list of code objects interleaved with unique
+  symbol names. Each unique symbol name is a combination of an unique id
+  and a function that would generate a unique string of code based on
+  that id. This unique id must be incrementable.
 
-When two \hask{SoftUNameCode} objects are concatenated, in the simple case
-we aim for the variable names to be completely disjoint. This is
-achieved by simply incrementing all symbolUIds in the right hand side
-of the concatenation operator by the left hand side uCodeMaxId.
+  When two \hask{SoftUNameCode} objects are concatenated, in the simple case
+  we aim for the variable names to be completely disjoint. This is
+  achieved by simply incrementing all symbolUIds in the right hand side
+  of the concatenation operator by the left hand side uCodeMaxId.
 
-In the slightly more complex case where we know that the same unique
-symbol is both on the left and the right hand side of the
-concatenation operator we use co-join \hask{SoftUNameCode} a into
-\hask{SoftUNameCode (SoftUNameCode a)} pushing the shared symbol in the
-internal layer. When concatenating SoftUNameCode, only the top layer
-of the right hand side is changed. After concatenation the functor is
-flattened:
+  In the slightly more complex case where we know that the same unique
+  symbol is both on the left and the right hand side of the
+  concatenation operator we use co-join \hask{SoftUNameCode} a into
+  \hask{SoftUNameCode (SoftUNameCode a)} pushing the shared symbol in the
+  internal layer. When concatenating SoftUNameCode, only the top layer
+  of the right hand side is changed. After concatenation the functor is
+  flattened:
 
-With this method we can flexibly concatenate code keeping certain
-variables hygienic while maintaining reference to others.
+  With this method we can flexibly concatenate code keeping certain
+  variables hygienic while maintaining reference to others.
+\end{comment}
 
 \section{Operator implementations}
 
