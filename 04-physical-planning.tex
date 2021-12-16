@@ -516,7 +516,7 @@ It is demonstrated in figure \ref{fig:marker_branches}
       \node[m] (m2)  {\(m_{2}\)}; \&
       \node[b] (b6)  {\(b_{6}\)}; \&
       \node[m] (m3)  {\(m_{3}\)}; \&
-      \node[b] (b8)  {\(b_{8}\)}; \&nppppnnn
+      \node[b] (b8)  {\(b_{8}\)}; \&
       \node[b] (b9)  {\(b_{9}\)}; \\
     };
     \draw [dotted,-stealth] (m1) to (rec_id);
@@ -529,8 +529,8 @@ It is demonstrated in figure \ref{fig:marker_branches}
   branch. Each marker gives the scheduler the opportunity to run a
   particular fallback branch. The entry of the fallback branch entry
   references the last marker so that only that one actually trigger
-  the fallback branch. A child branch that succeeds removres the
-  fallback entry so the final marker also fails to tigger the
+  the fallback branch. A child branch that succeeds removes the
+  fallback entry so the final marker also fails to trigger the
   fallback.}
 \end{figure}
 
