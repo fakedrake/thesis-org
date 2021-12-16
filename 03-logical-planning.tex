@@ -1181,7 +1181,7 @@ It returns an \hask{NQNFResult} (listing \ref{lst:qnf_result}) contains
 \begin{itemize}
 \item A  named QNF which is the main payload of the QNF building function.
 \item A mapping between input and output QNF columns. When there is no direct mapping 
- (like in the case of aggregations) this is an empty list.
+ (like in the case of aggregations), this is an empty list.
 \item The RA operator that was provided as input with the expression atoms 
   translated to QNF names
   refering to the input or output columns. The way the names in the operator expressions are translated to
@@ -1210,7 +1210,7 @@ It returns an \hask{NQNFResult} (listing \ref{lst:qnf_result}) contains
       ,nqnfResOrig :: op
       -- Map the names exposed by the input qnf to names on the output
       -- qnf. Unless qnfResOp is QProj, QGroup each input name corresponds
-      -- to 0 or 1 name in the output. So if qnfResOp is QProj or
+      -- to 0 or 1 name in the output. Thus if qnfResOp is QProj or
       -- qnfResInOutNames has no meaning and will be `const Nothing`
       ,nqnfResInOutNames :: [((e,QNFCol e s),(e,QNFCol e s))]
     }
@@ -1266,11 +1266,11 @@ useful in most common cases. In particular, it covers the following RA propertie
 We need to normalize the names in each operator, but we also require
 that there is no naming ambiguity at any level. Why, then, is it necessary
 to normalize the symbols if they are unambiguous in each context? If
-we were only dealing with one query we could declare that we trust
+we were only dealing with one query, we could declare that we trust
 that the user would be consistent when naming their columns
 (\sql{select col as name where...}), declare that the broader problem
 of RA equivalence is beyond the scope of this thesis and move on to
-more central issues to FluiDB. It is, however, the case that the user is not in
+more central issues for FluiDB. It is, however, the case that the user is not in
 total control of naming columns. When exposing
 unique ids and during the decorrelation transformations, FluiDB
 produces unique column names stochastically. This is not a
@@ -1302,7 +1302,7 @@ names but creates some complications. For example, in the query
 \(\sigma_{a=x \lor a=z}(\gamma(\sigma_{a<y}(A))\) the \(a\) in \(a=x\)
 and the \(a\) in \(a < y\) are not equal symbols as they refer to
 different columns. The former refers to a column in the table
-\(\gamma(\sigma_{a<y}(A))\) and the latter in the table \(A\). They
+\(\gamma(\sigma_{a<y}(A))\) and the latter to the table \(A\). They
 both refer to some transformation of a column labelled \(a\). On the other hand \(a\) in \(a=z\) and \(a\) in \(a=x\) are
 indeed equivalent as they refer to the same column. To clear up the
 confusion we will say that symbols are \emph{strictly-equivalent} if
@@ -1327,7 +1327,7 @@ split it's symbols' representation in two notions.
 
 \begin{itemize}
 \item A local notion of a symbol is subject to the names given by the
-  circumstances of its creation (user defined names,generated
+  circumstances of its creation (user-defined names,generated
   symbols,etc)
 \item a global notion that is a symbol representation dependent only in
   the column itself.
@@ -1341,14 +1341,14 @@ local notions of symbols are sensitive to the name chosen, the
 global is not.
 
 Using the global notion of symbols creates a problem with the
-correspondance of the query schema of the output with the schemata on
+correspondence of the query schema of the output with the schemata on
 the input side. In other words, if we throw away the names of the
 columns in the inserted operations in favor of column unique ids, how would the
 code generator know how to arrange the elements of each input tuple
 it encounters to generate the output tuple? 
 
 To mitigate that, we use the internal operations of the QNF query builder. 
-To build a cluster we use as parameters a named normal form (a query in normal form and a
+To build a cluster, we use as parameters a named normal form (a query in normal form and a
 mapping between the column names and column ids, along with an n-node for each input
 and output relation, and the operator with column references in terms
 of local notions of symbols. As described in detail in section \ref{sec:building_qnfs} on building QNF,
@@ -1357,7 +1357,7 @@ returns the root operator with globalized symbols, as well as a correspondence
 between globalized symbols at the input with globalized symbols at the
 output side of operator.
 
-Each cluster is marked with all the relevant information
+Each cluster is marked with all  relevant information
 required in order for the useful to the code generator. But is that
 enough? Not quite. As we have alluded to, each relation we deal
 with, and therefore each n-node, must be associated with a schema
@@ -1368,7 +1368,7 @@ which contains information about:
 \item What is the type of each column
 \item Which columns are constant values
 \item What sets of columns form unique sub-tuples
-\item What is the order in which the columns are store.
+\item What is the order in which the columns are stored.
 \end{itemize}
 
 \section{Query clusters}
