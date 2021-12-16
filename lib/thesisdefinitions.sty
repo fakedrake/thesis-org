@@ -3,6 +3,7 @@
 
 \RequirePackage[inline]{enumitem}
 \RequirePackage{graphicx}
+\RequirePackage{mdframed}
 \RequirePackage{color}
 \RequirePackage{xcolor}
 \RequirePackage[T1]{fontenc}                    % T1 encoding stops some errors
@@ -121,7 +122,7 @@
   \setcounter{secnumdepth}{-1}%
   \renewcommand{\chaptermark}[1]{}%
   \pagestyle{plain}%
-  %\titlespacing*{\chapter}{0pt}{0pt}{30pt}%
+  % \titlespacing*{\chapter}{0pt}{0pt}{30pt}%
 }%
 {
   %% Restart numbering
@@ -179,18 +180,17 @@
   \end{center}
 }
 
-% do not reset page numbers at \mainmatter
-\let\mainmatterorig\mainmatter
-\renewcommand\mainmatter
-{\edef\p{\arabic{page}}%
-  \mainmatterorig
-  % we need to compute the actual current page number. we know the page number
-  % from _before_ we called \mainmatter. but what is it now? well, it is
-  % certainly that +1. but we also need to account for the next chapter starting
-  % on a "right" (odd) page. we do this by adding the page number modulo two.
-  % TODO: double check before final version
-  \setcounter{page}{\p+1+(\p-\p/2*2)}%
-}
+% % do not reset page numbers at \mainmatter
+% \let\mainmatterorig\mainmatter
+% \renewcommand\mainmatter
+% {\edef\p{\arabic{page}}%
+%   \mainmatterorig
+%   % we need to compute the actual current page number. we know the page number
+%   % from _before_ we called \mainmatter. but what is it now? well, it is
+%   % certainly that +1. but we also need to account for the next chapter starting
+%   % on a "right" (odd) page. we do this by adding the page number modulo two.
+%   \setcounter{page}{\p+1+(\p-\p/2*2)}%
+% }
 
 
 \newcommand{\eddedication}[1]{%%
@@ -214,9 +214,9 @@
 \RequirePackage{float}
 \RequirePackage{caption}
 \RequirePackage[outputdir=./build/,newfloat,draft=false]{minted}
-\setminted{autogobble=true,breaklines=true}
+\setminted{autogobble=true,breaklines=true,linenos=true}
 \RequirePackage{fontspec}
-\setmonofont{FiraCode}[Scale=0.8]
+\setmonofont{FiraCode}[Scale=0.7]
 \newminted{sql}{}
 \newminted{cpp}{}
 \newminted{haskell}{}
@@ -264,5 +264,39 @@
   \end{center}
 }
 \makeatother
+
+
+\RequirePackage{tcolorbox}
+\NewEnviron{summary}{%
+  \begin{tcolorbox}[title=Chapter summary]
+    \begin{itemize}
+      \BODY
+    \end{itemize}
+  \end{tcolorbox}
+  \clearpage
+}
+
+% Chapter
+\KOMAoption{chapterprefix}{true}
+\renewcommand*\raggedchapter{\centering}
+\newif\ifmakeupper
+\newcommand*\chaptertitleformat[1]{\ifmakeupper\MakeUppercase{#1}\else#1\fi}
+\addtokomafont{chapter}{\makeuppertrue}
+\setkomafont{chapterprefix}{\normalsize\mdseries}
+\renewcommand*{\chapterformat}{%
+    \MakeUppercase{\chapappifchapterprefix{\nobreakspace}}\thechapter%
+    \IfUsePrefixLine{%
+      \par\nobreak\vspace{-\parskip}\vspace{-.5\baselineskip}%
+      \rule{0.9\textwidth}{.5pt}%
+    }{\enskip}%
+}
+\RedeclareSectionCommand[beforeskip=0pt,afterskip=8\baselineskip]{chapter}
+
+\RequirePackage{array}
+
+\newcommand{\li}{\mathit{lineitem}}
+\newcommand{\ord}{\mathit{order}}
+\newcommand{\cust}{\mathit{customer}}
+\newcommand{\nation}{\mathit{nation}}
 
 \message{Hello world thesis!}

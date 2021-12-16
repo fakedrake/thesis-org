@@ -1,5 +1,17 @@
+\dictum[Vamvakaris]{Don't hit hard the beads, work is what makes a man.}
+
 \begin{summary}
-\item TODO
+\item Tables are stored in a memory file systems and records are
+  stored as POD binary objects organized in 4K pages.
+\item The extent of each relation involved in a plan is converted to
+  C++ struct and each predicate is converted to a C++ callable
+  class.
+\item These parameterize the templatized operators to allow the
+  compiler to generate highly specifialized code.
+\item (TODO) We use an approach reminise of scheme's macro hygene to manage
+  the uniqueness of symbols in the generated code.
+\item In this chapter we discuss the implementation important
+  operations and their reverse.
 \end{summary}
 
 The logical plan is translated into a physical plan that has the form
@@ -320,19 +332,21 @@ respectively.
 
 \subsection{In-place sorting}
 
-It is important for the planner to have full control of the
-budget. For that reason we require that all operators' algorithms have
-constant space complexity. This may mean major compromizes for some
-algorithms with respect to the time complexity like join and
-aggregation. Fortunately we can mitigate that by taking advantage of
-the set semantics of FluiDB relational algebra and sorting input
-tables in-place before running joins or aggregations. Our particular
-implementation of in-place sorting hinges on the \cpp{RecordMap} type that
-provides C++ random access iterators iterators to the records of a
-file, abstracting the page reads and writes. We pass these iterators
-to \cpp{std::sort} (see listing \ref{lst:record_map_sort}) which runs insertion
-sort for small ranges to take advantage of the processors reorder
-buffer and quicksort for longer ones.
+It is important for the planner to have full control of the storage
+budget and assume that no significant memory is required for
+evaluating each operator. For that reason we require that all
+operators' algorithms have constant space complexity. This may mean
+major compromizes for some algorithms with respect to the time
+complexity like join and aggregation. Fortunately we can mitigate that
+by taking advantage of the set semantics of FluiDB relational algebra
+and sorting input tables in-place before running joins or
+aggregations. Our particular implementation of in-place sorting hinges
+on the \cpp{RecordMap} type that provides C++ random access iterators
+iterators to the records of a file, abstracting the page reads and
+writes. We pass these iterators to \cpp{std::sort} (see listing
+\ref{lst:record_map_sort}) which runs insertion sort for small ranges
+to take advantage of the processors reorder buffer and quicksort for
+longer ones.
 
 \begin{code}
 \begin{cppcode}
@@ -450,7 +464,7 @@ look at the transformation of a valid AST into code.
 
 \subsubsection{Code hygene}
 
-A major concern in any transpiler or code generation system generally
+A major concern in any transpiler, or code generation system generally,
 is the generation of unique symbols. The problem is similar to the one
 regarding scheme’s hygienic macros, although the problems for those
 are much more complex than our particular case. This is mostly because
@@ -458,30 +472,52 @@ our plans expand to a different language and expansion happens exactly
 once. Consider the following C++ AST that we want to transform into
 code.
 
+\[
+  R_1 \Join_{\theta} R_2
+\]
 
 The most naive and straightforward way is to convert it directly into
 a C++ string.
 
-\begin{code}
-\begin{haskellcode}
--- todo
-\end{haskellcode}
-\caption{No unique}
-\end{code}
+\begin{cppcode}
+struct R1 {...};
+struct R2 {...};
 
-Here the symbols \hask{a}, \hask{x}, and possibly even \hask{f} would
-need to be unique. A naive solution would directly attempt to attach
-an index to each symbol
+bool theta (R1 r1, R2 r2) {
+  ...
+}
 
-\begin{code}
-\begin{haskellcode}
--- todo
-\end{haskellcode}
-\caption{No unique}
-\end{code}
+int main () {
+  ...
+  auto op = Join<R1,R2>(theta,"R1.dat", "R2.dat");
+  op.run();
+}
+\end{cppcode}
 
-The obvious problem with this approach however changes the meaning of
-the program, so we match the various instances of a symbol.
+
+This approach works for a very narrow class of cases where the names
+\cpp{theta}, \cpp{R1}, and \cpp{R2} do not collide with any other
+names in the program. The obvious approach would be the Common Lisp
+approach to ``hygene'' where we generate a new symbol for each
+identifier. The naive and obviously wrong way to do that would be
+
+\begin{cppcode}
+struct R1_1 {...};
+struct R2_2 {...};
+
+bool theta_3 (R1_4 r1, R2_5 r2) {
+  ...
+}
+
+int main () {
+  ...
+  auto op = Join<R1_6,R2_7>(theta_8,"R1.dat", "R2.dat");
+  op.run();
+}
+\end{cppcode}
+
+This goes too far and discriminates between names that we need to
+match.
 
 \begin{code}
 \begin{haskellcode}
@@ -491,8 +527,7 @@ the program, so we match the various instances of a symbol.
 \end{code}
 
 New problems arise if we want to concatenate different code
-snippets. Consider the case that the following lines generated have
-the semantics:
+snippets. Consider thecase
 
 
 \begin{code}
@@ -528,7 +563,6 @@ What this amounts to is a list of code objects interleaved with unique
 symbol names. Each unique symbol name is a combination of an unique id
 and a function that would generate a unique string of code based on
 that id. This unique id must be incrementable.
-
 
 When two \hask{SoftUNameCode} objects are concatenated, in the simple case
 we aim for the variable names to be completely disjoint. This is

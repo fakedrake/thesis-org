@@ -1,1 +1,131 @@
-TODO
+\dictum[Someone Else]{We had our fun}
+
+Itroduction
+
+\begin{summary}
+\item FluiDB is an in-memory RDBMs optimizes data layout for space
+  efficiency w.r.t. the workload
+\item The main novelty relates to the introduction of reversible
+  relational operations which affords a new perspective on query
+  planning and view selection.
+\item She materializes all intermediate nodes and deletes garbage
+  collects when she runs out of space.
+\end{summary}
+
+Background
+\begin{summary}
+\item Relational databases are question answering systems that deal
+  with information organized in tables or relations.
+\item Query optimization and planning revolves around finding an
+  efficient alorithm for answering a query.
+\item In-mamory databases keep all the data in main memory so they are
+  closer to the processer
+\item many in-memory databases employ some variant of code generation
+  to execute the query plans.
+\item Intermediate result recycling is the practice of reusing
+  computation between queries.
+\end{summary}
+
+Logical planning
+\begin{summary}
+\item FluiDB expresses queries in relational algebra and defines
+  reverse operations for most operations.
+\item Query plan trees are accumulated in a bipartite DAG (QDAG) where
+  the types of nodes are tables and bidirectional operations.
+\item Queries are normalized to hashable objects (QNF) that abstract a
+  wide range of rewrites. This allows efficient merging query plan
+  trees into the QDAG.
+\item Sub-graphs of the QDAG (clusters) represent higher level
+  operations and are used as \emph{propagators} to infer information
+  of the n-nodes like cardinality, column type, and uniqueness of
+  subtuples.
+\end{summary}
+
+Physical planning
+\begin{summary}
+\item We introduce a monad-based functional method of weighted
+  backtracking search that supports \emph{once} and \emph{fallback},
+  two cut-like operations.
+\item The FluiDB query planner follows an A*-like method for seaching plans
+  plans are searched in a top-down fashion, guided by a cost model that
+  takes into account the cost historical queries.
+\item The query planner can make use of \emph{forward} or
+  \emph{reverse} triggering of operators.
+\item The garbage collector clears up space on-demand maintaining the
+  materializability of all the nodes in the graph.
+\end{summary}
+
+
+Antisthenis
+\begin{summary}
+\item \emph{Antisthenis} is a system for incremental evaluation of
+  algebraic expressions using heuristics to optimize the order in
+  which subexpressions are evaluated and to calculate some classes of
+  self referrential computations.
+\item Mealy arrows are a construct to implement adaptable computations
+  that can can prodice a value and a new, semantically equivalent
+  computation. Each iteration adapts to the previous caching values
+  and changing the evaluation plan to be more efficient.
+\item Antisthenis computations are implemented as network of mealy
+  arrows that compose larger adaptive (incremental and partial)
+  computations.
+\item Machines are named processes that can be referred to by other
+  machines. Antisthenis can handle some classes of self referrential
+  computations.
+\item We implement antisthenis operations to cover requirements of the
+  FluiDB physical planner:
+
+  \begin{itemize}
+  \item calculate min/sum of natural numbers -- used to compute cost
+  \item boolean functions -- used determine node materializability
+  \item calculate min/sum of numbers annotated with certainty metrics
+    -- used to calculate the cost of materialization of nodes give
+    nodes that \emph{might} be magterialized.
+  \end{itemize}
+\end{summary}
+
+
+Execution
+
+\begin{summary}
+\item Tables are stored in a memory file systems and records are
+  stored as POD binary objects organized in 4K pages.
+\item The extent of each relation involved in a plan is converted to
+  C++ struct and each predicate is converted to a C++ callable
+  class.
+\item These parameterize the templatized operators to allow the
+  compiler to generate highly specifialized code.
+\item (TODO) We use an approach reminise of scheme's macro hygene to manage
+  the uniqueness of symbols in the generated code.
+\item In this chapter we discuss the implementation important
+  operations and their reverse.
+\end{summary}
+
+\begin{summary}
+\item FluiDB is well suited for join-heavy star schemata so we
+  evaluated using the SSB-TPC-H benchmark.
+\item Our evaluation shows that FluiDB is able to plan around the
+  space constraints and come up with plans that materialize
+  intermediate results that are useful for future queries.
+\item FluiDB is generally faster than the baseline due to caching but
+  at times may be slower when it receives ``unexpected''
+  queries.
+\item FluiDB generally performs better when allowed larger memory
+  budgets but this speedup is based on heuristic assumptiosn that
+  sometimes break in interesting ways.
+\end{summary}
+
+
+\section{Future perspectives}
+
+FluiDB steps into a new path towards \emph{truly} adaptive storage,
+but it does only a few steps. There are many interesting tangents to
+follow and may places where FluiDB does not take full advantage of the
+state of the art in database research.
+
+Starting with the latter, the most important place where FluiDB can do
+better is cardinality estimation. As mention in section
+(\ref{sec:size_estimation_problems}) FluiDB is very naive w.r.t. to
+how it estimates sizes. That said the propagator network structure
+used to estimate cardinalities can be augmented to propagate
+information about selectivity and statistics about the

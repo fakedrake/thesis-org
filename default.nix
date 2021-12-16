@@ -10,9 +10,13 @@ let
     inherit (texlive)
       scheme-small
       enumitem
+      mdframed
+        needspace
+        zref
       todonotes
       biblatex
       xcolor
+      tcolorbox
       titlesec
       environ
       abstract
@@ -25,11 +29,12 @@ let
       koma-script
       framed
     ; });
+  py = pkgs.python39.withPackages (p: with p; [pandas numpy pygments matplotlib]);
 in pkgs.stdenv.mkDerivation {
   pname = "phd-thesis";
   version = "0.0.1";
   src = ./.;
-  buildInputs = [tex pkgs.python39Packages.pygments];
+  buildInputs = [tex py];
   phases = "buildPhase";
   buildPhase = ''
   ./build.sh

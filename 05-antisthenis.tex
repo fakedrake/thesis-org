@@ -1,5 +1,30 @@
+\dictum[Antisthenis]{There is no horse, there is horses}
+
 \begin{summary}
-\item TODO
+\item \emph{Antisthenis} is a system for incremental evaluation of
+  algebraic expressions using heuristics to optimize the order in
+  which subexpressions are evaluated and to calculate some classes of
+  self referrential computations.
+\item Mealy arrows are a construct to implement adaptable computations
+  that can can prodice a value and a new, semantically equivalent
+  computation. Each iteration adapts to the previous caching values
+  and changing the evaluation plan to be more efficient.
+\item Antisthenis computations are implemented as network of mealy
+  arrows that compose larger adaptive (incremental and partial)
+  computations.
+\item Machines are named processes that can be referred to by other
+  machines. Antisthenis can handle some classes of self referrential
+  computations.
+\item We implement antisthenis operations to cover requirements of the
+  FluiDB physical planner:
+
+  \begin{itemize}
+  \item calculate min/sum of natural numbers -- used to compute cost
+  \item boolean functions -- used determine node materializability
+  \item calculate min/sum of numbers annotated with certainty metrics
+    -- used to calculate the cost of materialization of nodes give
+    nodes that \emph{might} be magterialized.
+  \end{itemize}
 \end{summary}
 
 This chapter goes in depth descibing the various parts that compose
@@ -74,7 +99,7 @@ Which can be represented as a dag in figure
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=.9\linewidth]{./imgs/example_antisthenis_dag.pdf}
+\includegraphics[width=.5\textwidth]{./imgs/example_antisthenis_dag.pdf}
 \caption{\label{fig:example_antisthenis_dag}A computation DAG.}
 \end{figure}
 
@@ -292,8 +317,7 @@ class Functor f => Applicative f  where
   (<*>) :: f (a -> b) -> f a -> f b
   pure :: a -> f a
 \end{haskellcode}
-\label{lst:applicative_def}
-\caption{The interface of a haskell applicative functor.}
+\caption{\label{lst:applicative_def}The interface of a haskell applicative functor.}
 \end{code}
 
 Furthermore, from the definition of \hask{ap} or \hask{<*>} we
@@ -319,8 +343,8 @@ pure f <*> pure x = pure (f x)
 -- Interchange
 u <*> pure y = pure ($ y) <*> u
 \end{haskellcode}
-\label{lst:applicative_laws}
-\caption{Laws that any valid applicative intreface must obay}
+  \caption{\label{lst:applicative_laws}Laws that any valid applicative
+    intreface must obay}
 \end{code}
 
 \subsection{Monad}
@@ -353,8 +377,8 @@ class Applicative m => Monad m where
   return :: a -> m a
   (>>=) :: m a -> (a -> m b) -> m b
 \end{haskellcode}
-\label{lst:monad_def}
-\caption{Definition of the interface of a haskell monad.}
+  \caption{\label{lst:monad_def}Definition of the interface of a
+    haskell monad.}
 \end{code}
 
 Monad implementations need to adhare to laws laid out in listing
@@ -390,9 +414,8 @@ m >>= return = m
 -- Associativity
 m >>= (\x -> k x >>= h) = (m >>= k) >>= h
 \end{haskellcode}
-\label{lst:monad_laws}
-\caption{Laws that any valid monad implementation must abide
-  \cite{yorgeyTypeclassopedia2009}.}
+  \caption{\label{lst:monad_laws}Laws that any valid monad
+    implementation must abide \cite{yorgeyTypeclassopedia2009}.}
 \end{code}
 
 \subsubsection{Monad examples}
@@ -413,8 +436,7 @@ value.
 \begin{haskellcode}
 data Maybe a = Just a | Nothing
 \end{haskellcode}
-\label{lst:maybe_def}
-\caption{Definition of the \hask{Maybe} monad.}
+  \caption{\label{lst:maybe_def}Definition of the \hask{Maybe} monad.}
 \end{code}
 
 Composability of the Kleisli arrow allows us to compose multiple
@@ -439,8 +461,8 @@ inverse a = if a == 0 then Nothing else Just (1 / a)
 invAdd :: Double -> Double -> Maybe Double
 invAdd a b = (+) <$> inverse a <*> inverse b
 \end{haskellcode}
-\label{lst:maybe_example}
-\caption{Example usage of the \hask{Maybe} applicative functor.}
+  \caption{\label{lst:maybe_example}Example usage of the \hask{Maybe}
+    applicative functor.}
 \end{code}
 
 \begin{code}
@@ -469,8 +491,9 @@ a computation that depends on mutable state of type \hask{s}.
 \begin{haskellcode}
 newtype State s a = State (s -> (a,s))
 \end{haskellcode}
-\label{lst:state_monad_def}
-\caption{The state monad describes mutable state.}
+
+  \caption{\label{lst:state_monad_def}The state monad describes
+    mutable state.}
 \end{code}
 
 \hask{State} is essentially a function that accepts some state, modifies it
@@ -547,9 +570,10 @@ join m = m >>= id
 (>>=) :: Monad m => m a -> (a -> m b) -> m b
 m >>= f = join (fmap f m)
 \end{haskellcode}
-\label{lst:join_monad_op}
-\caption{The bind (\hask{>>=}) and join operations on a monad are
-  equivalent given that monads are also functors.}
+
+  \caption{\label{lst:join_monad_op}The bind (\hask{>>=}) and join
+    operations on a monad are equivalent given that monads are also
+    functors.}
 \end{code}
 
 A free monad \hask{Free f m} then is equivalent to the \emph{functor}
@@ -576,8 +600,8 @@ data Free f a
 newtype FreeF f a x = Pure a | Free (f x)
 data FreeT f m a = m (FreeF f a (FreeT f m a))
 \end{haskellcode}
-\label{lst:free_def}
-\caption{A simple implementation of the free monad type.}
+  \caption{\label{lst:free_def}A simple implementation of the free
+    monad type.}
 \end{code}
 
 \subsection{Arrows and profunctors}
@@ -650,8 +674,8 @@ class Arrow p => ArrowChoice p where
 class Profunctor p where
   dimap :: (a' -> a) -> (b -> b') -> p a b -> p a' b'
 \end{haskellcode}
-\label{lst:arrow_def}
-\caption{Haskell typeclasses related to the notion of \hask{Arrow}.}
+  \caption{\label{lst:arrow_def}Haskell typeclasses related to the
+    notion of \hask{Arrow}.}
 \end{code}
 
 
@@ -804,8 +828,7 @@ a process that can yield computation to be resumed by the caller.
 newtype MealyArrow a b =
   MealyArrow (a -> (MealyArrow a b,b))
 \end{haskellcode}
-\label{lst:mealy_def}
-\caption{Haskll definition of a mealy arrow.}
+  \caption{\label{lst:mealy_def}Haskll definition of a mealy arrow.}
 \end{code}
 
 The mealy arrow is at the heart of Antisthenis as they represent the
@@ -870,9 +893,9 @@ mkMealy :: (ArrowFunctor c,Monad (ArrFunctor c))
         => (a -> MB a b (ArrFunctor c) Void)
         -> MealyArrow c a b
 \end{haskellcode}
-\label{lst:mb_interface}.
-\caption{The \hask{MB a b m} monad can be used as a convenience to
-  implement mealy arrows using a conroutine-like interfaces.}
+  \caption{\label{lst:mb_interface}.The \hask{MB a b m} monad can be
+    used as a convenience to implement mealy arrows using a
+    conroutine-like interfaces.}
 \end{code}
 
 The important part is that we want to do something before each
@@ -890,8 +913,8 @@ foo = wrapMealy arr $ \a it -> do
   a' <- yieldMB r
   return it'
 \end{haskellcode}
-\label{lst:mb_example}
-\caption{An example the usage of the MB functor to generate mealy arrows.}
+  \caption{\label{lst:mb_example}An example the usage of the MB
+    functor to generate mealy arrows.}
 \end{code}
 
 This involves \hask{toKleisly} in reference to the "kleislifiable"
@@ -915,8 +938,7 @@ can produce only arrows that are from \hask{a} to \hask{b} from
 newtype MealyF a b x = MealyF (a -> x,b)
 type MB a b = Free (MealyF a b)
 \end{haskellcode}
-\label{lst:mb_def}
-\caption{Definition of the MB monad transformer.}
+  \caption{\label{lst:mb_def}Definition of the MB monad transformer.}
 \end{code}
 
 
@@ -1003,8 +1025,8 @@ type ArrProc w m =
   MealyArrow (WriterArrow (ZCoEpoch w) (Kleisli m))
   (Conf w) (BndR w)
 \end{haskellcode}
-\label{lst:arrproc_def}
-\caption{The type of an antisthenis process.}
+\caption{\label{lst:arrproc_def}The type of an antisthenis process is a mealy arrow paired
+  with a kleisli arrow.}
 \end{code}
 
 The \hask{w} parameter is simply a token related to the operation that
@@ -1060,10 +1082,10 @@ data BndR w
   | BndRes (ZRes w)
   | BndBnd (ZBnd w)
 \end{haskellcode}
-\label{lst:bnd_def}
-\caption{The definition of the return value of an Antisthenis
-  process. It may be a final result, an error indicating that a final
-  result is non-computable, or a bound for the final value.}
+  \caption{\label{lst:bnd_def}The definition of the return value of an
+    Antisthenis process. It may be a final result, an error indicating
+    that a final result is non-computable, or a bound for the final
+    value.}
 \end{code}
 
 Indeed, the iteration of the process has a very different meaning
@@ -1087,10 +1109,9 @@ data Conf w =
         ,confEpoch :: ZEpoch w
        }
 \end{haskellcode}
-\label{lst:conf_def}
-\caption{The type definition of a conficuration. It is a tuple
-  containing information that can be used to derive whether a value is
-  valid.}
+  \caption{\label{lst:conf_def}The type definition of a
+    conficuration. It is a tuple containing information that can be
+    used to derive whether a value is valid.}
 \end{code}
 
 The configuration for running a computation includes an epoch
@@ -1104,8 +1125,8 @@ then the process must keep processing until it found a bound that
 exceeds that cap. This way we can control how much work a process is
 allowed to do before switching to one that might help Antisthenis to
 cut the overall computation short. This way Antisthenis avoids falling
-into computational rabbit holes, where it takes on a big computation
-when switching to a smaller one would help arrive sooner to a final
+into computational rabbit holes, where it evaluates a long computation
+when switching to a shorter one would help arrive sooner to a final
 result.
 
 The epoch represents state external to Antisthenis like parameter
@@ -1116,7 +1137,6 @@ start computation form scratch (see section
 
 
 \subsection{Epochs and coepochs}
-\label{sec:epochs_coepochs}
 
 As mentioned in the previous section the interplay between epochs and
 coepochs determine the validity of the value of each Antisthenis
@@ -1139,7 +1159,7 @@ Most processes only depend on a subset of parameters. In Antisthenis'
 terms, most processesonly ever depend on parts of the epoch. This
 reference to a subset of any epoch is reified by the coepoch. Coepochs
 are the monoidal type parameter of the writer arrow transformer of
-\hask{ArrProc}. What this means in practice is that due to the writer
+\hask{ArrProc}.  In practice this theman that due to the writer
 semantics the coepochs of evaluated subproecesses are concatenated to
 produce the coepoch of the parent process. A special case for this are
 the commutative operations that involve absorbing elements (\(\land\),
@@ -1156,8 +1176,8 @@ that has a type equivalent to.
 \begin{haskellcode}
 combEpochCoepoch0 :: ZEpoch w -> ZCoEpoch w -> Bool
 \end{haskellcode}
-\caption{The type of a naive function checking the validity of a value
-  based on epoch and coepoch.}
+  \caption{\label{sec:epochs_coepochs}The type of a naive function
+    checking the validity of a value based on epoch and coepoch.}
 \end{code}
 
 That will indicate whether the value needs to be pushed down. In
@@ -1166,11 +1186,12 @@ law on the \hask{combEpochCoepoch0} function:
 
 \begin{align*}
 & \text{combEpochCoepoch}_0(e, c_0 \diamond c_1) \Rightarrow \\
-& \text{combEpochCoepoch}_0(e,c_1) \land \text{combEpochCoepoch}_0(e,c_1)
+& \text{combEpochCoepoch}_0(e,c_0) \land \text{combEpochCoepoch}_0(e,c_1)
 \end{align*}
 
-Where \hask{e :: ZEpoch w}, \hask{c0,c1 :: ZCoEpoch w} and \hask{<>} is the monoidal
-operation on coepochs.
+\todo{Clarify}
+Where \(e \in ZEpoch w\), \(c_0,c_1 \in ZCoEpoch w\) and \(\diamond\)
+is the monoidal merging operation on coepochs.
 
 We therefore have the option of filtering the epoch into a smaller
 subset of itself that is only relevant to the subprocesses that
@@ -1189,8 +1210,8 @@ including its coepoch to the aggregate.
 \begin{haskellcode}
 combEpochCoepoch :: ZEpoch w -> ZCoEpoch w -> Maybe (ZEpoch w)
 \end{haskellcode}
-\label{lst:comb_epoch_coepoch}
-\caption{The final function for epoch and coepoch combination.}
+  \caption{\label{lst:comb_epoch_coepoch}The final function for epoch
+    and coepoch combination.}
 \end{code}
 
 \subsection{Antisthenis caps and bounds}
@@ -1201,31 +1222,16 @@ Antisthenis deals with the validity of values returned by a
 process. In this section we will focus on how the children processes
 avoid falling into computational rabbit holes using the interplay of
 \emph{caps} and \emph{bounds}.  In the example discussed in the
-introduction (\ref{sec:antisthenis_intro}) [ref], we saw that there
-are case where, as soon as a subprocess can prove that its value is
-going to exceed a certain threshold (\emph{cap}), any further work on
-its part is likely futile. It then returns a \emph{bound} which is
-propagated up the chain of parent processes and handled at the point
-where the cap was imposed.
+introduction (\ref{sec:antisthenis_intro}), we saw that there are case
+where, as soon as a subprocess can prove that its value is going to
+exceed a certain threshold (\emph{cap}), any further work on its part
+is likely futile. It then returns a \emph{bound} which is propagated
+up the chain of parent processes and handled at the point where the
+cap was imposed. The reader is encouraged to maintain a mental model
+where the cap is an threshold and the bound is a lower bound.
 
-A cap must generally be a convex threshold and the bound of a value
-must be a value, that does not have to be of the same type as the
-result of the cap, which must be \emph{monotonic} with respect to the
-cap though the iterations of the corresponding process. In very
-informal terms an example of a cap/bound pair that have the same types
-are demonstrated in the figure \ref{fig:2d_cap}.
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=.9\linewidth]{./imgs/2021-10-11_00-38-22_screenshot.png}
-\label{fig:2d_cap}
-\caption{A cap delineates a convex space that may be
-  multi-dimensional. A bound returned by a process exceeds the cap
-  when it is outside that space.}
-\end{figure}
-
-In more concrete terms monotonicity is indicated by the following
-equation:
+We expect that the bound of a function satisfies the
+\emph{mototonicity criterion}:
 
 \[
 C \dot{<} B[ f(a_0, ...)] \Rightarrow C \dot{<} f_B(B[a_0],...)
@@ -1239,8 +1245,8 @@ that combines the bounds of the arguments to come up with a bound for
 \(C\).
 
 In simpler terms this means that if a bound exceeds the cap,
-evaluating the arguments and coming up with a tighter bound will not
-undo that fact.
+evaluating the arguments and coming up with a tighter bound will still
+exceed the cap.
 
 There may be more requirements of the properties of a cap relate to
 the particular operator. For example the minimum operator requires
@@ -1307,11 +1313,12 @@ zLocalizeConf coepoch conf z =
         CapVal cap -> CapVal $ subCap cap partRes
         ForceResult -> ForceResult
 \end{haskellcode}
-\label{lst:localizeconf}
-\caption{A sample implementatation of the function that transforms the
-  configuration received by a parent process into one suitable for the
-  child process. Checks if the parent process needs to be reset and
-  uses the partial result to constrain the cap.}
+
+  \caption{\label{lst:localizeconf}A sample implementatation of the
+    function that transforms the configuration received by a parent
+    process into one suitable for the child process. Checks if the
+    parent process needs to be reset and uses the partial result to
+    constrain the cap.}
 \end{code}
 
 Since the process knows it will be evaluating the cursor, it subtracts
@@ -1373,31 +1380,7 @@ the state of the node (see figure \ref{fig:zipper}).
   cursor.
 \end{itemize}
 
-During computation, the subprocesses owned by the parent process are
-evaluated, and their iteration are then moved from the \hask{initials}
-set to the \hask{coiterations} set, with an intermediate stop in the
-\hask{iterations} set according to the values and strategies. These
-are further elaborated in the section on \hyperref[sec:antisthenis_ops]{the
-  section antisthenis operations}. The structure of \hask{iterator
-  set} is highly operator dependent and primarily geared towards
-efficiently evaluating the parent process, but fundamentally it does
-not compromise on the correctness of the operator. For example the if
-a process is combining elements of an abelian group (commutative,
-associative, invertible) and the bound has the same type as the result
--- as it is the case with addition -- the structure of the zipper is
-fairly straightforward:
-
-\begin{itemize}
-\item the partial result maintains the aggregation of all values and
-  bounds encountered
-\item When evaluating the cursor we add the result to the group and
-  remove the bound of the next cursor if we are popping from the
-  iteration set.
-\item The the partial result is precisely the bound of the final
-  value.
-\end{itemize}
-
-\begin{figure}[p]
+\begin{figure}[H]
 \begin{tikzdiagram}
   \tikzset{b/.style={circle,draw,minimum size=1cm}};
   \tikzset{m/.style={circle,draw,minimum size=1cm, fill=gray!10}};
@@ -1428,18 +1411,42 @@ fairly straightforward:
   \path[-stealth,bend right=20] (curs) edge node[midway,fill=white,text width=1cm] {Bounded\\result} (its) ;
   \path[-stealth,bend right=20] (curs.east) edge node[midway,fill=white,text width=1cm] {Final\\result} (coit) ;
 \end{tikzdiagram}
-\label{fig:zipper}
-\caption{The zipper splits the sub-processes that cooperate to compute
-  values for the owning process in four categories a) initials that
-  have not yielded a currently valid value b) iterations that have not
-  yielded a valid partial value c) coiterations that have yielded a
-  full valid value d) the cursor that is the next sub-process to be
-  evaluated.  Depending on the evaluation strategy of the operator
-  once the cursor process evaluates it is replaced with an init
-  process or an iteration process, and depending on the value the
-  cursor process yields it is pushed to the iterations or the
-  coiterations of the zipper.}
+\caption{\label{fig:zipper}The zipper splits the sub-processes that
+  cooperate to compute values for the owning process in four
+  categories a) initials that have not yielded a currently valid value
+  b) iterations that have not yielded a valid partial value c)
+  coiterations that have yielded a full valid value d) the cursor that
+  is the next sub-process to be evaluated.  Depending on the
+  evaluation strategy of the operator once the cursor process
+  evaluates it is replaced with an init process or an iteration
+  process, and depending on the value the cursor process yields it is
+  pushed to the iterations or the coiterations of the zipper.}
 \end{figure}
+
+During computation, the subprocesses owned by the parent process are
+evaluated, and their iteration are then moved from the \hask{initials}
+set to the \hask{coiterations} set, with an intermediate stop in the
+\hask{iterations} set according to the values and strategies. These
+are further elaborated in the section on \hyperref[sec:antisthenis_ops]{the
+  section antisthenis operations}. The structure of \hask{iterator
+  set} is highly operator dependent and primarily geared towards
+efficiently evaluating the parent process, but fundamentally it does
+not compromise on the correctness of the operator. For example the if
+a process is combining elements of an abelian group (commutative,
+associative, invertible) and the bound has the same type as the result
+-- as it is the case with addition -- the structure of the zipper is
+fairly straightforward:
+
+\begin{itemize}
+\item the partial result maintains the aggregation of all values and
+  bounds encountered
+\item When evaluating the cursor we add the result to the group and
+  remove the bound of the next cursor if we are popping from the
+  iteration set.
+\item The the partial result is precisely the bound of the final
+  value.
+\end{itemize}
+
 
 
 At the other end of the spectrum, a process evaluating a magma (a set
@@ -1491,8 +1498,7 @@ data Zipper' w cursf (p :: *) partialRes =
   }
 type Zipper w p = Zipper' w Identity p (ZPartialRes w)
 \end{haskellcode}
-\label{lst:zipper_def}
-\caption{The definition of the zipper.}
+  \caption{\label{lst:zipper_def}The definition of the zipper.}
 \end{code}
 
 Finally, the operator defines the partial result type of the zipper
@@ -1532,8 +1538,9 @@ type ZProc e m =
     (LConf w)
     (Zipper w (ArrProc w m))
 \end{haskellcode}
-\label{lst:zproc_def}
-\caption{An internal representation of the process evolving the internal representation of a process: the zipper.}
+  \caption{\label{lst:zproc_def}An internal representation of the
+    process evolving the internal representation of a process: the
+    zipper.}
 \end{code}
 
 
@@ -1566,9 +1573,8 @@ data ItInit r f a
                   -- value until the epoch/coepoch pair requests a
                   -- reset.
 \end{haskellcode}
-\label{lst:cmds_def}
-\caption{Definition of the commands functor that provides different
-  branches of evolitution for zipper.}
+  \caption{\label{lst:cmds_def}Definition of the commands functor that
+    provides different branches of evolitution for zipper.}
 \end{code}
 
 So the \hask{Cmds} facilitates a tree of actions in conjunction with a
@@ -1587,11 +1593,11 @@ evolutionStrategy
   FreeT (Cmds w) m x
   -> m (Maybe (RstCmd w m x),Either (ZCoEpoch w,BndR w) x)
 \end{haskellcode}
-\label{lst:evolution_strategy}
-\caption{A function that each atnistenis opator needs to implement
-  that decides the traversal of the tree created by the different
-  possible evolutions of zipper. The implementation may also deem that
-  a good reset point has been discovered.}
+  \caption{\label{lst:evolution_strategy}A function that each
+    atnistenis opator needs to implement that decides the traversal of
+    the tree created by the different possible evolutions of
+    zipper. The implementation may also deem that a good reset point
+    has been discovered.}
 \end{code}
 
 This function navigates the tree in the way that is most beneficial to
@@ -1608,11 +1614,10 @@ leaf and return the leaf.
 
 An abridged example is presented in figure \ref{fig:cmds_tree}.
 
-\begin{figure}[H]
+\begin{figure}[p]
 \centering
 \includegraphics[width=\textwidth]{./imgs/cmds_tree.pdf}
-\label{fig:cmds_tree}
-\caption{A tree of different evolution paths a
+\caption{\label{fig:cmds_tree}A tree of different evolution paths a
   zipper may undergo during between the calling of a process and the
   accumulated bound exceeding the cap. \(p_0\), \(p_4\), \(p_3\) and
   \(p_4\) are subprocesses. The values returned, the specific
@@ -1702,8 +1707,8 @@ class BndRParams w => ZipperParams w where
   -- The type of the partial result
   type ZPartialRes w :: *
 \end{haskellcode}
-\label{lst:zipper_params}
-\caption{Operator specific types that need to be impolemented by every operator.}
+  \caption{\label{lst:zipper_params}Operator specific types that need
+    to be impolemented by every operator.}
 \end{code}
 
 \begin{code}
@@ -1717,8 +1722,11 @@ data MulTag p
 -- The witness type for logical And/Or
 data BoolTag op
 \end{haskellcode}
-  \caption{\label{lst:tag_types}Tags we implemented that are required
-    by FluiDB.}
+  \caption{\label{lst:tag_types}Tags are phantom types that define the
+    antisthenis operations. The tags themselves may be parameterized
+    using type parameter \hask{p}. For the needs of FluiDB we define
+    operations for addition, subtraction, multiplication and boolean
+    operations.}
 \end{code}
 
 The parametric part of the tags, especially for \hask{SumTag} and
@@ -1741,12 +1749,11 @@ requiring any further information.
 mkProc
   :: (Monad m,ZipperParams w,Eq (ZCoEpoch w)) => [ArrProc w m] -> ArrProc w m
 \end{haskellcode}
-\label{lst:mkproc}
-\caption{The type \hask{w} fully defines the operator so combining
-  subprocesses into a process is unumbiguous.}
+  \caption{\label{lst:mkproc}The type \hask{w} fully defines the
+    operator so combining subprocesses into a process is unumbiguous.}
 \end{code}
 
-\subsubsection{Compatibility}
+\subsubsection{Compatibility  between heterogeneous processes}
 
 The astute reader has likely noticed that \hask{w} is the parameter of
 both the subprocesses and the process. The reason is that a process
@@ -1772,15 +1779,13 @@ data Conv w w' =
   }
 convArrProc :: Monad m => Conv w w' -> ArrProc w m -> ArrProc w' m
 \end{haskellcode}
-\label{lst:conv_def}
-\caption{An object of type \hask{Conv w w'} can act as an interface
-  between parent processes of type \hask{w} to subprocesses of type
-  \hask{w'}.}
+  \caption{\label{lst:conv_def}An object of type \hask{Conv w w'} can
+    act as an interface between parent processes of type \hask{w} to
+    subprocesses of type \hask{w'}.}
 \end{code}
 
 
 \subsection{Basic cost operators}
-\label{sec:basic_cost_ops}
 
 General cost refers to minimum and sum operators with some special
 semantics:
@@ -1892,8 +1897,10 @@ def minimum_zipper_evolution(conf,zipper):
         else:
             conf = yield zipper.iter_procs.second_min().bound
 \end{pycode}
-\label{lst:min_zipper_evolution}
-\caption{Pseudocode for the algorithm of evaluating a process up to a threshold defined by the cap. For brevity and to avoid too much unnecessary detail we omit sanity checks and the reset handling code.}
+  \caption{\label{lst:min_zipper_evolution}Pseudocode for the
+    algorithm of evaluating a process up to a threshold defined by the
+    cap. For brevity and to avoid too much unnecessary detail we omit
+    sanity checks and the reset handling code.}
 \end{code}
 
 \subsubsection{Boolean conjunctions and disjunctions}
@@ -2115,7 +2122,7 @@ a machine is referenced while in the computational stack.
 
 We make the problem concrete with an example based on the graph in
 figure \ref{fig:recur_package}. A naive approach of dealing with
-recursive calls is demonstrated in figure \ref{fig:wrong} where
+recursive calls is demonstrated in figure \ref{subfig:comp_d_naive} where
 naive-Antisthenis looks for cycles by throwing errors (\(\bot\)) when
 encountering a node that is already in the computational
 stack. Evaluating node \(A\) Antisthenis first node \(B\) to 10. It
@@ -2124,60 +2131,61 @@ can therefore not yield a value and returns an error \(\bot\). Then,
 without changing any of the parameters the user tries to evaluate
 \(D\). Looking at the graph it is clear that \(D\) should in sequence
 evaluate to 15, as demonstrated by the evaluation process in figure
-\ref{fig:correct} (the reader is reminded that based on the assumption
+\ref{fig:comp_d_smart} (the reader is reminded that based on the assumption
 that all values refer to query evaluation costs we have asserted that
 \(min[a,\bot] \equiv a\)).
 
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.5\textwidth]{./imgs/recur_package.pdf}
-\label{fig:recur_package}
-\caption{A recursive cost graph where \(A\) is a minimum operator and}
-\end{figure}
 
+\newcommand{\newl}{\\ \ }
+\newcommand{\ev}{\!\!\Rightarrow\!}
+\newcommand{\comp}[3]{%
+  \left.\begin{array}{l}
+comp[#2] \!: \\
+\ #3 \\
+\end{array}\!\right] \ev #1%
+}
+\newcommand{\colw}{5cm}
+\begin{figure}[p]
+  \begin{subfigure}{0.9\linewidth}
+    \begin{tikzdiagram}
+      \tikzset{f /.tip = {Stealth[scale=2]}}
+    \tikzstyle{every node}=[ellipse,draw];
+    \node (a) at (0,0) {$A:=min[B,C]$};
+    \node (b) [below left=1cm and 0.5cm of a] {$B:=10$}
+      edge [f-] (a);
+    \node (d) [right=of a] {$D:=C+2$};
+    \node (c) [below right=1cm and 0.5cm of a] {$C:=A+3$}
+      edge [f-] [bend right=15] (a)
+      edge [-f] [bend left=15] (a)
+      edge [f-] (d);
+    \end{tikzdiagram}
+    \caption{\label{fig:recur_package}A recursive cost graph.}
+  \end{subfigure}
+  \begin{subfigure}{0.9\linewidth}
+    \[
+      \comp{\bot}{A}{
+        comp[B] \ev 10 \\
+        \comp{\bot}{C}{comp[A] \ev \bot}}
+    \]
+    \caption{\label{subfig:comp_a}Computation for \(A\)}
+  \end{subfigure}
 
-\todo{insert the figure}
-% \newcommand{\newl}{\\ \ }
-% \newcommand{\ev}{\!\!\Rightarrow\!}
-% \newcommand{\comp}[3]{
-% \left\!\begin{array}{l}
-% comp[#2] \!: \\
-% \ #3 \\
-% \end{array}\!\right] \ev #1
-% }
-% \newcommand{\colw}{5cm}
-\begin{figure}[H]
-TODO
-% \begin{tabular}{|p{\colw}|p{\colw}|}
-%   getCost[A] & getCost[D] (bad) \\
-%   \hline
-%   \comp{\bot}{A}{
-%     comp[B] \ev 10 \\
-%     \comp{\bot}{C}{comp[A] \ev \bot}}
-%   &
-%   \comp{\bot}{D}{
-%     comp[C] \ev \bot
-%   }
-% \end{tabular}
-\caption{\label{fig:wrong} The node \(C\) has cached a \(\bot\) even
-  though it is computable when computing \(D\).}
-\end{figure}
-
-\begin{figure}[H]
-  TODO
-% \begin{tabular}{|p{\colw}|p{7cm}|}
-%   getCost[A] & getCost[D] (good) \TBstrut\\
-%   \hline
-%   \comp{\bot}{A}{
-%     comp[B] \ev 10 \\
-%     \comp{\bot}{C}{comp[A] \ev \bot}}
-%   &
-%   \comp{10}{D}{
-%     \comp{10}{C}{
-%       \comp{10}{A}{
-%         comp[B] \ev 10 \\
-%         \ comp[C] \ev \bot}}}
-% \end{tabular}
+  \begin{subfigure}{0.4\linewidth}
+    \[
+      \comp{\bot}{D}{comp[C] \ev \bot}pp
+    \]
+    \caption{\label{subfig:comp_d_naive}Naive computation for \(D\)}
+  \end{subfigure}
+  \begin{subfigure}{0.4\linewidth}
+    \[
+    \comp{10}{D}{
+      \comp{10}{C}{
+        \comp{10}{A}{
+          comp[B] \ev 10 \\
+          \ comp[C] \ev \bot}}}
+  \]
+  \caption{\label{subfig:comp_d_smart}Computation for \(D\)}
+  \end{subfigure}
 \caption{\label{fig:correct} Node C is recomputed
  because the \(\bot\) value is predicated on \(A\) being in the computation stack.}
 \end{figure}
@@ -2230,8 +2238,8 @@ def run_submachine(node,conf):
     # confirmed.
     return (nxt,res,coepoch{predicates=coepoch.predicates.delete(node)})
 \end{pycode}
-\label{lst:algo_create_predicates}
-\caption{The algorithm for creating predicates.}
+  \caption{\label{lst:algo_create_predicates}The algorithm for
+    creating predicates.}
 \end{code}
 
 At the end of the computation Antisthenis goes through all the
