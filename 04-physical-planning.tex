@@ -14,54 +14,55 @@
 \end{summary}
 
 This chapter goes in detail about the architecture of the logical
-planing of a query. Query planni is based on an A*-like search
+planing of a query. Query planning is based on an A*-like search
 algorithm for through the space of partial plans. We initially
 describe the fundamental computational structures that facilitate this
 search and their unique properties that allow us the necessary
 flexibility. Then we discuss the basic backtracking algorithm and the
 way the graph is traversed. We move on to discussing the garbage
 collection that generates plan fragments that allow the plan to free
-up space in the underlying storage. Finally we talk about the cost
+up space in the underlying storage. Finally, we talk about the cost
 model that guides the evolution of the plan.
 
 \section{HCntT logic monad}
 
 The FluiDB planner is designed in terms of a backtracking search
-algorithm that searches in the space of subplans for an optimal (or
-good-enough) plan. Because the algorithm involves a lot of complicated
-heuristics it is important that a powerful underlying model is
+algorithm that searches in the space of subplans for an optimal 
+plan. Because the algorithm involves a lot of complicated
+heuristics it is important that a powerful underlying framework is
 deployed that matches the purely functional infrastructure in which
-FluiDB is written.  We require a monad that supports both weighted
-search and soft cuts. Because none of the solutions we dound in the
-literature support both we we developed the \hask{HCntT} backtracking monad
+FluiDB is implemented.  In particular, we require a monad that supports both weighted
+search and soft cuts. Because none of the solutions we found in the
+literature support both we developed the \hask{HCntT} backtracking monad
 that is described in this section.
 
 \subsection{Background}
 
 Monads for backtracking in a functional context have been proposed in
-various incarnateions.  The most common monad that encapsulates
+various incarnations.  The most common monad that encapsulates
 \hask{ListT m a = forall b . (a -> m b -> m b) -> m b -> m b}, also
 dubbed the Church encoding of lists or an application of the Cayley
-theorem on list, first proposed (in an untyped format in scheme) by
-\cite{haynesLogicContinuations1987}, but most authors cite
-\cite{hinzeDerivingBacktrackingMonad2000a} which seems to have
-redescovered an application of the concpetsin 2000, and also
-\cite{kiselyovBacktrackingInterleavingTerminating} who focused on a
+theorem on list. It was first proposed (in an untyped format in scheme) in
+\cite{haynesLogicContinuations1987} where they explicitly use it for implementing 
+a logic programming framewrk back in 1987, but most authors in the field cite
+\cite{hinzeDerivingBacktrackingMonad2000a} where the authors seem to have
+independently re-descovered an application of the concept in 2000, and also
+\cite{kiselyovBacktrackingInterleavingTerminating} where the authors focused on a
 notion of fairness in backtracking. As shown in
 \cite{kidneyAlgebrasWeightedSearch2021} this representation has
 \(O(n^2)\) BFS complexity.
 
-The other common representation of a list transformer, is the more
+The other common representation of a list monad transformer, is the more
 straightforward
 
 \begin{haskellcode}
 newtype ListT m a = ListT (Maybe (a,ListT m a))
 \end{haskellcode}
 
-Which mirrors precisely the idea behid MonadLogic from
+Which mirrors precisely the idea behind \hask{MonadLogic} from
 \cite{kiselyovBacktrackingInterleavingTerminating}. As demonstrated in
-listing \ref{lst:monad_logic} the MonadLogic able to cons(\hask{reflect})
-and uncons(\hask{msplut}).
+listing \ref{lst:monad_logic} the MonadLogic able to \hask{cons} (dubbed \hask{reflect})
+and \hask{uncons} (dubbed \hask{msplit}).
 
 \begin{code}
 \begin{haskellcode}
@@ -79,10 +80,12 @@ reflect Just (a,as) = pure a <|> as
 \end{code}
 
 In \cite{kiselyovBacktrackingInterleavingTerminating}, on top of this
-framework they build an \hask{interleave} and a monadic bind
+framework the authors build an \hask{interleave} and a monadic bind
 (\hask{>>-}) operator that works with it to make computation be
-slightly more "fair".  Interleaving is fair between two computations,
-when more than two are involved, half the time goes to the first
+slightly more "fair". In this context fair means that each of the branches 
+gets equal computation resources. Interleaving is in a certain sense 
+fair between two computations, but when more than two are involved, 
+half the time goes to the first
 computation, out of the half that is left, half (\(1/4\) of the total)
 goes to the second, out of the \(1/4\) left, half (\(1/8\)) goes to
 the third and so on. While this powerseries that describes the way the
@@ -94,6 +97,7 @@ code in listing \ref{lst:interl_logic_example} which does terminates
 due to the fact that while it does not give the same change to all the
 branches it does not completely starve any of them.
 
+% merge the listing as subfigures
 \begin{code}
 \begin{haskellcode}
 nonTerm :: [(Int,Int,Int)]
@@ -120,19 +124,19 @@ interleaveTest = runLogic @[] $ do
     it does not give all the processes}
 \end{code}
 
-So can we do better than terminating? Sometimes we can with weighted
-search. Weighted search refers to the backtracking search where we
-apply weights, or priority, to the branches. Branches with higher
+Can we do better than allowing for termination? Sometimes we can with \emph{weighted
+search}. Weighted search refers to the backtracking search where branches are
+weighted, or \emph{prioritized}, and branches with higher
 priority are scheduled before branches with lower priority. A sketch
 of the API is demonstrated in listing \ref{lst:halt_example}. The
 backtracking monad implements the \hask{halt} operation (called
 \hask{tell} in \cite{kidneyAlgebrasWeightedSearch2021}, presumably to
 echo the \hask{MonadWriter} interface) which accepts a value
 indicating the priority of the current branch and yields control to
-the scheduler. The scheduler then passes control to the highest
-priority branch. The value passed to \hask{halt} must implement a
+the scheduler. The scheduler then passes control to the branch with the highest
+priority. The value passed to \hask{halt} must implement a
 monoid such that the priority of a branch is the concatenation of all
-values passed to halt up to that point.
+values passed to \hask{halt} in that branch up to that point.
 
 \begin{code}
 \begin{haskellcode}
@@ -163,24 +167,29 @@ values passed to halt up to that point.
 With that in mind, for the FluiDB planner we require that our logic
 framework supports the following features:
 
-\textbf{Weighted search:} Not all plans that match our criteria, i.e. that
+\paragrph{Weighted search} 
+Not all plans that match our criteria, i.e. that
 solve the query within the space are equally admissible. We need to
 find as good plans as possible and we do not want the planner to spend
 time looking into plans that are unlikely to be efficient. For that
 reason neither breadth-first nor depth-first traversals are ideal for
 our purpose. We need a robust way to search in a weighted manner.
 
-\textbf{Soft-cut/either:} As we will see in more detail in the next section,
+\paragraph{Soft-cut/fallback} 
+As we will see in more detail in the next section,
 the planner is initially optimistic about being able to materialize a
-node until it hits the budget limit. If the budget turns out to be
-large enough FluiDB should completely disregard the the branch with
-the node should be completely forgotten about. The reason is that the
-later a GC happens the more options it will have and therefore the
-better job it will do. To achieve that we implement an operator we dub
-\hask{<//>} (pronounced \emph{eitherl}) which is similar to prolog's soft-cut.
+node until it hits the budget limit. If the node can not be materialized
+within the available budget, the branch fails and a new branch tries running 
+the garbage collector first and then trying to materialize the node.
+If the budget turns out to be large enough FluiDB should completely disregard the the latter branch. 
+The reason is that the later a GC pass happens the more options it will have and therefore the
+better job is likely to do w.r.t. deleting useless relations.
+To achieve that we implement the operator
+\hask{<//>} (pronounced \emph{fallback}) which is similar to prolog's soft-cut.
 
-\textbf{Once:} In the context of non-weighted search it is fairly
-straightforward to demand that a subcomputation yields no more than
+\paragrpah{Once} 
+In the context of non-weighted search it is fairly
+straightforward to implement an operator that demands that a sub-computation yields no more than
 one value (prolog's \hask{once}). Simply run the entire computation
 in-place requesting one result and if it doesn't fail return that
 result. This approach can still work with weighted but we would like
@@ -190,15 +199,14 @@ interleave this branch with other branches while preserving the
 semantics of \textbf{once}.
 
 None of the work we could find easily implements all the above
-features simuntaneous for the FluiDB planner so we implement yet
+features simultaneous for the FluiDB planner so we implement yet
 another backtracking monad transformer, \hask{HCntT}.
 
+\subsection{The \hask{HCntT} monad}
 
-\subsection{The HCntT monad}
-
-The \hask{HCntT} monad combines the powers of delimited continuations and
-much like \cite{kidneyAlgebrasWeightedSearch2021} it rsearches the
-result in layers (see listing \ref{lst:hcntt_def}).
+The \hask{HCntT} monad uses delimited continuations and, similarly to \cite{kidneyAlgebrasWeightedSearch2021} 
+it traverses the search space in a best first manner by running the 
+highest priority continuation available (see listing \ref{lst:hcntt_def}).
 
 \begin{code}
 \begin{haskellcode}
@@ -206,7 +214,7 @@ type HCntT h r m = ContT (HRes h m r)
   (ReaderT (HeapKey v)
    (StateT (CompState h r m) m))
 
-newtype HRes h m r = HRes (Tup2 (h (Brnch h r m)),[r])
+newtype HRes heap m r = HRes (heap (Brnch heap r m),[r])
 type Brnch h r m = ReaderT (HeapKey v)
   (StateT (CompState h r m) m) (HRes h m r)
 \end{haskellcode}
@@ -216,17 +224,15 @@ type Brnch h r m = ReaderT (HeapKey v)
     between branches.}
 \end{code}
 
-Here we use the continuation monad to capture the rest of the
-compuation and be able to access the final result from the scope of
-each operator. The result is represented as \hask{HRes} which is an
-intermediate layer of the continuation. Returning empty results should
-be passing. It contains a heap of halted branches and a list of
-concrete evaluated valies. The heap type is parametric to allow
+We define a recursive relationship between the monad within which the computation
+takes place --\hask{HCntT} -- and the value returned to the scheduler at 
+each step -- \hask{HRes}. In particular \hask{HRes} contains a priority queue
+(heap) of continuations and a set of final results. The heap type is parametric to allow
 flexibility with respect to how to best handle the particular key
 types (see listing \ref{lst:heap_def}). The heap is required to be stable,
 i.e. items with the same key are returned in the order they were
-inserted. The HeapKey \hask{mempty} must be less than (higher priority) all
-other \hask{HeapKey} s.
+inserted, and the \hask{HeapKey} \hask{mempty} must be higher priority than all
+other \hask{HeapKey}s.
 
 \begin{code}
 \begin{haskellcode}
@@ -243,22 +249,18 @@ class (forall v . Monoid (h v),Functor h,Monoid (HeapKey h),Ord (HeapKey h))
     the user to decide an efficient priority queue for the branches.}
 \end{code}
 
-A halted computation branch, denoted as \hask{Brnch} is simply a
-computation that evalautes to HRes. The computation must be able to
-interact with CompState as required by the infrastructure supporting
-\hask{<//>}.
-
 The \hask{HCntT} on its own is not a very useful object, it needs to
-be \emph{dissolved} so the values can be used. Disolution (listing
-\ref{lst:dissolve_func}) is the process of turning an HCntT value to a
+be \emph{dissolve}d to run the actual search. Dissolution (listing
+\ref{lst:dissolve_func}) is the process of turning an \hask{HCntT} value to a
 \hask{ListT} value. The \hask{ListT} will lazily produce just as many
 results as are required, and of course just as many effects as
 required, and not more. This indicates that the process of building
-comptuatins is composable but not incremental. The price of the
+computations is composable but not incremental. The price of the
 \hask{<//>} combinator that we described is that, unlike in other
 non-continuation based monad, once we start drawing results from the
 computation we can not apply further constraints on the resulting
-objects. Contrast that with the case of \hask{ListT} where we can draw
+objects, at least not in terms of the \hask{HCntT} object.
+Contrast that with the case of \hask{ListT} where we can draw
 the first couple of results and then use the rest in a different
 computation.
 
@@ -270,28 +272,27 @@ dissolve :: (IsHeap h,Monad m) => HCntT h r m r -> ListT m r
     turning an \hask{HCntT} computation into a \hask{ListT}.}
 \end{code}
 
-The way disolution works then (listing \ref{lst:dissovle_algo}) is to first
+The way dissolution works then (listing \ref{lst:dissovle_algo}), is to first
 commit to the computation constructed by applying the continuation and
-obtaining an \hask{HRes}. If \hask{HRes} provides concrete results they are
-yielded one by one into \hask{ListT}. Then, if the heap is not empty, the
-highest priority branch is popped and scheduled to run until it yields
+obtaining an \hask{HRes} object. If that object contains concrete results they are
+yielded one by one into the resulting \hask{ListT}. 
+Then, if the heap is not empty, the highest priority branch is popped and scheduled to run until it yields
 a new \hask{HRes}. The concrete results are yielded into \hask{ListT} and the
 new heap is combined with the old one. Scheduling a branch entails
-running the reader layer of the monad transformer using its pervious
-value. As we will see, halting the branch will update that value
-incrementally.
+running the reader layer of the monad transformer using its previous
+value. This is how the values provided to halt by the computation are accumulated within the branch.
+thereby incrementally updating the priority value.
 
-We use \hask{Tup2} (a functor that is simply \hask{data Tup2 = Tup2 a
-  a}) in the type of \hask{HRes} to allow us to be flexible on whether
-we use BFS or DFS search among the same-priority branches. As
-mentioned when describing the heap, a valid heap for \hask{HCntT} must
+As mentioned when describing the heap, a valid heap for \hask{HCntT} must
 be stable. While this is a weighted search, it remains a question of
-how the options that have the same priority should be ordered. If we
-had just one heap, appending the newly produced heaps to the left
+how the options that have the same priority should be ordered. 
+To avoid complicating things, up to this we have been implying that continuations are accumulated
+in a single heap. But
+with just one heap, appending the newly produced heaps to the left
 would make for a depth first traversal of the same-priority search
 space while appending on the right would result in a breath first
 traversal. We want the operators to have the flexibility to decide on
-which side each branch should be appended and for that reson the
+which side each branch should be appended. For that reason the
 \hask{HRes} actually contains two heaps: one appended to the left
 (DFS), and one to the right (BFS). This is of particular importance to
 the correct implementtion of \hask{<//>} as we will see shortly.
@@ -318,14 +319,14 @@ various combinators of \hask{HCntT}.
 
 The most fundamental combinator for any backtracking monad is the one
 splitting branches, the implementation of \hask{Alternative} or,
-equvalently in our case, \hask{MonadPlus}. The implementation for \hask{HCntT}
-is fairly straightforward (listing \ref{lst:alternative_impl} ) is fairly
-straightforward: for \hask{empty} or \hask{mzero}, which indicates failure of a
+its equivalently in our case, \hask{MonadPlus}. The implementation for \hask{HCntT}
+is fairly straightforward (listing \ref{lst:alternative_impl} ):
+for \hask{empty} or \hask{mzero}, which indicates failure of a
 branch, simply disregards the continuation and returns an empty
 \hask{HRes}. The \hask{mplus} or \hask{<|>} simply returns an \hask{HRes} with only the
-two alternative branches having maximum priority (i.e. \hask{mempty ::
-HeapKey h}) and bounded to the current continumation. Both those
-branches are pushed from the right so that they are scheduled before
+two alternative branches having maximum priority (i.e. \hask{mempty :: HeapKey h}) 
+and bounded to the current continuation. Both those
+branches are pushed from the left so that they are scheduled before
 other same-priority branches.
 
 \begin{code}
@@ -343,15 +344,15 @@ instance (IsHeap h,Monad m) => Alternative (HCntT h r m) where
 \end{code}
 
 
-\subsubsection{halt: passing control to the scheduler}
+\subsubsection{Halt: passing control to the scheduler}
 
 We mentioned the \hask{halt} \hask{HCntT} process. Because we want to
 be able to transform the \hask{HCntT} monad we define the class of
 \hask{MonadHalt} that can support this operation. Most common monad
-transformers of \hask{HCntT} can trivially support halt. The
+transformers of \hask{HCntT} can trivially support \hask{halt}. The
 implementation of \hask{halt} for \hask{HCntT} itself is demonstrated
 in listing \ref{lst:halt_class}. The provided priority is offset by the
-previous priority of the branch.
+previous priority of the branch using the \hask{ReaderT} monad transformer.
 
 \begin{code}
 \begin{haskellcode}
@@ -370,16 +371,16 @@ instance (Monad m,IsHeap h) => MonadHalt (HCntT h r m) where
 \end{code}
 
 
-\subsubsection{Soft-cut/eitherl}
+\subsubsection{Soft-cut/fallback}
 
-The \hask{<//>} (pronounced eitherl), \hask{left <//> right} runs the
+The \hask{<//>} (pronounced fallback), \hask{left <//> right} runs the
 left hand side operand (primary) and if no values are produced in the
 \emph{entire} computation based on that, only then does it try to
 evaluate the right hand side (fallback). \hask{HCntT} does not
-guarante that the right hand side will be scheduled immediately after
-it realizes that there are no solutions, but it does guarantee that it
-will be scheduled before it moves on to a new priority. In other words
-it is only guarantted that the priority of the fallback branch will
+guarantee that the right hand side will be scheduled immediately after
+the primary branch completely fails, but it does guarantee that it
+will be scheduled before it moves on to a new priority value. In other words
+it is only guaranteed that the priority of the fallback branch will
 tie the last failing branch of the left hand side in terms of
 priority, but if there are other branches that tie, there is no
 guarantee of how those will be scheduled.
@@ -390,78 +391,94 @@ implementing this:
 \begin{itemize}
 \item We want \hask{<//>} to operate on the entire operation, unlike
   \cite{kiselyovBacktrackingInterleavingTerminating} that makes the
-  decision o whether to run the fallback solely based on whther the
-  left hand side returns a value.
-\item In the context of a weightedx search control needs to be able to
+  decision on whether to run the fallback solely based on whether the
+  left hand side returns a value. For example in listing \ref{lst:holistic_fallback_example} 
+  the none of the branches of the fallback operator fail individually
+  but the entire branch fails for one of the two.
+\item In the context of a weighted search, control needs to be able to
   escape a branch that passes through the left hand side operand
   before it is exhausted. Therefore we can not simply dissolve the
-  left hand side and reconstruct it. But then how would the operator
+  left hand side and reconstruct it. However, then how would the operator
   know when the branches are exhausted?
 \end{itemize}
 
+\begin{code}
+\begin{haskellcode}
+comp = do
+  -- The left computation succeeds on its own  but the scheduler will
+  -- move on to the right branch because the branch fails later on. 
+  x <- return 0 <//> return 1
+  guard (x > 0)
+  return x
+\end{haskellcode}
+\caption{\label{lst:holistic_fallback_example}This computation will evaluate to \hask{1} because, while the computation \hask{return 0} always succeeds the branch fails.}
+\end{code}
+
 We solve these problems with the use of a special kind of branch we
-call a \emph{marker}, and a global state. Since branches are arbitrary
+call a \emph{marker}, and a global state that keeps track of all markers in the 
+branch heap. Since branches are arbitrary
 processes we equip them with access to global state (local to the
 computation), a lookup table (\hask{CompState}) full of fallback
-branches. The main ideas is that a fallback branch corresponds to an
-entry int the lookup table. This entry is modified accordingly by the
-children of the right hand side. At the time of the cut we push a
+branches (see figure \ref{fig:marker_branches}).
+The main idea is that a fallback branch corresponds to an
+entry in the lookup table. This entry is modified accordingly by the
+children of the right hand side. At the time of the cut, we push a
 marker into the heap with priority lower than the child branches so
-that when it is scheduled it will perform some checks based on the
+that when it is scheduled, it will perform some checks based on the
 lookup table entry and schedule the fallback function if all the
-children branches have finished whithout a result.
+children branches have finished without yielding a concrete result.
 
 We will see in a bit how the contents of the lookup table are updated
 and how new, lower priority markers are pushed in the heap. For now
 consider that each marker may be superseded by a lower priority marker
 rendering it a invalid. At any time there is exactly one valid marker
 per active fallback and it is denoted as such by the fallback entry in
-the lookup table. The rest of makers are invalid and should be
-equivalent to noops.
+the lookup table. The rest of the makers are invalid and should be
+equivalent to \texttt{noops}.
 
 More precisely about the internals of the marker processes, each one
 refers to a location in the lookup table via its closure. Also each
 marker is uniquely identifiable so each valid entry in the lookup
-table references one marker. Specifically the lowest priority one that
-corresponds to it. When the marker is scheduled it looks up the
+table references one marker. Specifically, the lowest priority one that
+corresponds to it. When the marker is scheduled, it looks up the
 fallback branch entry in the table and checks if the entry also refers
 to that marker. There are 3 possible scenaria that may play out at
 this point:
 
 \begin{itemize}
 \item The fallback entry in the table has been invalidated by a branch
-  that yielded a result. In this case the marker is invalid and just
+  that yielded a result. In this case, the marker is invalid and just
   returns.
 \item The fallback entry is valid but does not correspond to the
   scheduled marker. This means due to the left hand side branch
-  spawning low priority sub-branches, another marker has been inserted
+  spawning low priority subbranches, another marker has been inserted
   to (possibly) trigger the fallback at some time in the future. The
   current marker is invalid
 \item The fallback location is valid and corresponds to the scheduled
-  marker. This means that it is time fallback process needs to be run
+  marker. This means that the fallback process needs to be run
   and removed from the table.
 \end{itemize}
 
-But what is the lifecycle of the fallback entries? When an exprssion
+What is the lifecycle of the fallback entries? When an expression
 \hask{A <//> B} appears we create a new fallback entry in the lookup
 table containing \hask{B} and recursively "infect" all spawned
 sub-branches of \hask{A} to perform the following actions immediately
 after they generate new branches and results:
 
 \begin{itemize}
-\item If there is at least one valid result invalidate the fallback in
+\item If there is at least one valid result, invalidate the fallback in
   the lookup table and stop infecting child branches with the
   currently described hook.
 \item If the fallback is invalid it means there have already been
   valid results that rendered the fallback obsolete. Stop infecting
   sub-branches.
-\item If none of above happened check the priority of the last marker
-  corresponding to the fallback (registerd in the lookup table
+\item If none of the above happened, check the priority of the last marker
+  corresponding to the fallback (registered in the lookup table
   entry). If it is strictly lower than the lowest priority subbranch
-  do nothing because there is a well placed marker to handle
-  it. Otherwise create a new marker of the same priority as the lowest
+  do nothing because there is a well-placed marker to handle
+  it. Otherwise, create a new marker of the same priority as the lowest
   priority subbranch and put it in the right-append heap. This way we
-  know it will be scheduled AFTER the last branch relating to the
+  know it will be scheduled \emph{after} the last branch relating to the
   fallback.
 \end{itemize}
 
@@ -499,7 +516,7 @@ It is demonstrated in figure \ref{fig:marker_branches}
       \node[m] (m2)  {\(m_{2}\)}; \&
       \node[b] (b6)  {\(b_{6}\)}; \&
       \node[m] (m3)  {\(m_{3}\)}; \&
-      \node[b] (b8)  {\(b_{8}\)}; \&nppppnnn
+      \node[b] (b8)  {\(b_{8}\)}; \&
       \node[b] (b9)  {\(b_{9}\)}; \\
     };
     \draw [dotted,-stealth] (m1) to (rec_id);
@@ -512,38 +529,40 @@ It is demonstrated in figure \ref{fig:marker_branches}
   branch. Each marker gives the scheduler the opportunity to run a
   particular fallback branch. The entry of the fallback branch entry
   references the last marker so that only that one actually trigger
-  the fallback branch. A child branch that succeeds removres the
-  fallback entry so the final marker also fails to tigger the
+  the fallback branch. A child branch that succeeds removes the
+  fallback entry so the final marker also fails to trigger the
   fallback.}
 \end{figure}
 
-There are some optimizations that can be implemented to avoid too many
-lookups in the fallback table in the case of deep eitherl nesting that
+There are a few optimizations that can be implemented to avoid too many
+lookups in the fallback table in the case of deep fallback nesting that
 take advantage of the fact that new markers for outer fallbacks may
 only be created when new markers for inner fallbacks are
-created. However, for FluiDB we did not find \hask{CntT} to be too bad
-of a performance bottleneck so we leave it for a future iteration.
-
+created. However, for FluiDB we did not find \hask{CntT} to be a performance
+bottleneck so we leave it for a future iteration.
 
 \subsubsection{Once}
 
 The \hask{once} operator runs the argument computation and stops once it
 returns the first result. FluiDB uses \hask{once} to run the garbage
-collector without exploding the search space. Generally the different
-combinations of nodes that can be deleted is huge. We prune that by
-space by settling for the first result the planner can find.
+collector without exploding the search space, as the GC may have to search 
+an exponentially large large space of plan fragments. We prune that
+space by settling for the first result the planner can find and carefully crafting
+the GC such that it tries more robust plans first (see section \ref{sec:gc}).
 
-The way \hask{Once} is built on top of a concept we call a
-\emph{nested scheduler}. It takse a computation (the \emph{nested
-  computation}) and needs to know what to do in case of a success and
-in case of complete failure (no more branches to run). The nested
-scheduler is a process that \emph{always} returns a single case
-subbranch. This subbranch has the priority of the highest priority
-subbranch of the nested computation and when scheduled it internally
+The \hask{once} operator is built on top of a concept we call a
+\emph{nested scheduler} which is exactly what it sounds like.
+The nested scheduler is built from an \hask{HCntT} value (the \emph{nested computation}) 
+and needs to know what to do in case of a success and
+in case of complete failure (no more branches to run). 
+
+The nested scheduler then is a process that \emph{always} returns a single
+subbranch which has the priority of the highest priority
+subbranch of the nested computation. When scheduled, it internally
 schedules the next branch of the nested process. When the process
-yields results or fails completely the corresponding hook is
+yields results or completely fails, the corresponding hook is
 run. \hask{once} implements these hooks as "return the result and
-stop" and as "propagate the failure" respecively. Since the
+stop" and as "propagate the failure" respectively. Since the
 implementation of \hask{once} is fairly small it is provided along
 with the types in listing \ref{lst:once_def}.
 
@@ -564,21 +583,19 @@ once = nested (\_h r _rs -> HRes (Tup2 mempty mempty,[r])) emptyHRes
 \caption{\label{lst:once_def}The nested scheduler runs a subprocess within a single branch. Once is built on top of that to make sure the process stops once a result is returned.}
 \end{code}
 
-
 It is worth noting that nested schedulers are also applicable of
 implementing \hask{<//>}. In the marker-based implementation we are
-performing \(N\) lookups on the fields table, \(N\) being the nesting
+performing \(N\) lookups on the fields table, \(N\) being the number of active
 of \hask{<//>} operators. Implementing it using nested schedulers, on the
 other hand, means we are doing \(N\) pop/push pairs, one for each
-nested heap. For FluiDB we use a slighltly too general notion of a
-heap so we opt for the former.
+nested heap.
+
+\hline
 \section{The planner}
 \label{sec:planner}
 
-\subsection{Traversing the graph}
-
 The planner is the subsystem of FluiDB that given the state of the
-QDAG and a target node to be materialized produces a logical plan that
+QDAG and a target node to be materialized, produces a logical plan that
 will materialize the query.  Our notion of a logical plan is slightly
 more specific them what is commonly considered a logical plan,
 i.e. the RA representation of the query. In our case it is a sequence
