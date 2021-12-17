@@ -1,4 +1,6 @@
-\dictum[]{Something about accumulating relationships.}
+\dictum[Thorin]{Is there no end to this accursed forest? Somebody must climb
+a tree and have a look round. The only way is to choose the tallest
+tree that overhangs the path.}
 
 \begin{summary}
 \item FluiDB expresses queries in relational algebra and defines
@@ -1190,9 +1192,9 @@ It returns an \hask{NQNFResult} (listing \ref{lst:qnf_result}) contains
 
 \begin{itemize}
 \item A  named QNF which is the main payload of the QNF building function.
-\item A mapping between input and output QNF columns. When there is no direct mapping 
+\item A mapping between input and output QNF columns. When there is no direct mapping
  (like in the case of aggregations), this is an empty list.
-\item The RA operator that was provided as input with the expression atoms 
+\item The RA operator that was provided as input with the expression atoms
   translated to QNF names
   refering to the input or output columns. The way the names in the operator expressions are translated to
   \hask{QNFName}s is specific to each operator. For example,
@@ -1345,7 +1347,7 @@ they refer to the same column but that they are
 \emph{provenance-equivalent} when they refer to different columns but
 they are transformations of the same column, i.e., they would be
 represented by the same in a normal relational
-algebraic setting. 
+algebraic setting.
 
 In particular, each materialized n-node must have a precise
 schema that represents the order of columns. The identities of these
@@ -1382,7 +1384,7 @@ columns in the inserted operations in favor of column unique ids, how would the
 code generator know how to arrange the elements of each input tuple
 it encounters to generate the output tuple?
 
-To mitigate that, we use the internal operations of the QNF query builder. 
+To mitigate that, we use the internal operations of the QNF query builder.
 To build a cluster, we use as parameters a named normal form (a query in normal form and a
 mapping between the column names and column ids, along with an n-node for each input
 and output relation, and the operator with column references in terms

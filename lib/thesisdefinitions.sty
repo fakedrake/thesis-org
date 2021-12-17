@@ -213,7 +213,7 @@
 
 \RequirePackage{float}
 \RequirePackage{caption}
-\RequirePackage[outputdir=./build/,newfloat,draft=true]{minted}
+\RequirePackage[outputdir=./build/,newfloat,draft=false]{minted}
 \setminted{autogobble=true,breaklines=true,linenos=true}
 \RequirePackage{fontspec}
 \setmonofont{FiraCode}[Scale=0.7]
@@ -298,5 +298,9 @@
 \newcommand{\ord}{\mathit{order}}
 \newcommand{\cust}{\mathit{customer}}
 \newcommand{\nation}{\mathit{nation}}
+
+\newfontfamily\greekfont[Script=Greek, Scale=MatchUppercase, Ligatures=TeX]{Arial Unicode MS}
+\newcommand{\textgreek}[1]{\bgroup\greekfont\emph{#1}\egroup}
+\newenvironment{greek}{\bgroup\greekfont}{\egroup}
 
 \message{Hello world thesis!}

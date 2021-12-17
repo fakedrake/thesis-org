@@ -1,4 +1,8 @@
-\dictum[Antisthenis]{There is no horse, there is horses}
+\dictum[Antisthenes]{I can see a horse, and I can see a man; but
+  humanity and horsehood I cannot see.}
+
+\dictum[Plato]{You have the eye which sees a horse and a man; but the
+  eye which can see horsehood and manhood you have not.}
 
 \begin{summary}
 \item \emph{Antisthenis} is a system for incremental evaluation of
@@ -202,10 +206,10 @@ validity of its value while \(C\) should depend only on \(c_1\) and
 
 
 \section{Background}
-
+\begin{comment}
 In order to describe our model of self-adjusting computation we need
 to lay the groundwork by describing the basic model of computation as
-understood by ML like languages, and specifically Haskell. These
+understood by ML-like languages, and specifically Haskell. These
 languages define computations as first class values that have
 parametric types. A computation of type \hask{f a} can be understood
 as a computation that when executed would generate a value of type
@@ -603,18 +607,26 @@ data FreeT f m a = m (FreeF f a (FreeT f m a))
   \caption{\label{lst:free_def}A simple implementation of the free
     monad type.}
 \end{code}
+\end{comment}
 
 \subsection{Arrows and profunctors}
 
-So far we constructed our objects depending on an underlying category
-(Hask) provided by the programming language to get a basic notion of
-arrows that represent pure functions. This is a very opaque and
-inflexible kind of computation but a strong base on which to build
-ones better suited to our needs. In this subsection we will look at a
-generalization of this : arrows and profunctors.
+\begin{comment}
+  So far we constructed our objects depending on an underlying category
+  (Hask) provided by the programming language to get a basic notion of
+  arrows that represent pure functions. This is a very opaque and
+  inflexible kind of computation but a strong base on which to build
+  ones better suited to our needs. In this subsection we will look at a
+  generalization of this : arrows and profunctors.
 
 While describing the interfaces the various kinds of functors we
 already saw the following sub structures appearing in the types:
+\end{comment}
+
+The basic element of computation we have seen so far and described in
+the appendix [ref] related to the troika of functors, applicatives and
+monads. In the interfaces of those we found the sub-structures that
+relate their modification.
 
 \begin{itemize}
 \item \hask{a -> b} the normal pure function type. We take this for granted as
