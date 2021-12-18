@@ -38,18 +38,17 @@ class TraceLexer(RegexLexer):
 
     tokens = {
         'root': [
-            (r"(Inventory)(\s+)({)(\s*)",
+            (r'(Inventory)(\s+)({)(\s*)',
              bygroups(Keyword,Text,Operator,Text), 'inventory'),
-            (r"(Query)(\s+)(.*)(\s+)({)(\s*)",
+            (r'(Query)(\s+)(.*)(\s+)({)(\s*)',
              bygroups(Keyword,Text,Keyword.Namespace,Text,Operator,Text), 'query'),
             include('comment'),
             (r'\n',Text),
-            (r'...',Comment)
         ],
         'query': [
             (r'(Materialize)(\s*)(\[)(.*)(\])',
              bygroups(Name.Function, Text, Operator, Text, Operator)),
-            (r"(GC)(\s*)({)(\s*)", bygroups(Keyword,Text,Operator,Text),'gc'),
+            (r'(GC)(\s*)({)(\s*)', bygroups(Keyword,Text,Operator,Text),'gc'),
             (r',',Operator),
             (r':=',Operator),
             (r'}',Operator,'#pop'),

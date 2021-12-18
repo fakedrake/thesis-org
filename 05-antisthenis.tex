@@ -850,7 +850,7 @@ mealy arrow represents an incremental computation, every iteration is
 produced in such a way as to exploit information about the structure
 of the problem based the previous computation.
 
-For example a mealy arrow calculating a multiplication of several
+For example, a mealy arrow calculating a multiplication of several
 sub-arrows may want to try the ones that evaluated to zero in the
 previous iteration in order to exploit possible domain knowledge that
 nodes that are zero are likely to remain zero in future iterations.
@@ -973,7 +973,7 @@ categorical properties arising from the fact that they can implement a
 comonad interface \cite{uustaluComonadicFunctionalAttribute2005} but
 for our purposes we only need a rudamentary understanding of it.
 
-As an example consider the structure \hask{ListZipper}:
+As an example, consider the structure \hask{ListZipper}:
 
 \begin{haskellcode}
 data ListZipper =
@@ -1213,7 +1213,7 @@ the type of the function to be something similar to listing
 \ref{lst:comb_epoch_coepoch}. It is worth noting that if by this
 process we determine that a reset is required, a new coepoch is
 required and therefore there is no way to constrain the coepoch for
-the reset. In the example above if \hask{coepoch0 <> coepoch1} do not
+the reset. In the example above, if \hask{coepoch0 <> coepoch1} do not
 match the epoch, it is possible that re-evaluation of \(P_1\) will not
 yield \hask{BndRes 0} and thereby we would need to evaluate \(P_2\)
 including its coepoch to the aggregate.
@@ -1261,7 +1261,7 @@ evaluating the arguments and coming up with a tighter bound will still
 exceed the cap.
 
 There may be more requirements of the properties of a cap relate to
-the particular operator. For example the minimum operator requires
+the particular operator. For example, the minimum operator requires
 that bounds be translatable to caps and that if a bound \(b\) is
 translated to a cap \(c\) and \(b' \dot{<} c\) then \(b' < b\). This
 requirement is only related to the way the particular operator is
@@ -1363,18 +1363,18 @@ the state of the node (see figure \ref{fig:zipper}).
   evaluation has yielded a result bound is represented by a data
   strucutre that associates the iteration processes with
   \hask{initial} processes the bounds returned. Since these processes
-  that have yielded a e and need to be rerun with a different cap (see
-  section \ref{sec:caps_and_bounds}). It should be stressed that this
-  still acts like a heap of subprocesses where the internal properties
-  of the data structure decide the top element that is to be
-  popped. Since we have some information about the final result of
-  these processes, namely the bound, the parent process can be smart
-  about the order in which they are evaluated. As the particular
-  strategy is dependent on the operation implemented by the parent
-  process, the particular data structure used is also dependent on
-  said operation. For example a process implementing a sum between the
-  subprocesses stores them in a list as there is no beneficial order
-  in which to evaluate the subprocesses while minimum openration
+  that have yielded a value bound and need to be rerun with a
+  different cap (see section \ref{sec:caps_and_bounds}). It should be
+  stressed that this still acts like a heap of subprocesses where the
+  internal properties of the data structure decide the top element
+  that is to be popped. Since we have some information about the final
+  result of these processes, namely the bound, the parent process can
+  be smart about the order in which they are evaluated. As the
+  particular strategy is dependent on the operation implemented by the
+  parent process, the particular data structure used is also dependent
+  on said operation. For example, a process implementing a sum between
+  the subprocesses stores them in a list as there is no beneficial
+  order in which to evaluate the subprocesses while minimum openration
   benefits from evaluating the processes that have lower bounds first
   (for more details on the minimum oparation see section
   \ref{sec:basic_cost_ops}).
@@ -1439,15 +1439,16 @@ During computation, the subprocesses owned by the parent process are
 evaluated, and their iteration are then moved from the \hask{initials}
 set to the \hask{coiterations} set, with an intermediate stop in the
 \hask{iterations} set according to the values and strategies. These
-are further elaborated in the section on \hyperref[sec:antisthenis_ops]{the
-  section antisthenis operations}. The structure of \hask{iterator
-  set} is highly operator dependent and primarily geared towards
-efficiently evaluating the parent process, but fundamentally it does
-not compromise on the correctness of the operator. For example the if
-a process is combining elements of an abelian group (commutative,
-associative, invertible) and the bound has the same type as the result
--- as it is the case with addition -- the structure of the zipper is
-fairly straightforward:
+are further elaborated in the section on
+\hyperref[sec:antisthenis_ops]{the section antisthenis
+  operations}. The structure of \hask{iterator set} is highly operator
+dependent and primarily geared towards efficiently evaluating the
+parent process, but fundamentally it does not compromise on the
+correctness of the operator. For example, the if a process is
+combining elements of an abelian group (commutative, associative,
+invertible) and the bound has the same type as the result -- as it is
+the case with addition -- the structure of the zipper is fairly
+straightforward:
 
 \begin{itemize}
 \item the partial result maintains the aggregation of all values and
@@ -1520,20 +1521,20 @@ be either "appended" into the partial result if the new cursor is
 drawn from the initials set, or to replace the corresponding bound
 value if it is replaced with a value from the iterations set.
 
-\subsection{The \hask{Cmds} functor}
+\subsection{The Cmds functor}
 \label{sec:cmds_functor}
 
 As indicated in the section on zippers the process evolution is guided
-by moving the zipper focus to different subprocesses and then
+by shifting the zipper focus to different subprocesses and then
 evaluating them.
 
 A process is internally represented as a mealy arrow (introduced in
-section \ref{sec:mealy_arrows}) describing the evolution of a zipper
-(introduced in section \ref{sec:zipper}). An operator is allowed to
-follow a strategy defined specifically its \hask{ZipperParams} tag,
-but the function for evaluating said strategy applies to the
-\hask{ZProc} object. There are two important aspects to be noted about
-\hask{ZProc} (listing \ref{lst:zproc_def}).
+section \ref{sec:mealy_arrows}) describing the evolution of a
+\hask{ZProc} . An operator is allowed to follow a strategy defined
+specifically its \hask{ZipperParams} tag, but the function for
+evaluating said strategy applies to the \hask{ZProc} object. There are
+two important aspects to be noted about \hask{ZProc} (listing
+\ref{lst:zproc_def}).
 
 \begin{itemize}
 \item The return value is a zipper full of processes \hask{Zipper w
@@ -1592,7 +1593,7 @@ data ItInit r f a
 So the \hask{Cmds} facilitates a tree of actions in conjunction with a
 free monad .  We have talked about the free monad briefly, to recap a
 free monad of functor \hask{f} is actually many \hask{f} nested like
-\hask{f (f (f ... f (f a)))}. This means that \hask{FreeT Cmds m} is
+\hask{f (f (f ... f (f a)))}. This  that \hask{FreeT Cmds m} is
 an arbitrary depth tree of \hask{Cmds}. This tree is navigated in an
 operator specific way guided by the generic function
 \hask{evolutionStrategy} the type of which is presented in listing
@@ -1647,17 +1648,18 @@ An abridged example is presented in figure \ref{fig:cmds_tree}.
 \subsection{Resetting processes}
 \label{sec:process_resetting}
 
-In the subsection discussing the command functor we saw that it may
-include a reset process. Why create a reset process when reusing the
-initial process would reset the computation just as well? In any case
-a reset moves all the init parts of the elements of iteration set as
-well as the coiterations into the init set of the zipper. But in what
-order? From previous runs it is often apparent that some execution
-strategies are more likely to lead to a quick result than others. For
-example, under the assumption that processes change their values less
-often than they maintain them, while computing a logical AND operation
-(\(\land\)) we likely want to start the computation from processes
-that previously yielded \hask{False}.
+In subsection \ref{sec:cmds_functor} discussing the command functor we
+discussed that it may include a reset process. Why create a reset
+process when reusing the initial process would reset the computation
+just as well? In any case a reset moves all the init parts of the
+elements of iteration set as well as the coiterations into the init
+set of the zipper. But in what order? From previous runs it is often
+apparent that some execution strategies are more likely to lead to a
+quick result than others. For example, under the assumption that
+processes change their values less often than they maintain them,
+while computing a logical AND operation (\(\land\)) we likely want to
+start the computation from processes that previously yielded
+\hask{False}.
 
 To accommodate this, the \hask{Cmds} functor (introduced in section
 \ref{sec:cmds_functor}) can yield a reset point. While running a
@@ -2030,9 +2032,6 @@ of dereferences assuming the final value is \hask{True} and \(F(x)\)
 is the minimum number of dereference values assuming the final value
 is \hask{False}.
 
-
-
-
 \section{Node machines}
 
 A referrable machine is a process with a name that can be referenced
@@ -2046,10 +2045,10 @@ machines.
 
 \subsection{Antisthenis machine tape}
 
-The machine tape is a dynamic directory that maps nodes to
+The \emph{machine tape} is a dynamic directory that maps nodes to
 machines. The meaning of a node is dependent on the implementation, in
 the context of FluiDB nodes in this context correspond to the FluiDB
-internal graph nodes. The machine tape is part of the computation
+internal graph nodes.  The machine tape is part of the computation
 context and is updated by new and temporary values of machines (see
 section \ref{sec:cyclical_machines} on cyclic machines).
 
@@ -2072,50 +2071,52 @@ Since machines are referable by different other processes it means
 that, we need to be carful that more than one process do not own their
 own diverging copy of the same machine, essentially treating it as a
 process. To avoid this issue, processes referring to machines do so
-indirectly via a \textbf{machine wrapper process}. A machine wrapper is a
-process that does the exact same thing every time it is evaluated:
+indirectly via a \textbf{machine wrapper process}. A machine wrapper
+is a process that goes throught the same steps:
 
 \begin{itemize}
-\item it looks up a name in the tape
-\item it temporarily replaces it with a cyclical machine (see section
+\item look up a name in the tape
+\item temporarily replace it with a cyclical machine (see section
   \ref{sec:cyclical_machines})
+\item evaluate the machine that was just removed from the tape.
 \end{itemize}
 
-The machine tape evolves externally to each individual process and
-each process evolves within the tape itself. We implement it inside a
-state monad in the underlying Kleisli arrow. Thereby a recursive
-reference is formed between the tape and the machine.
+The machine tape state is managed via a state monad in the underlying
+Kleisli arrow. Thereby a recursive reference is formed between the
+tape and the machine.
+
 \subsection{Process stack}
 \label{sec:process_stack}
+
 Before we go further with the details of how exactly named machines
 are handled, it is important to make the discrimination between a
 process and a computation. In the context of Antisthenis a process, or
 in case it is named a machine, is the mealy machine that evolves
 during evaluation and survives between evaluations. On the other hand
 a computation is the part of the evaluation itself that refers to the
-particular machine. At the risk of getting too philosophical, a
-computation is the \textbf{relation} between the process and the value
-produced, regardless of whether that value is an actual result, a
-bound for a potential result or a witness to the non-computability of
-the result.
+particular machine. In a more abstract sense, a computation is the
+\emph{relation} between the process and the value produced, regardless
+of whether that value is an actual result, a bound for a potential
+result or a witness to the non-computability of the result.
 
 With this distinction in mind we introduce the notion of a process
-stack which is similar to the notion of a call stack in any
-programming language. The process stack contains all processes that
-have live computation. When a process is called, it is pushed to the
-process stack and when a result is returned it is popped from the
-process stack. The process stack is completely ephemeral, acyclic and
-should be completely empty between computations. In this sense it is
-part of the \textbf{computation context}, the sum of effects that
-affect each computation separately. The computation context may be
-implicit (like in the case of the process stack as we will see when
-discussing \hyperref[sec:cyclical_machines]{cyclical machines}) or
-explicit in the process' underlying Kleisli arrow.
+stack which is similar to the call stack in most programming
+languages. The process stack contains all processes that participate
+in the computation at any given moment. When a process is called, it
+is pushed to the process stack and when a result is returned it is
+popped from the process stack. The process stack is completely
+ephemeral, acyclic and should be completely empty between
+computations. In this sense it is part of the \emph{computation
+  context}, the set of effects that affect each computation
+separately. The computation context may be implicit (like in the case
+of the process stack as we will see when discussing cyclical machines
+in selction \ref{sec:cyclical_machines}) or explicit in the process'
+underlying Kleisli arrow.
 
 \subsection{Cyclical machines}
 \label{sec:cyclical_machines}
 
-By virtue of machines being referable by arbitrary other machines, it
+By virtue of machines being referrable by arbitrary other machines, it
 is possible, and certain in the case of FluiDB, that the Antisthenis
 machines will form referential cycles. Such cycles in most
 computational frameworks, especially ones that deploy a non-lazy order
