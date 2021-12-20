@@ -39,15 +39,15 @@ of FluiDB is an attempt to study some aspects of this question. In
 particular FluiDB is based on the following pillars:
 
 \begin{itemize}
-\item Reversible query operations that allow for more sophisticated
-  plans based on available materialized views.
-\item The planner involves a garbage collector that will delete
+\item Introduce reversible query operations that allow for more
+  sophisticated plans based on available materialized views.
+\item The planner itself involves a garbage collector that will delete
   materialized views or primary tables that can be materialized from
   the remaining relations.
-\item An incremental numeric evaluation system that allows the planner
-  to efficiently and repeatedly infer the cost of materializing
-  queries under a rapidly changing inventory of materialized views.
-\item Query execution driven based code generation.
+\item An incremental numeric evaluation system allows the planner to
+  efficiently and repeatedly infer the cost of materializing queries
+  under a rapidly changing inventory of materialized views.
+\item Query execution is based on code generation.
 \end{itemize}
 
 These concepts allow FluiDB to dynamically adapt the data layout to
@@ -101,9 +101,9 @@ some plan resembling the following following plan following:
 
 Notice how the selection (\(\sigma_{shipdate > 10-11-2015}\)) is
 pushed all the way to the bottom of the tree because it is a cheap
-operation (worst case a single scan over the input) and can
-potentially shrink the input by a lot rendering the joins higher in
-the tree much cheaper.
+operation (worst case a full scan over the input) and can potentially
+shrink the input by a lot rendering the joins higher in the tree much
+cheaper.
 
 
 Consider a workload that repeatedly runs a query generated from the
@@ -115,7 +115,7 @@ following template:
   where       l_orderkey = o_orderkey
   and         c_custkey = o_custkey
   and         c_nationkey = n_nationkey
-  and         l_shipdate > ${min_date}
+  and         l_shipdate > |${min_date}|
   group by    n_name
  \end{sqlcode}
 
@@ -174,13 +174,12 @@ view storage can quickly become a scarce resource.
 There is an opportunity to reduce the effect of this problem by
 exploiting another common workload attribute: certain tables are
 frequently subsumed by the same intermediate result. In our example
-workload \(\li\) is fully subsumed by \(\li \Join \ord\),
-\(\li \Join \ord \Join \cust\), and
-\(\li \Join \ord \Join \cust \Join \nation\). Similarly \(opreder\),
-\(\cust\), and \(\nation\) are fully or partially subsumed by these
-relations. It seems wasteful to always keep the rows of all primary
-tables separately \emph{and} concatenated in the rows
-\(\li \Join \ord \Join \cust \Join \nation\).
+workload \(\li\) is fully subsumed by \(\li \Join \ord\), \(\li \Join
+\ord \Join \cust\), and \(\li \Join \ord \Join \cust \Join
+\nation\). Similarly \(\ord\), \(\cust\), and \(\nation\) are fully or
+partially subsumed by these relations. It seems wasteful to always
+keep the rows of all primary tables separately \emph{and} concatenated
+in the rows \(\li \Join \ord \Join \cust \Join \nation\).
 
 In particular we can retrieve the rows of \(\li\) by projecting
 on the latter relation and deduplicating the resulting rows we can
@@ -223,7 +222,9 @@ example a plan taking into account amortized costs could be:
     }
 \end{minted}
   \caption{\label{fig:amortized_plan}A sequence of plans optimizing
-    the workload amortized cost and involving reverse operations.}
+    the workload amortized cost and involving reverse
+    operations. These queries are the same save for the predicate
+    \(p_i\) selecting \(\li\)}
 \end{figure}
 
 By incorporating reverse relational operations where possible FluiDB
@@ -242,22 +243,28 @@ they make no attempt to recycle tables, ie. garbage collect tables,
 whose data can be found in other relations, and narrows it's attention
 to aggregations.
 
+
+% TODO: rewrite: we are like
+% \cite{mistryMaterializedViewSelection2001} AND-OR but
+%
+% - bidirectional
+% - not only aggregations
+% - out contains complements
+% - Interleave GC when traversing
 From the aforementioned work we keep the basic notion of using a graph
-to represent the subsumption of queries and to derive the benefit of
-materializing a relation. We also use path finding techniques in that
-graph to create plans. However we introduce a more complex and ad-hoc
-hierarchy of relations to account for subsumptions the entire
-relational algebra, rather than just aggregations that is very similar
-to AND-OR dags as found in
-\cite{mistryMaterializedViewSelection2001}. Thereby we express for
-example the fact that \(\sigma_p(S)\) subsumes \(\sigma_{p \lor q}(S)\),
-or that \(B \Join C\) subsumes \(A \Join B \Join C\). Furthermore the
-relations we express in that graph are bidirectional. So rather than
-only finding paths towards the goal and deleting relations when they
-are no longer needed, we simultaneously plan for moving towards the
-goal query and performing "backwards" operations for saving up
-space. We clarify this with an example which demonstrates a slightly
-simplified version of our system's functionality.
+to represent relationships between queries and to derive the benefit
+of materializing a relation. We also use path finding techniques in
+that graph to create plans. However we introduce a more complex and
+ad-hoc hierarchy of relations to account for subsumptions the entire
+relational algebra, rather than just aggregations. That is very
+similar to AND-OR dags as found in
+\cite{mistryMaterializedViewSelection2001}.  Furthermore the relations
+we express in that graph are bidirectional. So rather than only
+finding paths towards the goal and deleting relations when they are no
+longer needed, we simultaneously plan for moving towards the goal
+query and performing "backwards" operations for saving up space. We
+clarify this with an example which demonstrates a slightly simplified
+version of our system's functionality.
 
 In figure \ref{fig:intro_selectexample} we provide representation of a
 subsumption graph that our RDBMS might create after witnessing
@@ -299,26 +306,27 @@ selections on \(\li\). For brevity let
   from \(\sigma_p \li\) and \(\sigma_{\neg p} \li\).  }
 \end{figure}
 
+% TODO: Benefit order: \sigma_q > \sigma_{p \land r} > \sigma_p >
+% \sigma_{\neg q} > ... > \li.
 
 The query that we are planning is
 \(\sigma_{quantity < 24} \sigma_{discount < .06} (\li)\), which
 is denoted in the figure as \(\sigma_{q \land r}(\li)\). Our
 total size budget is 2.5.
 
-Following the edges in the graph, to plan
-\(\sigma_{q \land r}(\li)\) we need \(\sigma_{q}(\li)\) and
-for that we need \(\li\). So first the union:
+Following the edges in the graph, to plan \(\sigma_{q \land r}(\li)\)
+we need \(\sigma_{q}(\li)\) and for that we need \(\li\) and is least
+beneficial. So first we plan the union
 
 \[
   \sigma_{\neg p}(\li) \cup \sigma_{p}(\li) \rightarrow \li
 \]
 
-Then we need \(\sigma_{q}(\li)\) but we are now using 2 units of
-space and adding .6 more would exceed our space budget of
-2.5. \(\li\) is the least beneficial of our materialized views
-but it is required for our next step, ie. creating
-\(\sigma_{q}(\li)\) . \(\sigma_{\neg p}(\li)\) is deleted
-since it's derivable from \(\li\) and is least beneficial. Then
+Then we need \(\sigma_{q}(\li)\) but we are now using 2 units of space
+and adding .6 more would exceed our space budget of 2.5. \(\li\) is
+the least beneficial of our materialized views but it is required for
+our next step, ie. creating \(\sigma_{q}(\li)\) . \(\sigma_{\neg
+p}(\li)\) is deleted since it's derivable from \(\li\). Then
 \(\sigma_{q}(\li)\) is created and now we are using 2.1 units of
 space.
 
@@ -372,6 +380,11 @@ represented as:
     the workload amortized cost and involving reverse operations.}
 \end{figure}
 
+% TODO: Paragraph: contenxt where it is important to strictluy manage
+% space: in-memory database. In that vain fluidb makes heavy use of of
+% code generation.
+
+% TODO: Chapter titles.
 This thesis describes in detail how we implemented a system targeted
 at performing this kind of reasoning to planning and executing
 queries. In chapter \ref{chapter:background} we provide a brief
