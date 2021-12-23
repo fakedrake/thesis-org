@@ -9,7 +9,8 @@
 In this thesis we coverd the important and interesting aspects of
 FluiDB. Implementing the system itself involved much work that is not
 covered in this thesis in order to not flood the reader with details
-that might remove focus from the important stuff. Some of these are:
+that might remove focus from the important aspects of the system. Some
+of these are:
 
 \begin{itemize}
 \item Implementation of a backtracking-based, caching pretty printing
@@ -20,7 +21,7 @@ that might remove focus from the important stuff. Some of these are:
 \end{itemize}
 
 Aside from those, in the introduction we discussed some examples where
-data layout can be radically adapted to the workload by making use of
+data layout can radically adapt to the workload by making use of
 reversible operations and integrating a garbage collector into the
 planner. We further introduced the relational database model and
 provided an overview of the various stages of query processing. We
@@ -49,10 +50,10 @@ supported by any similar weighted search framework.
 
 Based on \hask{HCntT} we describe the implementation of the physical
 planner that lies at the core of FluiDB. The physical planner uses an
-\(A^{\star}\)-like algorithm to traverse the QDAG in order to enumerate
-query plans that take. Query plan fragments are interleaved with GC
+\(A^{\star}\)-like algorithm to traverse the QDAG in order to
+enumerate query plans. Query plan fragments are interleaved with GC
 runs that produce sequences of table deletions when the planner
-detects that the storage budget is exceeded.
+detects that the storage budget would be exceeded.
 
 The decisions made by the planner are besd on computations that depend
 on the inventory of materialized relationions, namely variations of
@@ -85,29 +86,30 @@ that hurt performance.
 
 \section{Future perspectives}
 
-FluiDB steps into a new path towards \emph{truly} adaptive storage,
-but it does only a few steps. There are many interesting tangents to
-follow and may places where FluiDB does not take full advantage of the
-state of the art in database research.
+FluiDB steps into a new path towards what we believe to be a
+\emph{truly} adaptive storage, but it does only a few steps. There are
+many interesting tangents to follow and may places where FluiDB does
+not take full advantage of the state of the art in database research.
 
 Starting with the latter, the most important place where FluiDB can do
-better is cardinality estimation. As mention in section
+better is cardinality estimation. As mentioned in section
 (\ref{sec:size_estimation_problems}) FluiDB is very naive w.r.t. to
 how it estimates sizes. That said the propagator network structure
 used to estimate cardinalities can be augmented to propagate
 information about selectivity and statistics about each node. These
-statistice could be collected for every materialized intermediate
+statistics could be collected for every materialized intermediate
 relation to enrich the much needed information available during
 planning.
 
-Another low hanging fruit is parallelism. All plans that FluiDB
-produces are single threaded but there is no fundamental reason for
-that to be so. A simple data dependency analysis could reveal
-opportunities for parallelism and operators themselves could be easily
-replaced with parallel versions. A more difficoult but very
-interesting problem would be how to teach the planner to take this
-into account in order to produce plans that aren't just accidentally
-parallel, but are designed taking such speedups into account.
+Another low hanging fruit that can be exploited is parallelism. All
+plans that FluiDB produces are single threaded but there is no
+fundamental reason for that to be so. A simple data dependency
+analysis could reveal opportunities for parallelism and operators
+themselves could be easily replaced with parallel versions. A more
+complex but very interesting problem would be how to teach the planner
+to take this into account in order to produce plans that aren't just
+accidentally parallel, but are designed taking such speedups into
+account.
 
 Another important shortcoming of FluiDB as it was implemented is its
 complete lack of support for updates. There are heaps of literature to

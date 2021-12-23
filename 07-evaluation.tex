@@ -7,8 +7,8 @@
   space constraints and come up with plans that materialize
   intermediate results that are useful for future queries.
 \item FluiDB is generally faster than the baseline due to caching but
-  at times may be slower when it receives ``unexpected''
-  queries.
+  at times may be slower in individual queries when it receives
+  ``unexpected'' queries.
 \item FluiDB generally performs better when allowed larger memory
   budgets but this speedup is based on heuristic assumptiosn that
   sometimes break in interesting ways.
@@ -17,25 +17,13 @@
 We based our evaluation on the Star Schema Benchmarkx (SSB)
 \cite{barataOverviewDecisionSupport2015} which is a variation of
 TPC-H. Like TPC-H it models the data warehouse of a wholesale
-supplier. It is organized in four "flights" (groups):
-
-\begin{itemize}
-\item The first flight performs a single join between the Lineorder table
-and the small Date dimension table.
-\item Queries in Flight 2 join the Lineorder, Date, Part and Supplier
-tables. They aggregate and sort data on Year and Brand.
-\item Starting from a specific customer, supplier, region and date, flight
-3 selects into specific cities and years.
-\item Flight 4 is the most complex one, as it joins all tables.
-\end{itemize}
-
-Each flight contains 3 queries making a total of 12 distinct queries.
+supplier.
 
 As the name suggests these queries query a star schama. The star
 schema is derived from the TPC-H schema (figure \ref{fig:tpch_schema})
 by merging the \sql{linenumber}, \sql{orders} and
 \sql{partsupp} and completely dropped tables \sql{nation} and
-\sql{region} tables as shown in figure \ref{fig:ssb_tpch_schame}.
+\sql{region} tables as shown in figure \ref{fig:ssb_tpch_schema}.
 
 \begin{figure}[p]
 \begin{tikzdiagram}
@@ -81,6 +69,7 @@ by merging the \sql{linenumber}, \sql{orders} and
 \end{figure}
 
 
+% TODO: Present workloads to the appendix
 The particular queries contained in the workload are presented in
 listing [ref] in the appendix (\ref{chapter:appendix}).
 
@@ -127,18 +116,19 @@ workloads that do not include sub-second queries.
 \includegraphics[width=.9\linewidth]{./plans/io_perf_22000.pdf}
 \caption{\label{fig:min_budget_plot}
   The total page read/writes for each query a sequence of queries. The
-  SSB query number is \(mod(\text{query sequence},12\). The baseline
-  is the query being run by FluiDB directly without any materialized
-  nodes. The workload bars represent the cost of each query in a
-  workload built within the same QDAG. The budget for this is the
-  minimum budget within which FluiDB can run each individual query.}
+  baseline is the query being run by FluiDB directly without any
+  materialized nodes. The workload bars represent the cost of each
+  query in a workload built within the same QDAG. The budget for this
+  is the minimum budget within which FluiDB can run each individual
+  query.}
 \end{figure}
 
-It is clear from figure \ref{fig:min_budget_plot} that even at the minimum budget
-FluiDB is able to come up with an efficient plan at every case. In
-some cases, however the garbage collector is forced to delete tables
-that need to be recreated causing FluiDB to be sporadically less
-performant than the base case.
+Figure \ref{fig:min_budget_plot} demonstrates that FluiDB running a
+workload versus runing individual queries causes significant speedups
+even in constrained budgets. In some cases, however the garbage
+collector is forced to delete tables that need to be recreated later
+in the workload causing FluiDB to be sporadically less performant than
+the base case.
 
 For a larger budget the FluiDB is able to store more useful
 intermediate results as demonstrated in figure \ref{fig:large_budget_plot}
@@ -149,22 +139,24 @@ intermediate results as demonstrated in figure \ref{fig:large_budget_plot}
 
 \caption{\label{fig:large_budget_plot}
   The total page read/writes for each query a sequence of queries. The
-  SSB query number is \(mod(\text{query sequence},12)\). The baseline
-  is the query being run by FluiDB directly without any materialized
-  nodes. The workload bars represent the cost of each query in a
-  workload built within the same QDAG. The budget for this is triple
-  the minimum budget within which FluiDB can run each individual
-  query.}
+  baseline is the query being run by FluiDB directly without any
+  materialized nodes. The workload bars represent the cost of each
+  query in a workload built within the same QDAG. The budget for this
+  is triple the minimum budget within which FluiDB can run each
+  individual query.}
 \end{figure}
 
 An interesting point here is the plan for evaluating query 8 is more
-expensive in the workload run under laxer budgetary constraints. This is strange
+expensive in the workload run under laxer budgetary constraints. This
+may seem starange but it is an example demonstrative of the
+fundamental operation of FluiDB.
 
+% TODO: Provide the plans we are talking about.
 The top level explanation is that the lax-budget plan needs to
 evaluate \(\mathit{lineorder}\) via the reverse trigger of a join as
 it was deleted during evaluation of query 7. Mysteriously during the
 strict-budget planning the \(\mathit{lineorder}\) relation is readily
-available during planning of query 8! The key is slightly earlier in
+available during planning of query 8! The key lies slightly earlier in
 the workload. FluiDB, materializes in query 5 all the join
 
 \[
@@ -172,42 +164,44 @@ Q := \mathit{supplier} \Join_{\mathit{lo\_suppkey} = \mathit{s\_suppkey}} \mathi
 \]
 
 and corresponding antijoins \(Q_1\) and \(Q_2\) making the node
-\(\mathit{lineorder})\) deletable. However, when running the workload
+\(\mathit{lineorder}\) deletable. However, when running the workload
 under strict budgetary constraints, it is forced to garbage collect
 shortly after materializing said join at a moment while both \(Q\) and
-\(\mathit{lineorder})\) are protected (see section \ref{sec:gc} on
+\(\mathit{lineorder}\) are protected (see section \ref{sec:gc} on
 garbage collection). Therefore, FluiDB is forced to delete both
-\(Q_1\) and \(Q_2\). This makes \(\mathit{lineorder})\) non-deletable
+\(Q_1\) and \(Q_2\). Making \(\mathit{lineorder}\) non-deletable
 when planning for query 5 finishes.
 
 On the other hand, whith laxer budgetary constraints, no garbage
 collection is triggered during query 5. In fact the next garbage
 collection is triggered during query 7, at a moment when
-\(\mathit{lineorder})\) is deletable, unprotected, and a prime
+\(\mathit{lineorder}\) is deletable, unprotected, and a prime
 candidate for deletion based on the GC heuristics.
 
-Alas, when query 8 requires \(\mathit{lineorder})\) for its plan,
+Alas, when query 8 requires \(\mathit{lineorder}\) for its plan,
 FluiDB needs to re-construct it in the case of lax budgetary
 constraints but, not in the case of strict constraints.
 
 This example of FluiDB being force to locally produce more expensive
-plans is an of FluiDB being more opportunistic the lower the available
-budget is, and more adventurous when operating with high budgets. When
-FluiDB is frugal it is generally prone to miss oportunities to share
-computation between queries. There are times however that this
-fugality saves it from bad heuristic-based decisions that it is
-allowed to make otherwise.
+plans is an effect of FluiDB being more opportunistic the lower the
+available budget is, and more adventurous when operating with high
+budgets. When FluiDB is frugal it is generally prone to miss
+oportunities to share computation between queries. There are times
+however that this fugality saves it from bad heuristic-based decisions
+that it is allowed to make otherwise.
 
 FluiDB aspires to deal with the entire workload as if it were planning
 a single query. While any decision during the planning of a single
-query can be undone, FluiDB is tragically forced to commit to whatever
-adveturous or conservative decisions it makes at the end of every
-planning iteration, doomed to pay dearly for every misstep but to reap
-the rewards of every insightful choice.
+query can be scrapped in the backtracking process, FluiDB is
+tragically forced to commit to whatever adveturous or conservative
+decisions it makes at the end of every planning iteration, doomed to
+pay dearly for every misstep but to reap the rewards of every
+insightful choice.
 
+% TODO: Maybe skip this section?
 \section{A note on size estimation}
 \label{sec:size_estimation_problems}
-The size of the budget may feen fairly excessive for the size required
+The size of the budget may seem fairly excessive for the size required
 for the primary tables. To understand why that is we need to look at
 the largest nodes in the QDAG:
 
@@ -226,18 +220,21 @@ Pages & Expr\\
 
 From looking at those nodes it seems that a sufficiently advanced
 garbage collector should be able to support plans that materialize the
-nodes in about half the budget as fluidb should have been able to plan
+nodes in about half the budget as FluiDB should have been able to plan
 the query needing around double the pages of the largest equijoin
 which for us is customer date lineorder.
 
 The main issue however, as it is with many query prolcessing systems
 \cite{leisHowGoodAre2015}, is the cardinality estimator. With a more
-sophisticated cardinality estimator the required pages.
-
-The main issue with the cardinality estimator is that it assumes that
-a natural join there are no foreign key lookup failures, that is, that
-all natural joins are extension joins. Therefore
+sophisticated cardinality estimator the required pages. Which assumes
+that in a natural join there are no foreign key lookup failures, that
+is, that all natural joins are extension joins. Therefore
 
 \[
 \lvert \sigma _{p(customer)} (customer \Join (date \Join lineorder)) \rvert = \lvert (\sigma _{p(customer)} customer \Join (date \Join lineorder)) \rvert
 \]
+
+
+This causes FluiDB to vastly overestimate the size of plans that have
+selections pushed down making these plans disproportionately
+unappealing

@@ -1038,6 +1038,7 @@ in sections \ref{sec:antisthenis_ops} on operators and
 \ref{sec:antisthenis_machines} on named processes.
 
 \subsection{Processes}
+\label{sec:antisthenis_processes}
 
 An Antisthenis process is a node in the evaluation graph and it is
 built using the concepts described so far in order to implement the
@@ -1381,15 +1382,19 @@ the subprocess.
 \label{sec:zipper}
 We saw in the introduction on Antisthenis
 (\ref{sec:antisthenis_intro}) what a zipper is in general. Here we
-will specialize the notion of a section for the specific case of the
-internal state of the computation. A single process is defined by an
-operator, the subprocesses and a partial result for the
-computation. The process evolves by evaluating a subprocess at a
-time. We define a zipper structure that focuses on a the particular
-process to be evaluated and arranges the reset of the subprocesses in
-such a way that moving around in the datastructure we focus on the
-next subrpocess to be evaluated. The internal structure of the zipper
-helps Antisthenis decide on the next subprocess to be evaluated.
+will specialize the notion for the specific case of the internal state
+of the computation. A single process is defined by an operator, the
+subprocesses and a partial result for the computation. The process
+evolves by evaluating a subprocess at a time. We define a zipper
+structure that
+
+\begin{itemize}
+\item focuses on the particular process to be evaluated next.
+\item arranges a recet process that restarts the evaluation from a
+  state that possibly takes into account information about the
+  previous evaluation, for example by starting evaluation from a
+  subprocess that previously yileded an absorbing element.
+\end{itemize}
 
 With this in mind we define the zipper data structure keeps track of
 the state of the node (see figure \ref{fig:zipper}).
@@ -1417,16 +1422,18 @@ the state of the node (see figure \ref{fig:zipper}).
   benefits from evaluating the processes that have lower bounds first
   (for more details on the minimum oparation see section
   \ref{sec:basic_cost_ops}).
-\item Coiteration processes are processes that have been evaluated and
-  yielded a concrete e (error or result), ie a value that is
-  predicated on the epoch (see section \ref{sec:epochs_coepochs}) but
-  can not be refined by re-evaluating the process with a different cap
-  . Upon reset the coiteration
+
+\item \emph{Coiteration processes} are processes that have been
+  evaluated and yielded a concrete e (error or result), ie a value
+  that is predicated on the epoch (see section
+  \ref{sec:epochs_coepochs}) but can not be refined by re-evaluating
+  the process with a more permissive cap. Upon reset the coiteration
   stack is ordered in an operator specific way and moved to the init
   stack.
-\item A cursor that is the next machine to be triggered along with a
-  way to reset it and the previous value
-\item A partial value to which values can be inserted or removed. The
+\item A \emph{cursor} that is the next process to be triggered along
+  with a way to reset it and the previous value
+\item A \emph{partial} value to which values can be inserted or
+  removed (for example the sum accumulated up to that point). The
   partial value does \emph{not} include the value stored in the
   cursor.
 \end{itemize}
@@ -1476,18 +1483,17 @@ the state of the node (see figure \ref{fig:zipper}).
 
 During computation, the subprocesses owned by the parent process are
 evaluated, and their iteration are then moved from the \hask{initials}
-set to the \hask{coiterations} set, with an intermediate stop in the
-\hask{iterations} set according to the values and strategies. These
-are further elaborated in the section on
-\hyperref[sec:antisthenis_ops]{the section Antisthenis
-  operations}. The structure of \hask{iterator set} is highly operator
-dependent and primarily geared towards efficiently evaluating the
-parent process, but fundamentally it does not compromise on the
-correctness of the operator. For example, the if a process is
-combining elements of an abelian group (commutative, associative,
-invertible) and the bound has the same type as the result -- as it is
-the case with addition -- the structure of the zipper is fairly
-straightforward:
+set to the \hask{coiterations} set, possibly with an intermediate stop
+in the \hask{iterations} set according to the values and
+strategies. These are further elaborated in the section on section
+\ref{sec:antisthenis_ops} on Antisthenis operations. The structure of
+\hask{iterator set} is highly operator dependent and primarily geared
+towards efficiently evaluating the parent process, but fundamentally
+it must not compromise on the correctness of the operator. For
+example, the if a process is combining elements of an abelian group
+(commutative, associative, invertible) and the bound has the same type
+as the result -- as it is the case with addition -- the structure of
+the zipper is fairly straightforward:
 
 \begin{itemize}
 \item the partial result maintains the aggregation of all values and
@@ -1504,7 +1510,9 @@ straightforward:
 At the other end of the spectrum, a process evaluating a magma (a set
 with a closed binary operation), where the binary operator has no
 properties besides closure, must never push anything to the iterations
-set. The set is equivalent to unit.
+set. The set is equivalent to unit (\(\emptyset\)), and the cursor is
+forced to yield a concrete result or an error by being run with a
+\hask{ForceResult} cap.
 
 As promised we will expand on these in section
 \ref{sec:antisthenis_ops} on Antisthenis operators but to make the
@@ -1553,7 +1561,7 @@ type Zipper w p = Zipper' w Identity p (ZPartialRes w)
   \caption{\label{lst:zipper_def}The definition of the zipper.}
 \end{code}
 
-Finally, the operator defines the partial result type of the zipper
+Finally, each operator defines the partial result type of the zipper
 \hask{ZPartialRes} and functions for putting and replacing values in
 it. When the subprocess on the cursor is evaluated the result needs to
 be either "appended" into the partial result if the new cursor is
@@ -1569,11 +1577,13 @@ evaluating them.
 
 A process is internally represented as a mealy arrow (introduced in
 section \ref{sec:mealy_arrows}) describing the evolution of a
-\hask{ZProc} . An operator is allowed to follow a strategy defined
-specifically its \hask{ZipperParams} tag, but the function for
-evaluating said strategy applies to the \hask{ZProc} object. There are
-two important aspects to be noted about \hask{ZProc} (listing
-\ref{lst:zproc_def}).
+\hask{ZProc} which is transformed into the Antistehnis process
+described in section \ref{sec:antisthenis_processes} by following the
+strategy in which the \hask{Zipper} is meant to evolve. An operator is
+allowed to follow a strategy defined specifically its
+\hask{ZipperParams} tag, but the function for evaluating said strategy
+applies to the \hask{ZProc} object. There are two important aspects to
+be noted about \hask{ZProc} (listing \ref{lst:zproc_def}).
 
 \begin{itemize}
 \item The return value is a zipper full of processes \hask{Zipper w
@@ -1630,13 +1640,12 @@ data ItInit r f a
 \end{code}
 
 So the \hask{Cmds} facilitates a tree of actions in conjunction with a
-free monad .  We have talked about the free monad briefly, to recap a
-free monad of functor \hask{f} is actually many \hask{f} nested like
-\hask{f (f (f ... f (f a)))}. This  that \hask{FreeT Cmds m} is
-an arbitrary depth tree of \hask{Cmds}. This tree is navigated in an
-operator specific way guided by the generic function
-\hask{evolutionStrategy} the type of which is presented in listing
-\ref{lst:evolution_strategy}.
+free monad .  A free monad of functor \hask{f} is actually many
+\hask{f} nested like \hask{f (f (f ... f (f a)))}. This that
+\hask{FreeT Cmds m} is an arbitrary depth tree of \hask{Cmds}. This
+tree is navigated in an operator specific way guided by the generic
+function \hask{evolutionStrategy} the type of which is presented in
+listing \ref{lst:evolution_strategy}.
 
 \begin{code}
 \begin{haskellcode}
@@ -1666,7 +1675,7 @@ leaf and return the leaf.
 
 An abridged example is presented in figure \ref{fig:cmds_tree}.
 
-\begin{figure}[p]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{./imgs/cmds_tree.pdf}
 \caption{\label{fig:cmds_tree}A tree of different evolution paths a
@@ -1690,7 +1699,7 @@ An abridged example is presented in figure \ref{fig:cmds_tree}.
 In subsection \ref{sec:cmds_functor} discussing the command functor we
 discussed that it may include a reset process. Why create a reset
 process when reusing the initial process would reset the computation
-just as well? In any case a reset moves all the init parts of the
+just as well? In every case a reset moves all the init parts of the
 elements of iteration set as well as the coiterations into the init
 set of the zipper. But in what order? From previous runs it is often
 apparent that some execution strategies are more likely to lead to a
@@ -1704,36 +1713,21 @@ To accommodate this, the \hask{Cmds} functor (introduced in section
 \ref{sec:cmds_functor}) can yield a reset point. While running a
 process we maintain in the lexical scope of the mealy arrows
 computation the latest reset process to switch to when the
-\hyperref[sec:epochs_coepochs]{epoch/coepoch} comparison requires as
-much. When generating a \hask{Cmds} functor, the operator has the
-option to implement the \hask{bgsReset} that resets a running zipper
-that is at an arbitrary state. The signature and default
-implementation are below:
-
-\begin{haskellcode}
-bgsReset :: ZipState w a -> ZipState w a
-bgsReset bgs =
-  mkGgState
-  $ bgsInits bgs
-  ++ (snd <$> toList (bgsIts bgs))
-  ++ (snd <$> bgsCoits bgs)
-\end{haskellcode}
+epoch/coepoch comparison requires as much. When generating a
+\hask{Cmds} functor, the operator has the option to provide a reset
+process that resets a running zipper that is at an arbitrary state.
 
 \section{General operators}
 \label{sec:antisthenis_ops}
 
 While describing the core concepts of Antisthenis we often dealt with
 functionality that is operator specific. Indeed, a large part of
-Antisthenis depends on operator specific logic. We define operators at
-three levels, each refining the previous. The lower levels are
-parameterized by the higher ones.
-
-The lowest level is reified as an uninhabited type, or tag, witnessing
-the implementation of \hask{ZipperParams}. This implementation would
-be build a workable Antisthenis type. The operator specific types are
-presented in listing \ref{lst:zipper_params}. We have implemented a few types
-in Antisthenis to cover the needs of FluiDB (see listing
-\ref{lst:tag_types}).
+Antisthenis depends on operator specific logic. We reify operators via
+uninhabited types that instantiate the \hask{w} parameter of many
+types we mentioned so far (\hask{BndR w}, \hask{Zipper w _},
+\hask{ArrProc w m}, etc). We refer to these types as ``tags''. We have
+implemented a few tags in Antisthenis to cover the needs of FluiDB
+(see listing \ref{lst:tag_types}).
 
 
 \begin{code}
@@ -1809,15 +1803,17 @@ mkProc
 \subsubsection{Compatibility  between heterogeneous processes}
 
 The astute reader has likely noticed that \hask{w} is the parameter of
-both the subprocesses and the process. The reason is that a process
-expects to see a specific type of coepoch and bound returned by its
-subprocesses, while the subprocess must be able to deal with the epoch
-and cap that the parent process is defined for. To do that we avoid
-defining an \(N \times N\) correspondence between all the epochs, but
-rather we define ad hoc a record that facilitates the conversion, the
-type of which is presented in listing \ref{lst:conv_def}. This way we
-can compartmentalize the translation among operators from the internal
-logic of the operators.
+both the subprocesses and the process even though they may be
+different operators for example the operands of a min are themselves
+sum expressions in FluiDB cost estimation). The reason is that a
+process expects to see a specific type of coepoch and bound returned
+by its subprocesses, while the subprocess must be able to deal with
+the epoch and cap that the parent process is defined for. To do that
+we avoid defining an \(N \times N\) correspondence between all the
+operators, but rather we define ad hoc a record that facilitates the
+conversion, the type of which is presented in listing
+\ref{lst:conv_def}. This way we can compartmentalize the translation
+among operators from the internal logic of the operators.
 
 \begin{code}
 \begin{haskellcode}
@@ -1838,26 +1834,17 @@ convArrProc :: Monad m => Conv w w' -> ArrProc w m -> ArrProc w' m
 \end{code}
 
 
-\subsection{Basic cost operators}
+\subsection{Basic cost estimation operators}
+\label{sec:basic_cost_ops}
 
-General cost refers to minimum and sum operators with some special
-semantics:
+General cost estimation involves minimum and sum operators with some
+special semantics:
 
 \begin{itemize}
 \item Non-computable values are larger than any value from the
   perspective of minimum.
 \item All values are positive (therefore all values are implicitly
   bounded by \([0 - \epsilon)\)
-\end{itemize}
-
-The minimum operation computes the minimum of the argument
-operations.
-
-\begin{itemize}
-\item Iteration data structure of the minimum is a heap-like structure
-  where we can peek at the top element and look into the secondary one
-  and it also contains the value derived from the s encountered.
-\item Zipper cursor always contains the most promising.
 \end{itemize}
 
 \subsubsection{Sum}
@@ -1879,29 +1866,30 @@ arguments are also evaluated under \hask{ForceResult}. Of course if
 \(c_{parent} > r_{partial} + b_{cursor}\) then \(r_{partial} +
 b_{curopr}\) is returned as the result bound.
 
-\subsubsection{Multiplication}
+\begin{comment}
+  \subsubsection{Multiplication}
 
-Multiplication is not used by FluiDB but is implemented in Antisthenis
-nonetheless as a reference because it is fairly simple and yet it
-implements exploits many of the features of Antisthenis. The
-multiplication goes through all the initial subprocesses capping them
-at zero until one of them returns a concrete result of zero in which
-case the final result is also zero. Because a bound returned by a
-process is strictly greater than the cap all the iterating results are
-guaranteed to not be absorbing elements. Then multiplication proceeds
-in the same way as addition does only multiplying instead of adding:
+  Multiplication is not used by FluiDB but is implemented in Antisthenis
+  nonetheless as a reference because it is fairly simple and yet it
+  implements exploits many of the features of Antisthenis. The
+  multiplication goes through all the initial subprocesses capping them
+  at zero until one of them returns a concrete result of zero in which
+  case the final result is also zero. Because a bound returned by a
+  process is strictly greater than the cap all the iterating results are
+  guaranteed to not be absorbing elements. Then multiplication proceeds
+  in the same way as addition does only multiplying instead of adding:
 
-\[
-c_{subproc} := c_{parent} / r_{partial}
-\]
-
+  \[
+    c_{subproc} := c_{parent} / r_{partial}
+  \]
+\end{comment}
 \subsubsection{Minimum}
 
 Much like the sum operator, the minimum operator implementation also
-assumes that it is manipulating cost types, and it is used in
+assumes that it is manipulating cost values, and it is used in
 conjunction with the sum operator to define our cost evaluations. The
 operation of the minimum Antisthenis operator depends heavily upon the
-iterator set which has the interface of a heap. The zipper evolution
+iteration set which has the interface of a heap. The zipper evolution
 stategy is described by the pseudo-python code in listing
 \ref{lst:min_zipper_evolution}
 
@@ -1959,35 +1947,48 @@ def minimum_zipper_evolution(conf,zipper):
 \subsubsection{Boolean conjunctions and disjunctions}
 
 Antisthenis implements operators for boolean conjunction and
-disjunction in order to be able to answer the question of whether a
-node is materializable in the presence of a specific inventory of
-materialized nodes. Booleans are different to the other operations in
-how they handle caps. Boolean \(\land\) and \(\lor\) do not use the
-same type for caps and bounds as for results. Instead the bound is a
-two dimensional value that represents the minimum number of steps
-required to arrive to each possible value (\hask{True} or
-\hask{False}).
+disjunction to answer the question of whether a node is materializable
+in the presence of a specific inventory of materialized
+nodes. Booleans are different to the other operations in how they
+handle caps. Boolean \(\land\) and \(\lor\) do not use the same type
+for caps and bounds as for results. Instead the bound is a two
+dimensional value that represents the minimum number of steps required
+to arrive to each possible value (\hask{True} or \hask{False}).
 
-To efficiently evaluate boolean algebra expressions we make look for
-absorbing elements, which this time demonstrates how absorbing
-elements can be exploited to prune the expression tree, consider the
-problem of evaluating a Boolean expression \(A \land B \land C\) where
-\(A\), \(B\) and \(C\) are subexpressions. Obviously if any of the
-expressions \(A\),\(B\) or \(C\) evaluates be \hask{False} the entire
-expression would consequently evaluate to \hask{False} as well as
+To efficiently evaluate boolean algebra expressions we make use of
+absorbing elements,. Consider the evaluation of a boolean expression
+
+\[
+Q := A \land B \land C
+\]
+
+where \(A\), \(B\) and \(C\) are subexpressions. Obviously if any of
+the expressions \(A\),\(B\) or \(C\) evaluates be \hask{False} the
+entire expression would consequently evaluate to \hask{False} as
 \hask{False} is the absorbing element for the group of booleans over
 \(\land\). Furthermore without taking into account the structure of
 each of the subexpressions \(A\), \(B\) and \(C\) we can tell that the
 amount of work for evalutating it depends on the result. If the result
 of this expression is \hask{False} then the best case scenario in
 terms of amount of work we would need to do is for A to be the
-expression \hask{False}. In this case we would be able to evaluate the
-expression with just one dereference. If the result is \hask{True}
+expression \hask{False}. Or more succintly
+
+\[
+w(Q|Q=\mathit{False}) \ge \min (w(A | A = \mathit{False}), w(B | B = \mathit{False}), w(C | C = \mathit{False}))
+\]
+
+Where \(w(E|E=k)\) is the amound of work for calculating \(E\) if
+\(E\) turns out to be \(k\). In this case we would be able to evaluate
+the expression with just one dereference. If the result is \hask{True}
 then the best case scenario is for \(A\), \(B\) and \(C\) to all be
 \hask{True} and we would be able to come to a result with three
-dereference steps.
+dereference steps. Or equivalently
 
-Consider the expression
+\[
+w(Q|Q=\mathit{True}) = w(A | A = \mathit{True}) + w(B | B = \mathit{True}) + w(C | C = \mathit{True})
+\]
+
+Now let's consider the compound expression
 
 \[
 X := (A_1 \lor A_2 \lor A_3) \land (B_1 \lor B_2) \land (C_1 \lor C_2 \lor C_3)
@@ -2000,20 +2001,20 @@ encounter absorbing elements early on. As explained in the
 introduction, especially for terms automatically generated this
 strategy is unlikely to be efficient.
 
-Instead, at each expansion we count the minimum number of steps
-required for each value. In the above example the best case scenario
-if the value of \(X\) is \hask{False} is \(B_1 = False\) and
-\(B_2 = False\), in which case the expression is evaluated in a
-minimum of 4 steps:
+Instead, at each expansion we track the minimum number of steps
+required for each value. The best case scenario if
+\(X = \mathit{False}\) is \(B_1 = False\) and \(B_2 = False\), in
+which case the expression is evaluated in a minimum of 4 steps
+(dereferences):
 
 \begin{itemize}
 \item Evaluate \(B_1 = False\) in a single step
 \item Evaluate \(B_2 = False\) in a single step
 \item Evaluate the subexpression \(False \lor False\)
-\item Evaluate \(X = (...) \land False \land (...)\)
+\item Evaluate \(X = (...) \land False \land (...) = False\)
 \end{itemize}
 
-For a value of \hask{True} it is 7:
+For a \(X = \mathit(True)\) we need 7 steps:
 
 \begin{itemize}
 \item Evaluate \(A_i = True\) in a single step for any \(i\)
@@ -2031,7 +2032,7 @@ evaluated with a cap of \(\{True: 6, False: \infty \}\) it would
 return a bound of value \(\{True: 7, False: 4 \}\). In plain english
 this means "try to evaluate this if your other options are more
 expensive than 7 steps for \hask{True} and 4 for \hask{False}". It
-should be seen as a metric for the size of the tree.
+could be seen as a metric for the size of the tree.
 
 To demonstrate the derivation of caps we present the following
 expression:
@@ -2041,36 +2042,36 @@ X = X_1 \land X_2 \land X_3
 \]
 
 Any of the \(X_i\) terms has a minimum bound of
-\(\{True: 1, False: 1 \}\). Since the absorbin element for \(\land\)
+\(\{True: 1, False: 1 \}\). Since the absorbing element for \(\land\)
 is \hask{False} expanding any of the \(X_i\) terms is bounded by
-\(\{True: \infty, False: 1 \}\) bacause so an expansion of
+\(\{True: \infty, False: 1 \}\) so an expansion of
 
 \[
 X_1 = A_1 \lor A_2
 \]
 
-Would cause the subprocess to immediately yield
+would cause the subprocess to immediately yield
 \(\{True: 2, False: 3 \}\) passing control to the parent
 process. Thus, a symmetrically growing tree would be traversed in a
 breadth first fashion and any asymmetries would cause Antisthenis to
 try to greedily exploit the smaller parts of the tree.
+\begin{comment}
+  Antisthenis has a different regime for comparing caps and between a
+  cap and a bound. We consider that a bound exceeds a cap when either
+  the steps to a true final value or the steps to a false final value
+  exceed the corresponding cap. However when it comes to comparing
+  bounds we consider the better bound to be the more optimistic one.
 
-Antisthenis has a different regime for comparing caps and between a
-cap and a bound. We consider that a bound exceeds a cap when either
-the steps to a true final value or the steps to a false final value
-exceed the corresponding cap. However when it comes to comparing
-bounds we consider the better bound to be the more optimistic one.
+  \begin{align*}
+    b_1 <_{bnd} b_2 := \min(T(b_1),F(b_1)) < \min(T(b_2),F(b_2))
+    c <_{cap} b := T(c) < b \land F(c) < F(b).
+  \end{align*}
 
-\begin{align*}
-b_1 <_{bnd} b_2 := \min(T(b_1),F(b_1)) < \min(T(b_2),F(b_2))
-c <_{cap} b := T(c) < b \land F(c) < F(b).
-\end{align*}
-
-where for \(x\) being a bound or a cap, \(T(x)\) is the minimum number
-of dereferences assuming the final value is \hask{True} and \(F(x)\)
-is the minimum number of dereference values assuming the final value
-is \hask{False}.
-
+  where for \(x\) being a bound or a cap, \(T(x)\) is the minimum number
+  of dereferences assuming the final value is \hask{True} and \(F(x)\)
+  is the minimum number of dereference values assuming the final value
+  is \hask{False}.
+\end{comment}
 \section{Node machines}
 \ref{sec:antisthenis_machines}
 
@@ -2078,10 +2079,9 @@ A referrable machine is a process with a name that can be referenced
 by more than one other processes. In FluiDB a machine name corresponds
 to a graph node since the Antisthenis infrastructure is utilized to
 provide incremental computation of properties on nodes
-(materializability, cost, stochastic cost, etc are described in
-separate sections). In this section we look into the the layer of
-Antisthenis that takes into account the dynamics of referrable
-machines.
+(materializability, cost, stochastic cost, etc). In this section we
+look into the the layer of Antisthenis that takes into account the
+dynamics of referrable machines.
 
 \subsection{Antisthenis machine tape}
 
@@ -2090,29 +2090,20 @@ machines. The meaning of a node is dependent on the implementation, in
 the context of FluiDB nodes in this context correspond to the FluiDB
 internal graph nodes.  The machine tape is part of the computation
 context and is updated by new and temporary values of machines (see
-section \ref{sec:cyclical_machines} on cyclic machines).
+section \ref{sec:cyclical_machines} on cyclical machines).
 
 Not all processes involved in a computation are involved in the
 machine tape. Each machine in the tape is composed by a hierarchy of
-machines that are inaccessible from outside. In fact a machine is
-discriminated from a process solely by virtue of the fact that it can
-be referenced via the tape. A parallel might be drawn between machines
-as being like C++ lvalues in that they are referable by an address,
-and processes being like rvalues in that they are still values but
-they are completely nameless. Furthermore, as the astute reader will
-have noticed, it may not be clear in every context when a process
-stops being itself. Remember that a process is fundamentally a mealy
-arrow (introduced in section \ref{sec:mealy_arrows}) which once
-evaluated returns a new mealy arrow, the next version of
-itself. Self-sameness is much more concrete in the case of machines,
-as machines are always referred by exactly one slot in the tape.
+processes that are inaccessible from outside that machine. In fact a
+machine is discriminated from a process solely by virtue of the fact
+that it can be referenced via the tape.
 
 Since machines are referable by different other processes it means
 that, we need to be carful that more than one process do not own their
 own diverging copy of the same machine, essentially treating it as a
-process. To avoid this issue, processes referring to machines do so
-indirectly via a \textbf{machine wrapper process}. A machine wrapper
-is a process that goes throught the same steps:
+process. To avoid this, processes referring to machines do so
+indirectly via a \emph{machine wrapper process}. A machine wrapper is
+a process that always does the following:
 
 \begin{itemize}
 \item look up a name in the tape
@@ -2129,15 +2120,15 @@ tape and the machine.
 \label{sec:process_stack}
 
 Before we go further with the details of how exactly named machines
-are handled, it is important to make the discrimination between a
-process and a computation. In the context of Antisthenis a process, or
-in case it is named a machine, is the mealy machine that evolves
-during evaluation and survives between evaluations. On the other hand
-a computation is the part of the evaluation itself that refers to the
-particular machine. In a more abstract sense, a computation is the
-\emph{relation} between the process and the value produced, regardless
-of whether that value is an actual result, a bound for a potential
-result or a witness to the non-computability of the result.
+are handled, it is important to make the distinction between a process
+and a computation. In the context of Antisthenis a process is the
+mealy machine that evolves during evaluation and survives between
+evaluations. On the other hand a computation is the part of the
+evaluation itself that refers to the particular machine. In a more
+abstract sense, a computation is the \emph{relation} between the
+process and the value produced, regardless of whether that value is an
+actual result, a bound for a potential result or a witness to the
+non-computability of the result.
 
 With this distinction in mind we introduce the notion of a process
 stack which is similar to the call stack in most programming
@@ -2165,28 +2156,29 @@ not-terminate. Antisthenis is explicitly designed around allowing the
 computation to handle such self-referential cases.
 
 We already discussed in a previous section that machines are stored in
-data structure called a tape that allows us to reference them, and
-that in the period from the time a value is requested of a machine and
-the time a value (including an error or a value bound) the machine is
-said to be in the computational stack (introducted in section
-\ref{sec:process_stack}). During its residence in the stack a machine is
-in a state where it is unable to produce a value. A cycle occurs when
-a machine is referenced while in the computational stack.
+data structure called a tape that allows them to be referenced by
+other machines, and that in the period from the time a value is
+requested of a machine and the time a value is returned (including an
+error or a value bound) the machine is said to be in the computational
+stack (introducted in section \ref{sec:process_stack}). During its
+residence in the stack a machine is in a state where it is unable to
+produce a value. A cycle occurs when a machine is referenced while in
+the computational stack.
 
 We make the problem concrete with an example based on the graph in
 figure \ref{fig:recur_package}. A naive approach of dealing with
-recursive calls is demonstrated in figure \ref{subfig:comp_d_naive} where
-naive-Antisthenis looks for cycles by throwing errors (\(\bot\)) when
-encountering a node that is already in the computational
-stack. Evaluating node \(A\) Antisthenis first node \(B\) to 10. It
-then tries to evaluate node \(C\) which redirects back to \(A\). \(C\)
-can therefore not yield a value and returns an error \(\bot\). Then,
-without changing any of the parameters the user tries to evaluate
-\(D\). Looking at the graph it is clear that \(D\) should in sequence
-evaluate to 15, as demonstrated by the evaluation process in figure
-\ref{fig:comp_d_smart} (the reader is reminded that based on the assumption
-that all values refer to query evaluation costs we have asserted that
-\(min[a,\bot] \equiv a\)).
+recursive calls is demonstrated in figure
+\ref{subfig:comp_d_naive_TODO_not_ref} where naive-Antisthenis looks
+for cycles by throwing errors (\(\bot\)) when encountering a node that
+is already in the computational stack. Evaluating node \(A\)
+Antisthenis first node \(B\) to 10. It then tries to evaluate node
+\(C\) which redirects back to \(A\). \(C\) can therefore not yield a
+value and returns an error \(\bot\). Then, without changing any of the
+parameters the user tries to evaluate \(D\). Looking at the graph it
+is clear that \(D\) should in sequence evaluate to 15, as demonstrated
+by the evaluation process in figure \ref{fig:comp_d_smart} (the reader
+is reminded that all values refer to query evaluation costs, and
+therefore we have asserted that \(min[a,\bot] \equiv a\)).
 
 
 \newcommand{\newl}{\\ \ }
@@ -2198,7 +2190,7 @@ comp[#2] \!: \\
 \end{array}\!\right] \ev #1%
 }
 \newcommand{\colw}{5cm}
-\begin{figure}[p]
+\begin{figure}[H]
   \begin{subfigure}{0.9\linewidth}
     \begin{tikzdiagram}
       \tikzset{f /.tip = {Stealth[scale=2]}}
@@ -2248,25 +2240,27 @@ an ephemeral property and yet it affects the return values that are
 non-ephemeral. The only solution for this is to lift information about
 the cycles to the non-ephemeral plane that survives the
 computation. Indeed, what is needed is for values that are deemed
-non-computable to \emph{reset} when accessed with a different stack. In
-other words the value of \(\bot\) for \(C\) is \emph{predicated} on the
-process stack containing \(A\), or \(A\) being otherwise
-non-computable. Coepochs fill the bill precisely. We extend the coepoch
-to include, along with the parameter versions used to derive a
-particular result, also a set of machines that need to be
-non-computable in order for the value to be valid.
+non-computable to \emph{reset} when accessed with a different
+stack. In other words the value of \(\bot\) for \(C\) is
+\emph{predicated} on the process stack containing \(A\), or \(A\)
+being otherwise non-computable. Coepochs fill the bill precisely. We
+extend the coepoch to include, along with the parameter versions used
+to derive a particular result, also \emph{a set of machines that need
+  to be non-computable in order for the value to be valid.}
 
 To accomplish this when a machine is looked up, before being evaluated
-it is removed from the tape and in its place a \textbf{cyclic machine}
+it is removed from the tape and in its place a \emph{cyclical machine}
 is placed. This machine always returns the same \(\bot\) result that
 indicates that the value is non-computable and sets to the coepoch
 that it is itself not computable. When the original machine comes up
-with a value it replaces the cyclic machine again and the coepoch is
-sensored. This way whenever any machine tries to evaluate another
-non-computable machine it finds a cyclic machine which handles the
-situation automatically. Upon evaluating the cyclic machine, the
-coepoch of the caller is infected with the predicate that the cyclic
-machine must be \(\bot\). Pseudo-python algorithm in listing
+with a value it replaces the cyclical machine with the iteration or
+coiteration of the process and the coepoch is censored to remove the
+predicate that the current machine must be \(\bot\). This way whenever
+any machine tries to evaluate another non-computable machine it finds
+a cyclical machine which handles the situation automatically. Upon
+evaluating the cyclical machine, the coepoch of the caller is infected
+with the predicate that the cyclical machine must be
+\(\bot\). Pseudo-python algorithm in listing
 \ref{lst:algo_create_predicates}.
 
 \begin{code}
@@ -2357,7 +2351,7 @@ force their value be taken into account via the epoch's copredicates.
 \subsection{Calculating historical query costs}
 \label{sec:historical_cost}
 
-As we saw in section  on the query planner, the planner depends
+As we saw in section \ref{sec:planner} on the query planner, the planner depends
 on the cost of past nodes to make decisions about the overall
 usefulness of a plan. A naive approach to this would be to just use
 the normal min/sum operation set to calculate historical costs. As
@@ -2488,12 +2482,13 @@ extExceedsCap _ HistCap {..} HistRes {..} =
 
 \section{Conclusion}
 
-In this chapter we described in detail the incremental evaluation
-system we developed for FluiDB that we call Antisthenis. The main
-goals of Antisthenis are to compute incrementally, to gracefully
-handle computational cycles and to order the operations in an operator
-specific way such that the overall computation finishes as soon as
-possible.
+In this chapter we described in detail the framework for building
+incremental evaluation systems we developed for FluiDB that we call
+Antisthenis as well as a brief summary of the way we use it in
+FluiDB. The main goals of Antisthenis are to compute incrementally, to
+gracefully handle computational cycles and to order the operations in
+each operator in a specific way such that the overall computation
+finishes as soon as possible.
 
 There are two major shortcomongs of Antisthenis:
 
