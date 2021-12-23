@@ -268,11 +268,10 @@ version of our system's functionality.
 
 In figure \ref{fig:intro_selectexample} we provide representation of a
 subsumption graph that our RDBMS might create after witnessing
-selections on \(\li\). For brevity let
-\(p:=shipdate > 10-11-2015\), \(q:=quantity < 24\) and
-\(r:=discount < .06\). The RDBMS has encountered
-\(\sigma_{p}(\li)\), \(\sigma_{q}(\li)\) and
-\(\sigma_{q} \sigma_{r} (\li)\).
+selections on \(\li\). For brevity let \(p:=shipdate > 10-11-2015\),
+\(q:=quantity < 24\) and \(r:=discount < .06\). The RDBMS has
+encountered \(\sigma_{p}(\li)\), \(\sigma_{q}(\li)\) and \(\sigma_{q}
+\sigma_{r} (\li)\).
 
 
 \begin{figure}[H]
@@ -309,10 +308,9 @@ selections on \(\li\). For brevity let
 % TODO: Benefit order: \sigma_q > \sigma_{p \land r} > \sigma_p >
 % \sigma_{\neg q} > ... > \li.
 
-The query that we are planning is
-\(\sigma_{quantity < 24} \sigma_{discount < .06} (\li)\), which
-is denoted in the figure as \(\sigma_{q \land r}(\li)\). Our
-total size budget is 2.5.
+The query that we are planning is \(\sigma_{quantity < 24}
+\sigma_{discount < .06} (\li)\), which is denoted in the figure as
+\(\sigma_{q \land r}(\li)\). Our total size budget is 2.5.
 
 Following the edges in the graph, to plan \(\sigma_{q \land r}(\li)\)
 we need \(\sigma_{q}(\li)\) and for that we need \(\li\) and is least

@@ -1411,6 +1411,7 @@ Thereby each node is coupled with a structure containing all this
 information (see section \ref{sec:relation_shapes})
 
 \section{Query clusters internals}
+\label{sec:cluster_internals}
 
 Clusters are the highest level building blocks of the graph. This
 section describes of the semantic role of the cluster as a set of
@@ -1613,26 +1614,27 @@ So the unique subtuples are computed using the following rules:
 
 Shape propagators are based on the the idea of the propagator as first
 introduced in \cite{sussmanArtPropagator2009} and analyzed more in
-depth in \cite{hansonSoftwareDesignFlexibility2021a}. Very briefly, a
-propagator network is a hypergraph of cells containing mutable state
-and hyperedges as multi-directional functions that, when triggered,
-update the state of the connected cells so they are consistent with
-each other. The state of each cell represents some information about a
-value (like a bound or a value paired with a certainty metric), and
-the propagator takes into account the state of each cell and
-propagates that information to the other cells (for example tightening
-their bound or finding a linear combination of alternative values
-based on the certainty of each). Kmett \cite{kmettPropagators2021}
-formalized the notion of "information about a value" drawing from
+depth in \cite{hansonSoftwareDesignFlexibility2021a} and mentioned in
+section \ref{sec:qdag}. Very briefly, a propagator network is a
+hypergraph of cells containing mutable state and hyperedges as
+multi-directional functions that, when triggered, update the state of
+the connected cells so they are consistent with each other. The state
+of each cell represents some information about a value (like a bound
+or a probability distribution), and the propagator takes into account
+the state of each cell and propagates that information to the other
+cells (for example tightening their bound or finding a linear
+combination of alternative values based on the certainty of
+each). Kmett \cite{kmettPropagators2021} formalized the notion of
+"information about a value" drawing from
 \cite{kuperLVarsLatticebasedData2013} encoding it as a lattice with
 \(\top\) meaning contradiction, and \(\bot\) meaning that there is no
 information about the value. Then the new values of cells are being
 joined ( \(\lor\) ) with the old ones and the value is updated to
 reflect the combination of information. The example provided by Kmett
-is cell being embedded in a 3 level lattice where the bottom level is
-\hask{Nothing}, the middle level is \hask{Just x} and the top level
-being a Haskell error (ironically denoted as \(\bot\) in literature
-unrelated to propagators).
+is each cell value being embedded in a 3 level lattice where the
+bottom level is \hask{Nothing}, the middle level is \hask{Just x} and
+the top level being a Haskell error (ironically denoted as \(\bot\) in
+literature unrelated to propagators).
 
 As the name of our propagator implementation suggests, our idea is to
 correspond each cluster to a propagator to form a propagator network
@@ -1674,23 +1676,25 @@ process is justified in \cite{kuperLVarsLatticebasedData2013}.
 
 \subsection{Defaulting functor}
 
-While discussing propagators, we mentioned that the cells of a
-propagator involve more structure than raw values. Indeed, FluiDB
-wraps these values in a functor that we dub as \emph{defaulting
-functor} to reason about the consistency of the relation shape. In
-particular we require that the cell can handle cases where
+As mentioned, the cells of a propagator involve more structure than
+raw values. Indeed, FluiDB wraps these values in a functor that we dub
+as \emph{defaulting functor (DF)} to reason about the consistency of
+the relation shape. In particular we require that the cell can handle
+cases where
+
 \begin{itemize}
-\item The value for the shape is not computed yet
+\item The shape is not computed yet, i.e., there is no information
+  about the value.
 \item The shape is inferred via the propagator network and is
 therefore subject to change and
 \item The shape stored in the cell corresponds to a materialized node
 and other parts of the FluiDB's internal state depend on it.
 \end{itemize}
 
-The latter point is salient. Different logical plans can lead to
+The latter case is salient. Different logical plans can lead to
 different, yet semantically equivalent as per the FluiDB RA.
 
-The defaulting functor (DF) may hold up to two values (see listing
+The DF may hold up to two values (see listing
 \ref{lst:defaulting_functor}).
 
 \begin{itemize}
@@ -1727,20 +1731,21 @@ left operand of the semigroup operator is the newer value and the
 right one is the older value. Therefore, the DF does not require all
 the properties of the semilattice which is required to commutative and
 associative. In general, the semigroup implemented by the underlying
-type of the DF is taken to mean \hask{better <> backup}, i.e. keep as
-much of the left operand as possible unless the right operand is found
-to be "better" for some definition of better. For example, when
-calculating the cardinality we include a value of certainty between
+type of the DF is taken to mean
+\(\mathit{better} \diamond \mathit{backup}\), i.e. keep as much of the
+left operand as possible unless the right operand is found to be
+"better" for some definition of better. For example, when calculating
+the cardinality we include a value of certainty between
 \(\left[0,1\right]\).  A more certain right-hand cardinality is
 preferred over a less certain left-hand side.
 
 Bringing our attention to the implementation of the \hask{Def <> Full}
-combination in the semigroup definition
-\ref{lst:defaulting_semigroup}: it inverts the order of the
-combination of the default values. The reason we do this is to give
-priority the the full valued (materialized) nodes when propagating to
-their immediate neighbors. We need this when committing an operator to
-the code generation.
+combination in the semigroup definition \ref{lst:defaulting_semigroup}
+it is worth noting that it inverts the order of the combination of the
+default values. The reason we do this is to give priority the the full
+valued (materialized) nodes when propagating to their immediate
+neighbors. We need this when committing an operator to the code
+generation.
 
 \begin{code}
   \begin{haskellcode}
@@ -1775,8 +1780,9 @@ are consistent with other default values of the same cluster
 w.r.t. the amount of information they hold, but not w.r.t. the order
 of the columns in the relation shape. Therefore, before promoting the
 default functors to full functors by duplicating the default value to
-fill both fields of the \hask{FullDefaulting} constructor, we trigger
-the propagator to enforce full consistency between the defaultvalues.
+fill both fields of the \hask{DefaultingFull} constructor, we trigger
+the propagator to enforce full consistency between the
+\hask{DefaultingDef} values.
 
 The full part and the default part of the the defaulting value are not
 necessarily structurally synchronized. We \emph{internally
@@ -1786,8 +1792,8 @@ existing full cells.
 
 It is notable that there is no formal guarantee that the propagator
 will be able to create structurally consistent cells. In that case the
-propagator will fail. Handling of this failure is beyond the current
-scope of this work.
+propagator will fail. Handling of this failure gracefully is beyond
+the current scope of this work.
 
 When an n-node is to be materialized, the corresponding defaulting
 functor containing the value is \emph{promoted}.  Promotion of
@@ -1811,11 +1817,11 @@ the full state (listing \ref{lst:promote_defaulting}).
 \section{Summary and conclusion}
 
 In this chapter, we detailed how FluiDB processes queries. From
-parsing to generating a graph of queries and inferring the shapes of
-the relations in that graph. We also discussed different conceptions
-of relational algebra that are used in FluiDB (normal RA and QNF) and
-reverse operations. This will serve as a solid bedrock on which we can
-build the query planner and on top of the code generator.
+parsing to generating a graph of queries (QDAG) and inferring the
+shapes of the relations in that graph. We also discussed different
+conceptions of relational algebra that are used in FluiDB (normal RA
+and QNF) and reverse operations. This will serve as a solid bedrock on
+which we can build the query planner and on top of the code generator.
 
 There are a few shortcomings to this model that we have not yet
 addressed that we plan to implement in later incarnations of

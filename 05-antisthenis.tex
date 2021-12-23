@@ -5,86 +5,87 @@
   eye which can see horsehood and manhood you have not.}
 
 \begin{summary}
-\item \emph{Antisthenis} is a system for incremental evaluation of
-  algebraic expressions using heuristics to optimize the order in
-  which subexpressions are evaluated and to calculate some classes of
-  self referrential computations.
-\item Mealy arrows are a construct to implement adaptable computations
-  that can can prodice a value and a new, semantically equivalent
-  computation. Each iteration adapts to the previous caching values
-  and changing the evaluation plan to be more efficient.
-\item Antisthenis computations are implemented as network of mealy
-  arrows that compose larger adaptive (incremental and partial)
+\item \emph{Antisthenis} is a framework for building systems for
+  incremental evaluation of algebraic expressions using heuristics to
+  optimize the order in which subexpressions are evaluated and to
+  calculate some classes of self referrential computations.
+\item \emph{Mealy arrows} are a construct to implement adaptable
+  computations that can can prodice a value and a new, semantically
+  equivalent computation. Each iteration adapts to the previous
+  caching values and changing the evaluation plan to be more
+  efficient. Antisthenis computations are implemented as network of
+  mealy arrows that compose larger adaptive (incremental and partial)
   computations.
-\item Machines are named processes that can be referred to by other
-  machines. Antisthenis can handle some classes of self referrential
-  computations.
-\item We implement antisthenis operations to cover requirements of the
+\item Machines are named Antisthenis processes that can be referred to
+  by other machines. Antisthenis provides tools for handling some
+  classes of self referrential computations.
+\item We implement Antisthenis operations to cover requirements of the
   FluiDB physical planner:
 
   \begin{itemize}
-  \item calculate min/sum of natural numbers -- used to compute cost
-  \item boolean functions -- used determine node materializability
+  \item calculate min/sum of natural numbers -- used to compute
+    \emph{cost estimations}
+  \item boolean functions -- used determine \emph{node materializability}
   \item calculate min/sum of numbers annotated with certainty metrics
-    -- used to calculate the cost of materialization of nodes give
-    nodes that \emph{might} be magterialized.
+    -- used to calculate the estimated cost of materialization of
+    nodes give nodes that \emph{might} be magterialized.
   \end{itemize}
 \end{summary}
 
 This chapter goes in depth descibing the various parts that compose
-Antisthenis, a system we developed to assist the FluiDB planner in
-incrementally and efficiently computing costs and checking if nodes in
-the QDAG are materializable during the evolution of the inventory.
+Antisthenis, a framework for building incremental computation systems
+we developed to assist the FluiDB planner in incrementally and
+efficiently computing costs and checking if nodes in the QDAG are
+materializable during the evolution of the inventory.
 
 The chapter starts with an introduction about the motivation for
 developing Antisthenis as a collection of synchronously communicating
-processes performing incremental computation. Next we look at some
-background concepts most of which relate to notions for computation
-and our conception of a Mealy arrow that builds on those notions to
-enable the construction of Antisthenis processes. In the following
-section we describe the core of Antisthenis, which is the internal
-construction of a single antisthenis process. From there we move on to
-describe some specific operation implementations that are useful for
-FluiDB and then describe the systems that facilitate
-intercommunication and high level organization of Antisthenis
-processes. Finally, we conclude with some shortcomings and some future
-future work that can be done to make Antisthenis easier to apply to
-solutions other than FluiDB.
+processes performing incremental computation. Next we look at our
+conception of a Mealy arrow that enables the construction of
+Antisthenis processes. In the following section we describe the core
+of Antisthenis, which is the structure of a single Antisthenis
+process. From there we move on to describe some specific operation
+implementations that are useful for FluiDB and then describe the
+systems that facilitate intercommunication and high level organization
+of Antisthenis processes. Finally, we conclude with some caveats and
+some future future work that can be done to make Antisthenis easier to
+apply to solutions other than FluiDB.
 
 \section{Introduction}
 \label{sec:antisthenis_intro}
 
-The order in which an expression is evaluated can be important not
-only for the performance of the expression evaluation but, in the
-context of infinite expressions, for the very termination of the
-evalution itself.
+The order in which subexpressions of an algebraic expression are
+evaluated can be important not only for the performance of the
+expression evaluation but, in the context of infinite expressions, for
+the very termination of the evalution itself.
 
 Expressions are typically modelled as abstract syntax trees or
-computation graphs, and evaluation is commonly modelled as a reduction
-of that tree or DAG. Depending on the evaluation strategy each operand
-is either fully or partially evaluated. Typically, the strategy for
-evaluating the subexpression operand however is oblivious to the
-parent expression and a partially evaluated subexpression (thunk) is
-opaque from the perspective of the parent expression. Breaking this
-assumption provides some opportunities for incremental computation and
-efficient evalaution in the presence of non-total arguments.
+computation graphs (DAGs), and evaluation is commonly modelled as a
+reduction of that tree or DAG. Depending on the evaluation strategy
+each operand is either fully or partially evaluated. Typically, the
+strategy for evaluating a subexpression operand , however, is
+oblivious to the parent expression and a partially evaluated
+subexpression (thunk) is opaque from the perspective of the parent
+expression. Breaking this assumption provides some opportunities for
+incremental computation and efficient evalaution in the presence of
+non-total arguments.
 
 We built \emph{Antisthenis} around this principle to achieve three
 important goals:
 
 \begin{itemize}
-\item Incrementally evaluate an expression, i.e. to only re-evaluate
-  the parts of it that depend on parameters that were updated with
-  respect to the last time the expression was evaluated.
+\item To \emph{incrementally evaluate} an expression, i.e. to only
+  re-evaluate the parts of it that depend on parameters that were
+  updated with respect to the last time the expression was evaluated.
 \item Take advantage of absorbing elements and other operator-specific
-  strategies for early stopping the evaluation.
+  strategies for \emph{early stopping} the evaluation.
 \item Often sub-expressions are not total, i.e. they may not be
   computable. A common reason for that is the expression being
   self-referential. These errors may be detrimental to the evaluation
-  the top level expression, but often as we will see they are not.
+  the top level expression, but often, as we will see, they are not.
 \end{itemize}
 
-Incremental computation is a tool for efficiently evaluating
+Incremental computation is a tool for \emph{efficiently} evaluating
 expressions of variables that change over time. The area has received
 some attention recently
 \cite{bhatotiaIncoopMapReduceIncremental2011,hammerAdaptonComposableDemanddriven2014a}. An
@@ -104,49 +105,51 @@ Which can be represented as a dag in figure
 \begin{figure}[H]
 \centering
 \includegraphics[width=.5\textwidth]{./imgs/example_antisthenis_dag.pdf}
-\caption{\label{fig:example_antisthenis_dag}A computation DAG.}
+\caption{\label{fig:example_antisthenis_dag}A computation
+  DAG. Circular nodes represent operations adn square nodes represent
+  parameters that are subject to change.}
 \end{figure}
 
 Where \(A\), \(B\), \(C\), and \(D\) are expression nodes in the DAG
-and \(a\), \(b\), and \(c\) are parameters that change over
-time. \(A\) depends on all three parameters. A non-incremental
-evaluation system would evaluate all four nodes every time a value
-were requested, regardless of whether and which parameters have
-changed. Incremental evalutaion systems keep track of which variables
-change and only re-evaluate the nodes of the DAG that have been
-updated. In our example if only the parameter \(b\) has been updated
-since the last time \(A\) was evaluated, in the meantime only \(A\)
-and \(B\) would need to be re-evaluated.
+and \(a\), \(b\), and \(c\) are parameters that change over time. A
+non-incremental evaluation system would evaluate all four nodes every
+time a value were requested, regardless of whether and which
+parameters have changed. Incremental evalutaion systems keep track of
+which variables change and only re-evaluates the nodes of the DAG that
+have been updated. In our example if only the parameter \(b\) has been
+updated since the last time \(A\) was evaluated, an evalutation of
+\(A\) would require only \(A\) and \(B\) to be re-evaluated.
 
 Incremental evaluation systems employ a wide range of tricks from
 simply memoizing the functions
 \cite{pughIncrementalComputationFunction1989} to more complex
 strategies like \cite{hammerAdaptonComposableDemanddriven2014a} where
-changes in parameters are propagated in the form of dirtying DAG nodes
-and more explicitly breaking the computation into reusable parts.
+changes in parameters are propagated in the form of ``dirtying'' DAG
+nodes and more explicitly breaking the computation into reusable
+parts.
 
 To our knowledge none of the existing approaches to incremental
 computation take into account the presence of either absorbing
 elements or non-compuatable subtrees (i.e. recursive values) in their
-scheduling the evaluation order. It is either done naively or left up
-to the programmer. However, it is a hard requirement of the FluiDB
+scheduling the evaluation order. Scheduling is either done naively or
+left up to the user. However, it is a hard requirement of the FluiDB
 query planner for the incremental computing framework to automatically
 exploit the properties of the computation at hand in order to
 incrementally compute node materializability and query costs in the
 presence of different materialized query sets. Furthermore, in all the
 approaches we are aware of the network of sub-expressions was assumed
-to be well-behaved, in that all nodes return a valid value and there
-are no cyclical references.
+to be well-behaved, in that all nodes can return a valid value and
+there are no cyclical references.
 
 The main principle behind the architecture of Antisthenis is to
 manipulate the order in which sub-expressions are evaluated in order
-to exploit properties of the parent operator to avoid fully evaluating
-each of the sub-terms. For example when evaluating the cost of a
-database query we take the result of the computation is the minimum
-cost of each of the possible logical plans. It is unlikely that one
-would need to come up with a full estimation of each plan, especially
-the more expensive ones, before realising the lowest cost. Instead, we
-would like to accumulate a lower bound for the cost of each plan.
+to exploit properties of the parent operator and avoid fully
+evaluating each of the sub-terms. For example when estimating the cost
+of a database query we take the it to be the minimum cost of each of
+the possible logical plans. It is unlikely that one would need to come
+up with a full estimation of each plan, especially the more expensive
+ones, before realising the lowest cost. Instead, we would like to
+accumulate a lower bound for the cost of each plan.
 
 Another prime example of an opportunity pruning the expression tree is
 the exploitation of absorbing elements. In the general case, in a
@@ -156,17 +159,16 @@ need to fully evaluate \emph{all} three arguments first. Since the
 absorbing element of multiplication in the reals is 0, for
 \(f(a,b,c) := a \times b \times c\), a result of 0 for the first
 argument \(A\) would render the evaluation of the rest of the
-arguments futile.
+arguments redundant.
 
-As alluded to, a lazy evaluation strategy paired with a Sufficiently
-Advanced Compiler, can take steps towards mitigating this
-problem. This can only go so far, however. Consider the following
-example:
+As alluded to, a lazy evaluation strategy paired with a ``Sufficiently
+Advanced Compiler'', can take steps towards mitigating this problem,
+but it can only go so far. Consider the following example:
 
 \begin{align*}
 A &= B \times C \times D \\
 B &= \sum_i{i} \\
-C &= 0 \\
+C &= 10 - 10 \\
 D &= \sum_i{i}
 \end{align*}
 
@@ -176,8 +178,9 @@ expensive to evaluate and very soon a human would figure out that it
 will never evaluate to zero. \(C\), however, does evaluate to zero,
 and once that is evaluated the evaluation of \(A\) is complete. In a
 complex set of automatically generated such expressions it is
-important that the evaluator does not fall into a deep expression when
-a very shallow one could yield an absorbing value.
+important that the evaluator does not keep trying to evaluate a
+complex expression when evaluating another simpler one could yield an
+absorbing value.
 
 Early stopping a computation is not useful only to avoid extra
 work. As we mentioned, many incremental computation systems assume
@@ -587,7 +590,7 @@ A free monad \hask{Free f m} then is equivalent to the \emph{functor}
 functor rather than a single layer like monads are. Listing
 \ref{lst:free_def_naive} presents a simple implementation, although
 the implemetation in \ref{lst:free_def} is more common. Free monads
-are particularly important for our implementation of antisthenis.
+are particularly important for our implementation of Antisthenis.
 
 \begin{code}
 \begin{haskellcode}
@@ -623,38 +626,41 @@ While describing the interfaces the various kinds of functors we
 already saw the following sub structures appearing in the types:
 \end{comment}
 
-The basic element of computation we have seen so far and described in
-the appendix [ref] related to the troika of functors, applicatives and
-monads. In the interfaces of those we found the sub-structures that
-relate their modification.
+The basic element of computation in the purely functional workld is so
+far related to the troika of \emph{functors}, \emph{applicatives}, and
+\emph{monads} \cite{yorgeyTypeclassopedia2009}, in the interfaces of
+which we find some recuring sub-structures that relate their
+modification.
 
 \begin{itemize}
-\item \hask{a -> b} the normal pure function type. We take this for granted as
-it is provided and managed by the language, in our case Haskell.
-\item \hask{f a -> f b} A functor morphism. The standard functor stack we saw
+\item \texttt{a -> b} the normal pure function type. We take this for granted as
+it is provided and managed by the language, in our case Textttell.
+\item \texttt{f a -> f b} A functor morphism. The standard functor stack we saw
 so far focused on producing such morphisms from simpler arrows.
-\item \hask{f (a -> b)} is known as the Cayley morphism
-\item \hask{a -> f b} which for an \hask{f} being a monad is the now familiar
+\item \texttt{f (a -> b)} is known as the Cayley morphism
+\item \texttt{a -> f b} which for an \texttt{f} being a monad is the now familiar
 Kleisli arrow.
 \end{itemize}
 
 We would like to generalize this notion to an parametric object that
-we will denote as \hask{~>}. We follow the arrow definition from
-Hughes \cite{hughesProgrammingArrows2005} which dictates that an arrow
-must be a \textbf{category} (i.e. arrows must compose in a commuting
-way and there must be an identity arrow) and must also satisfy the
+we will denote as \hask{~>} (occasionally denoted as \hask{p} ). We
+follow the arrow definition from Hughes
+\cite{hughesProgrammingArrows2005} which dictates that an arrow must
+be a \textbf{category} (i.e. arrows must compose in a commuting way
+and there must be an identity arrow) and must also satisfy the
 following:
 
 \begin{itemize}
-\item it must commute with tuple (ie \hask{first} and \hask{second}).
+\item it must commute with tuple (i.e. must implement \hask{first} and
+  \hask{second}).
 \item The Hask category must be embeddable in the category defined by the
 arrows (i.e. via the \hask{arr} function)
 \end{itemize}
 
 In more concrete terms we depend on the haskell typeclasses presented
-in listing \ref{lst:arrow_def}. In plain english an arrow can act on
-the first or second element of a tuple, and an \hask{ArrowChoice} can
-act on the the left or the right case of an \hask{Either}.
+in listing \ref{lst:arrow_def}. An \hask{Arrow} can act on the first
+or second element of a tuple, and an \hask{ArrowChoice} can act on the
+the left or the right case of an \hask{Either}.
 
 A related concept to arrows is the profunctor. Profunctors are not
 necessarily directly composable like arrows nor to they commute with
@@ -742,9 +748,10 @@ dimap (f . g) (h . i) ≡ dimap g h . dimap f i
 \end{code}
 
 \subsubsection{Examples}
-
-To make the concepts of arrows and profunctors more tangible consider
-the following examples:
+The definition and highlighting of important properties of arrows that
+we have done so far is probably not extremely helpful to understand
+how computation is defined in such terms. To make the concepts of
+arrows and profunctors more tangible consider the following examples:
 
 \paragraph{The Kleisli arrow}
 
@@ -756,8 +763,11 @@ mentioned earlier, is equivalent to the arrow \hask{Monad m => a -> m
 newtype Kleisli m a b = Kleisli (a -> m b)
 \end{haskellcode}
 
-So the arrow \hask{Kleisli (State s) a b} is an arrow that when mapping
-values from \hask{a} to \hask{b} also operates on a state value of type \hask{s}.
+So the arrow \hask{Kleisli (State s) a b} is an arrow that when
+mapping values from \hask{a} to \hask{b} also operates on a state
+value of type \hask{s}. Cpomposing two Kleisli arrows is equivalent to
+binding two \hask{a -> m b} objects using \hask{>=>}. The identity of
+the Kleisli category is equivalent to the monadic \hask{return}.
 
 \paragraph{The state arrow}
 
@@ -825,15 +835,16 @@ instance ArrowFunctor c => ArrowFunctor (WriterArrow w c) where
 \subsection{Mealy arrows:  processes that remember}
 \label{sec:mealy_arrows}
 
-The concepts that we will dub a \emph{mealy arrow} or \emph{mealy process}, is
-kin to many different ideas: transducer, automaton and a coroutine to
-name a few. A mealy arrow (listing \ref{lst:mealy_def}) is a function that
-along with the result gives a new version of itself. Like an
-\emph{automaton} after every iteration it moves to a new state ready to
-continue the process. Like a \emph{transducer} every element of a stream
-consumed changes a hidden state to be taken into account when
-consuming the next one. Like a \emph{coroutine} it can be conceptualized as
-a process that can yield computation to be resumed by the caller.
+The concepts that we will dub a \emph{mealy arrow} or \emph{mealy
+  process}, is kin to many different ideas: transducer, automaton, and
+a coroutine to name a few. A mealy arrow (listing \ref{lst:mealy_def})
+is a function that along with the result gives a new version of
+itself. Like an \emph{automaton} after every iteration it moves to a
+new state ready to continue the process. Like a \emph{transducer}
+every element of a stream consumed changes a hidden state to be taken
+into account when consuming the next one. Like a \emph{coroutine} it
+can be conceptualized as a process that can yield computation to be
+resumed by the caller.
 
 \begin{code}
 \begin{haskellcode}
@@ -843,7 +854,7 @@ newtype MealyArrow a b =
   \caption{\label{lst:mealy_def}Haskll definition of a mealy arrow.}
 \end{code}
 
-The mealy arrow is at the heart of Antisthenis as they represent the
+The mealy arrow is at the heart of Antisthenis as it represents the
 basic building block of computation. We call the arrow returned by a
 Mealy arrow along with the value an \emph{iteration}. Assuming that a
 mealy arrow represents an incremental computation, every iteration is
@@ -858,10 +869,10 @@ nodes that are zero are likely to remain zero in future iterations.
 \subsubsection{Mealy arrow transformer}
 
 Like monads \cite{liangMonadTransformersModular1995} , arrows can be
-composed together whey they are represented as \emph{arrow transformers}
-For brevity we will only talk about mealy arrow transformers but the
-concept is generalizable to many different kinds of arrows
-\cite{keidelSoundReusableComponents2019a}.
+composed to form composit arrow types when they are represented as
+\emph{arrow transformers} For brevity we will only talk about mealy
+arrow transformers but the concept is generalizable to many different
+kinds of arrows \cite{keidelSoundReusableComponents2019a}.
 
 The motivation behind "transformizing" the mealy arrow is that arrow
 evolution as in the plain mealy arrow we presented must be pure (due
@@ -883,20 +894,20 @@ newtype MealyArrow c a b =
     type for a parametric one.}
 \end{code}
 
-Here the mealy arrow is parameterized by an arbitrary arrow \hask{c} which
-may be a Kleisli or whatever arrow which will define what side effects
-are supported during the evolution of the process.
+Here the mealy arrow is parameterized by an arbitrary arrow \hask{c}
+which may be a Kleisli arrow or any other arrow which will define what
+side effects are supported during the evolution of the process.
 
 \subsubsection{Building mealy arrows}
 
 While arrows are powerful and general, they can be slightly awkward to
-work with even with the haskell \hask{proc} syntactic
-sugar. Transferring state between mealy iterations via their closures
-even more so. Capitalizing on the parallels between an arrow and a
-coroutine, and taking advantage of the rich haskell ecosystem around
-monads we define a monad \hask{MB a b m} to help us build mealy arrows
-more easily. The interface to that monad is presented in listing
-\ref{lst:mb_interface}.
+work with even with the haskell \hask{proc} syntactic sugar
+\cite{bibtex}. Transferring state between mealy iterations via their
+closures even more so. Capitalizing on the parallels between an arrow
+and a coroutine, and taking advantage of the rich haskell ecosystem
+around monads we define a monad \hask{MB a b m} to help us build mealy
+arrows more easily. The interface to that monad is presented in
+listing \ref{lst:mb_interface}.
 
 \begin{code}
 \begin{haskellcode}
@@ -957,10 +968,10 @@ type MB a b = Free (MealyF a b)
 \subsection{Zippers}
 
 Now that we have a fairly coherent view of computations we need one
-more piece of background knowledge to start putting together
-Antisthenis: the zipper data structure. A zipper \cite{huetZipper1997}
-is an auxiliary data structure that is similar to (but not exactly the
-same as) a cursor.
+more piece of background to start putting together Antisthenis: the
+zipper data structure. A zipper \cite{huetZipper1997} is an auxiliary
+data structure that is similar to (but not exactly the same as) a
+cursor.
 
 For our purposes a zipper is a datastructure that represents an
 alternative configuration of a container such that it focuses on a
@@ -1007,27 +1018,44 @@ element in question to the neighboring elements.
 
 \section{Antisthenis core}
 
-In this section we discuss the core components of antisthenis. The
-parts that comprise antisthenis are roughly split in two
+In this section we discuss the core components of Antisthenis. The
+parts that comprise Antisthenis are roughly split in two
 categories.
 
 \begin{itemize}
-\item The core components that are related to building the antisthenis
-processes, the cells of computation, and the interfaces that need to
-be implemented to specialize them to specific operations.
-\item and the external that are generally the components tha relate cells
-to each other and the systems that specialize proecesses to
-implement specific operators.
+\item The \emph{core components} that are related to building the
+  Antisthenis processes, the cells of computation, and the interfaces
+  that need to be implemented to specialize them to specific
+  operations.
+\item and the \emph{external components} that generally relate cells
+  to each other and the systems that specialize proecesses to
+  implement specific operators.
 \end{itemize}
 
 While in this section we focus on the core components we will
-frequently alude to external components.
+frequently alude to external components which we will see in details
+in sections \ref{sec:antisthenis_ops} on operators and
+\ref{sec:antisthenis_machines} on named processes.
 
 \subsection{Processes}
 
-As we described in section \ref{sec:mealy_arrows} on mealy arrows
-define the basis of an antisthenis process. Indeed our definition of
-an antisthenis incremental cell is a composition of \hask{MealyArrow},
+An Antisthenis process is a node in the evaluation graph and it is
+built using the concepts described so far in order to implement the
+following properties:
+
+\begin{itemize}
+\item \emph{Parameterize} the computation by a cascaded configuration
+  (as we will see \hask{Conf w})
+\item \emph{Adapt} the computation between runs using Mealy arrows.
+\item Return metadata about the result \emph{deliniating its validity}
+  (as we will see \hask{CoEpoch w})
+\item Disambiguate betweeen an \emph{uncomputable}, a \emph{partial},
+  and a \emph{concrete} result (as we will see \hask{BndR w})
+\end{itemize}
+
+As we described in section \ref{sec:mealy_arrows} mealy arrows define
+the basis of an Antisthenis process. Indeed our definition of an
+Antisthenis incremental cell is a composition of \hask{MealyArrow},
 \hask{WriterArrow} and \hask{Kleisli} presented in
 \ref{lst:arrproc_def}
 
@@ -1037,7 +1065,7 @@ type ArrProc w m =
   MealyArrow (WriterArrow (ZCoEpoch w) (Kleisli m))
   (Conf w) (BndR w)
 \end{haskellcode}
-\caption{\label{lst:arrproc_def}The type of an antisthenis process is a mealy arrow paired
+\caption{\label{lst:arrproc_def}The type of an Antisthenis process is a mealy arrow paired
   with a kleisli arrow.}
 \end{code}
 
@@ -1047,27 +1075,27 @@ involved in a process by leveraging the type family feature of
 haskell's type system \cite{AssociatedTypeSynonyms}. We call it a
 \hask{ZipperParams} token beacuse, as we will be seing thoughout the
 chapter, it mainly parameterize the evolution of the internal state of
-the antisthenis process. We will be looking in detail into the methods
-that \hask{ZipperParams} tag needs to implement in the following
-sections.
+the Antisthenis process, the \hask{Zipper}. We will be looking in
+detail into the methods that \hask{ZipperParams} tag needs to
+implement in the following sections.
 
 We will describe every type involved in the \hask{ArrProc} type
 separately, but to do that we first provide a general intuition of
 what these types mean. The basis is a mealy arrow that emits monoidal
 value via \hask{WriterArrow}, along with the values, we dub
-\hask{ZCoEpoch}.  As we will see later in more depth (section
-\ref{sec:caps_and_bounds} on Antisthenis caps sand bounds), it is a
-datastructure that summarizes the provenance of the value returned. It
-is used to determine when the value is no longer valid due, for
-example, to changed parameters.
+\hask{ZCoEpoch}.  It is a datastructure that summarizes the provenance
+of the value returned (section \ref{sec:caps_and_bounds} on
+Antisthenis caps sand bounds). It is used to determine when the value
+is no longer valid due, for example, to changed parameters.
 
 The \hask{MealyArrow} and \hask{WriterArrow} combined transform an
 arbitrary Kleisli arrow which is used to embed the computation of
-antisthenis processes into parent monadic computations. In the FluiDB
-case that would be the monad computation assocuiated with
-planning. This way we give the antisthenis processes the means to
-lookup values, throw errors, or generally have effects of any
-computation we require.
+Antisthenis processes into parent monadic computations, which in the
+case of FluiDB is the \hask{PlanT t n m} monad as we saw in section
+\ref{sec:planner}. In the FluiDB case that would be the monad
+computation assocuiated with planning. This way we give the
+Antisthenis processes the means to lookup values, throw errors, or
+generally have effects of any computation we require.
 
 The output side of the \hask{ArrProc} is a \hask{BndR w} type, the
 returned value, which is parametric to the operation but has some
@@ -1103,11 +1131,17 @@ data BndR w
 Indeed, the iteration of the process has a very different meaning
 depending on whether the previous returned value is a bound or an
 error/result. In the former case the iteration continues a previous
-computation. In the latter case there are two options. Eitger the
-previously returned value is still valid and is therefore returned, or
-if it is not and the computation is reset. To reflect this fundamental
-difference between a paused and a finished computation we will call
-the former simply an \emph{iteration} and the latter \emph{coiteration}.
+computation, in the latter there are two options.
+
+\begin{itemize}
+\item the previously returned value is still valid and is therefore
+  returned,
+\item if it is not and the computation is reset.
+\end{itemize}
+
+To reflect this fundamental difference between a paused and a finished
+computation we will call the former simply an \emph{iteration} and the
+latter \emph{coiteration}.
 
 Finally, we turn our attention to \hask{Conf w} which represents the
 configuration for running the next step of the computation. Much like
@@ -1127,28 +1161,28 @@ data Conf w =
 \end{code}
 
 The configuration for running a computation includes an epoch
-(introduced in section \ref{sec:epochs_coepochs}) and a cap
-(introduced in \ref{sec:caps_and_bounds}). It is passed as input to
-each computation and propagated to the children computation. If the
-process is iterating (as opposed to co-iterating, i.e. it has not
-returned a concrete result or error) the cap is compared against the
-previously yielded bound, if the cap is less than the bound returned
-then the process must keep processing until it found a bound that
-exceeds that cap. This way we can control how much work a process is
-allowed to do before switching to one that might help Antisthenis to
-cut the overall computation short. This way Antisthenis avoids falling
-into computational rabbit holes, where it evaluates a long computation
-when switching to a shorter one would help arrive sooner to a final
-result.
+(discussed in section \ref{sec:epochs_coepochs}) and a cap (discussed
+in \ref{sec:caps_and_bounds}). It is passed as input to each
+computation and propagated to the children computation. If the process
+is iterating (as opposed to co-iterating, i.e. it has not returned a
+concrete result or error) the cap is compared against the previously
+yielded bound, if the cap is less than the bound returned then the
+process must keep processing until it found a bound that exceeds that
+cap. This way we can control how much work a process is allowed to do
+before switching to one that might help Antisthenis to cut the overall
+computation short. This way Antisthenis avoids falling into
+computational rabbit holes, where it evaluates a long computation when
+switching to a shorter one would help arrive sooner to a final result.
 
-The epoch represents state external to Antisthenis like parameter
-versions. When the epoch indicates that a parameter on which the
-process depends has been updated, the process needs to be reset and
-start computation form scratch (see section
+The \emph{epoch} represents state external to Antisthenis like
+parameter versions. When the epoch indicates that a parameter on which
+the process depends has been updated, the process needs to be reset
+and start computation form scratch (see section
 \ref{sec:process_resetting} on process resetting).
 
 
 \subsection{Epochs and coepochs}
+\label{sec:epochs_coepochs}
 
 As mentioned in the previous section the interplay between epochs and
 coepochs determine the validity of the value of each Antisthenis
@@ -1167,28 +1201,28 @@ state. When a discrepancy is found the process knows its state is out
 of date and must reset.
 
 It is clear that not all parameters are relevant to all processes.
-Most processes only depend on a subset of parameters. In Antisthenis'
-terms, most processesonly ever depend on parts of the epoch. This
-reference to a subset of any epoch is reified by the coepoch. Coepochs
-are the monoidal type parameter of the writer arrow transformer of
-\hask{ArrProc}.  In practice this theman that due to the writer
-semantics the coepochs of evaluated subproecesses are concatenated to
-produce the coepoch of the parent process. A special case for this are
-the commutative operations that involve absorbing elements (\(\land\),
-\(\lor\), and \(\times\)), where only the coepoch of the subprocess
-that yields an absoring element is returned. In short, the coepoch of
-a subprocess is included in all parent processes that are not constant
-with respect to the value of that subprocess.
+Most processes only depend on a subset of parameters, or in
+Antisthenis' terms, most processes only ever depend on parts of the
+epoch. This reference to a subset of any epoch is reified by the
+\emph{coepoch}. Coepochs are the monoidal type parameter of the writer
+arrow transformer of \hask{ArrProc}.  In practice this means that due
+to the writer semantics, the coepochs of evaluated subproecesses are
+concatenated to produce the coepoch of the parent process. A special
+case for this are the commutative operations that involve absorbing
+elements (\(\land\), \(\lor\), and \(\times\)), where only the coepoch
+of the subprocess that yields an absoring element is returned. In
+short, the coepoch of a subprocess is included in all parent processes
+that are not constant with respect to the value of that subprocess.
 
 In principle the function that the \hask{ZipperParams} tag needs to
 implement with respect to the epoch/coepoch interplay is a function
-that has a type equivalent to.
+that has a type equivalent to listing \ref{lst:comb_epoch_coepoch0}.
 
 \begin{code}
 \begin{haskellcode}
 combEpochCoepoch0 :: ZEpoch w -> ZCoEpoch w -> Bool
 \end{haskellcode}
-  \caption{\label{sec:epochs_coepochs}The type of a naive function
+  \caption{\label{lst:comb_epoch_coepoch0}The type of a naive function
     checking the validity of a value based on epoch and coepoch.}
 \end{code}
 
@@ -1201,9 +1235,9 @@ law on the \hask{combEpochCoepoch0} function:
 & \text{combEpochCoepoch}_0(e,c_0) \land \text{combEpochCoepoch}_0(e,c_1)
 \end{align*}
 
-\todo{Clarify}
-Where \(e \in ZEpoch w\), \(c_0,c_1 \in ZCoEpoch w\) and \(\diamond\)
-is the monoidal merging operation on coepochs.
+\todo{Clarify} Where \(e \in \mathit{ZEpoch w}\),
+\(c_0,c_1 \in \mathit{ZCoEpoch w}\) and \(\diamond\) is the monoidal
+merging operation on coepochs.
 
 We therefore have the option of filtering the epoch into a smaller
 subset of itself that is only relevant to the subprocesses that
@@ -1213,10 +1247,10 @@ the type of the function to be something similar to listing
 \ref{lst:comb_epoch_coepoch}. It is worth noting that if by this
 process we determine that a reset is required, a new coepoch is
 required and therefore there is no way to constrain the coepoch for
-the reset. In the example above, if \hask{coepoch0 <> coepoch1} do not
-match the epoch, it is possible that re-evaluation of \(P_1\) will not
-yield \hask{BndRes 0} and thereby we would need to evaluate \(P_2\)
-including its coepoch to the aggregate.
+the reset. In the example above, if \texttt{coepoch0 <> coepoch1} do
+not match the epoch, it is possible that re-evaluation of \(P_1\) will
+not yield \hask{BndRes 0} and thereby we would need to evaluate
+\(P_2\) including its coepoch to the aggregate.
 
 \begin{code}
 \begin{haskellcode}
@@ -1229,18 +1263,19 @@ combEpochCoepoch :: ZEpoch w -> ZCoEpoch w -> Maybe (ZEpoch w)
 \subsection{Antisthenis caps and bounds}
 \label{sec:caps_and_bounds}
 
-In the section regarding epochs and copeochs we described how
-Antisthenis deals with the validity of values returned by a
-process. In this section we will focus on how the children processes
-avoid falling into computational rabbit holes using the interplay of
-\emph{caps} and \emph{bounds}.  In the example discussed in the
-introduction (\ref{sec:antisthenis_intro}), we saw that there are case
-where, as soon as a subprocess can prove that its value is going to
-exceed a certain threshold (\emph{cap}), any further work on its part
-is likely futile. It then returns a \emph{bound} which is propagated
-up the chain of parent processes and handled at the point where the
-cap was imposed. The reader is encouraged to maintain a mental model
-where the cap is an threshold and the bound is a lower bound.
+In section \ref{sec:epochs_coepochs} regarding epochs and copeochs we
+described how Antisthenis deals with the validity of values returned
+by a process. In this section we will focus on how the children
+processes avoid falling into computational rabbit holes using the
+interplay of \emph{caps} and \emph{bounds}.  In the example discussed
+in the introduction (\ref{sec:antisthenis_intro}), we saw that there
+are case where, as soon as a subprocess can prove that its value is
+going to exceed a certain threshold (\emph{cap}), any further work on
+its part is likely futile. It then returns a \emph{bound} which is
+propagated up the chain of parent processes and handled at the point
+where the cap was imposed. The reader is encouraged to maintain a
+mental model where the cap is an threshold and the bound is a lower
+bound.
 
 We expect that the bound of a function satisfies the
 \emph{mototonicity criterion}:
@@ -1257,15 +1292,15 @@ that combines the bounds of the arguments to come up with a bound for
 \(C\).
 
 In simpler terms this means that if a bound exceeds the cap,
-evaluating the arguments and coming up with a tighter bound will still
-exceed the cap.
+evaluating the arguments and coming up with a tighter bounds will
+still exceed the cap.
 
-There may be more requirements of the properties of a cap relate to
-the particular operator. For example, the minimum operator requires
-that bounds be translatable to caps and that if a bound \(b\) is
-translated to a cap \(c\) and \(b' \dot{<} c\) then \(b' < b\). This
-requirement is only related to the way the particular operator is
-implemented and is not a requirement for any other operator.
+There may be more requirements of the properties of a cap w.r.t. to a
+particular operator. For example, the minimum operator requires that
+bounds be translatable to caps and that if a bound \(b\) is translated
+to a cap \(c\) and \(b' \dot{<} c\) then \(b' < b\). This requirement
+is only related to the way the particular operator is implemented and
+is not necessarily a requirement for any other operator.
 
 
 The \hask{ZipperParams} tag needs to provide a way for comparing caps
@@ -1276,7 +1311,11 @@ this one is much more straightforward:
 exceedsCap :: ZCap w -> ZBnd w -> Bool
 \end{haskellcode}
 
-Simply from a cap and a bound check if the bound exceeds the cap.
+Simply from a cap and a bound check if the bound exceeds the cap. A
+special case for the cap is \hask{ForceResult} for which
+\hask{exceedsCap ForceResult _ == False}. As the name suggests
+\hask{ForceResult} is used when we want a process to necessarily
+return a concrete result or an error, as opposed to a bound.
 
 Now that we have seen how the cap is handled on the input side we
 should discuss how the parent process passes a cap to its child
@@ -1350,7 +1389,7 @@ time. We define a zipper structure that focuses on a the particular
 process to be evaluated and arranges the reset of the subprocesses in
 such a way that moving around in the datastructure we focus on the
 next subrpocess to be evaluated. The internal structure of the zipper
-helps antisthenis decide on the next subprocess to be evaluated.
+helps Antisthenis decide on the next subprocess to be evaluated.
 
 With this in mind we define the zipper data structure keeps track of
 the state of the node (see figure \ref{fig:zipper}).
@@ -1440,7 +1479,7 @@ evaluated, and their iteration are then moved from the \hask{initials}
 set to the \hask{coiterations} set, with an intermediate stop in the
 \hask{iterations} set according to the values and strategies. These
 are further elaborated in the section on
-\hyperref[sec:antisthenis_ops]{the section antisthenis
+\hyperref[sec:antisthenis_ops]{the section Antisthenis
   operations}. The structure of \hask{iterator set} is highly operator
 dependent and primarily geared towards efficiently evaluating the
 parent process, but fundamentally it does not compromise on the
@@ -1468,7 +1507,7 @@ properties besides closure, must never push anything to the iterations
 set. The set is equivalent to unit.
 
 As promised we will expand on these in section
-\ref{sec:antisthenis_ops} on antisthenis operators but to make the
+\ref{sec:antisthenis_ops} on Antisthenis operators but to make the
 concept tangible here are some examples of what the iterator set is
 defined as for different operations (all numerical opertions are
 assumed to operate on non-negative numbers, in particular query
@@ -1693,7 +1732,7 @@ The lowest level is reified as an uninhabited type, or tag, witnessing
 the implementation of \hask{ZipperParams}. This implementation would
 be build a workable Antisthenis type. The operator specific types are
 presented in listing \ref{lst:zipper_params}. We have implemented a few types
-in antisthenis to cover the needs of FluiDB (see listing
+in Antisthenis to cover the needs of FluiDB (see listing
 \ref{lst:tag_types}).
 
 
@@ -1737,7 +1776,7 @@ data MulTag p
 data BoolTag op
 \end{haskellcode}
   \caption{\label{lst:tag_types}Tags are phantom types that define the
-    antisthenis operations. The tags themselves may be parameterized
+    Antisthenis operations. The tags themselves may be parameterized
     using type parameter \hask{p}. For the needs of FluiDB we define
     operations for addition, subtraction, multiplication and boolean
     operations.}
@@ -2033,14 +2072,15 @@ is the minimum number of dereference values assuming the final value
 is \hask{False}.
 
 \section{Node machines}
+\ref{sec:antisthenis_machines}
 
 A referrable machine is a process with a name that can be referenced
 by more than one other processes. In FluiDB a machine name corresponds
-to a graph node since the antisthenis infrastructure is utilized to
+to a graph node since the Antisthenis infrastructure is utilized to
 provide incremental computation of properties on nodes
 (materializability, cost, stochastic cost, etc are described in
 separate sections). In this section we look into the the layer of
-antisthenis that takes into account the dynamics of referrable
+Antisthenis that takes into account the dynamics of referrable
 machines.
 
 \subsection{Antisthenis machine tape}
