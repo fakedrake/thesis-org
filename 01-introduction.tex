@@ -109,15 +109,15 @@ cheaper.
 Consider a workload that repeatedly runs a query generated from the
 following template:
 
-\begin{sqlcode}
+\begin{minted}[escapeinside=||,mathescape=true]{sql}
   select      n_name, avg(l_discount)
   from        lineitem, customer, nation, order
   where       l_orderkey = o_orderkey
   and         c_custkey = o_custkey
   and         c_nationkey = n_nationkey
-  and         l_shipdate > |${min_date}|
+  and         l_shipdate > |\(\mathit{\$\{min\_date\}}\)|
   group by    n_name
- \end{sqlcode}
+\end{minted}
 
 
 It is clear in this case that it would be beneficial if the workload
@@ -243,14 +243,6 @@ they make no attempt to recycle tables, ie. garbage collect tables,
 whose data can be found in other relations, and narrows it's attention
 to aggregations.
 
-
-% TODO: rewrite: we are like
-% \cite{mistryMaterializedViewSelection2001} AND-OR but
-%
-% - bidirectional
-% - not only aggregations
-% - out contains complements
-% - Interleave GC when traversing
 From the aforementioned work we keep the basic notion of using a graph
 to represent relationships between queries and to derive the benefit
 of materializing a relation. We also use path finding techniques in
@@ -258,20 +250,32 @@ that graph to create plans. However we introduce a more complex and
 ad-hoc hierarchy of relations to account for subsumptions the entire
 relational algebra, rather than just aggregations. That is very
 similar to AND-OR dags as found in
-\cite{mistryMaterializedViewSelection2001}.  Furthermore the relations
-we express in that graph are bidirectional. So rather than only
-finding paths towards the goal and deleting relations when they are no
-longer needed, we simultaneously plan for moving towards the goal
-query and performing "backwards" operations for saving up space. We
-clarify this with an example which demonstrates a slightly simplified
-version of our system's functionality.
+\cite{mistryMaterializedViewSelection2001}.  The relations we express
+in that graph are bidirectional, so rather than only finding paths
+towards the goal and deleting relations when they are no longer needed
+via GC plan fragments. We simultaneously plan for moving towards the
+goal query and performing "backwards" operations to enrich the space
+of possible plans. We clarify this with an example which demonstrates
+a slightly simplified version of our system's functionality.
 
 In figure \ref{fig:intro_selectexample} we provide representation of a
 subsumption graph that our RDBMS might create after witnessing
 selections on \(\li\). For brevity let \(p:=shipdate > 10-11-2015\),
 \(q:=quantity < 24\) and \(r:=discount < .06\). The RDBMS has
-encountered \(\sigma_{p}(\li)\), \(\sigma_{q}(\li)\) and \(\sigma_{q}
-\sigma_{r} (\li)\).
+encountered \(\sigma_{p}(\li)\), \(\sigma_{q}(\li)\) and
+\(\sigma_{q} \sigma_{r} (\li)\). For the purposes of this example we
+assume that according to the workload the planner has determined that
+the priority in terms of usefulness of each qury involved is in
+descending order of usefulness:
+
+\begin{itemize}
+\item \(\sigma_q \li\)
+\item \(\sigma_{p \land r} \li\)
+\item \(\sigma_p \li\)
+\item \(\sigma_{\neg p} \li\)
+\item[ \( \ldots \)]
+\item \(\li\)
+\end{itemize}
 
 
 \begin{figure}[H]
@@ -299,18 +303,15 @@ encountered \(\sigma_{p}(\li)\), \(\sigma_{q}(\li)\) and \(\sigma_{q}
 \end{tikzdiagram}
 \caption{\label{fig:intro_selectexample}The materialized relations are
   marked with grey. Assuming the absense of null values and assuming
-  set semantics
-  \(\li = \sigma_p \li \cup \sigma_{\neg p} \li\).
+  set semantics \(\li = \sigma_p \li \cup \sigma_{\neg p} \li\),
   FluiDB can find a plan to generate any of the relations in the graph
   from \(\sigma_p \li\) and \(\sigma_{\neg p} \li\).  }
 \end{figure}
 
-% TODO: Benefit order: \sigma_q > \sigma_{p \land r} > \sigma_p >
-% \sigma_{\neg q} > ... > \li.
-
-The query that we are planning is \(\sigma_{quantity < 24}
-\sigma_{discount < .06} (\li)\), which is denoted in the figure as
-\(\sigma_{q \land r}(\li)\). Our total size budget is 2.5.
+The query that we are planning is
+\(\sigma_{quantity < 24} \sigma_{discount < .06} (\li)\), which is
+denoted in the figure as \(\sigma_{q \land r}(\li)\). Our total size
+budget is 2.5.
 
 Following the edges in the graph, to plan \(\sigma_{q \land r}(\li)\)
 we need \(\sigma_{q}(\li)\) and for that we need \(\li\) and is least
@@ -378,20 +379,23 @@ represented as:
     the workload amortized cost and involving reverse operations.}
 \end{figure}
 
-% TODO: Paragraph: contenxt where it is important to strictluy manage
-% space: in-memory database. In that vain fluidb makes heavy use of of
-% code generation.
+This radical approiach to adaptation of data to the workload is
+particularly useful in contexts where (fast) memory is scarce compared
+to the data, particularly in-memory databases. In that vain we lean
+heavily on executing plan by transpiling the plan to C++ code.
 
-% TODO: Chapter titles.
-This thesis describes in detail how we implemented a system targeted
-at performing this kind of reasoning to planning and executing
-queries. In chapter \ref{chapter:background} we provide a brief
-overview of the state of the art and common practices that pretain to
-query processing; in chapter \ref{chapter:fluidb_logical_planning} we
-describe how queries are processed and stored at a logical level; in
-chapter \ref{chapter:physical_planning} we describe how FluiDB
-performs planning and garbage collection to come up with a concrete
-physical plan for each query; in chapter
+This thesis describes in detail how we implemented FluiDB, a system
+targeted at performing this kind of reasoning to planning and
+executing queries. In chapter \ref{chapter:background} we provide a
+brief overview of the state of the art and common practices that
+pretain to query processing; in chapter
+\ref{chapter:fluidb_logical_planning} we describe how queries are
+processed and stored at a logical level; in chapter
+\ref{chapter:physical_planning} we describe how FluiDB performs
+planning and garbage collection to come up with a concrete physical
+plan for each query; in chapter \ref{chapter:antisthenis} we go over
+an incremental evaluation system we built to facilitate the
+requirements of the physical planner; in chapter
 \ref{chapter:execution_engine} we go over the algorithms and
 particular techniques that FluiDB employs to transpile the physical
 plan into C++ code; finally at chapter \ref{chapter:evaluation} we

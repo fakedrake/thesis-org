@@ -1082,3 +1082,16 @@ Where \(\lambda \in (0,1)\) is the estimated probability that the the
 node is no longer materialized when needed. As before materialized
 nodes have cost \(c_{mat}\) and non-materialized nodes have cos
 \(c_{nomat}\)
+
+\section{Conclusion}
+
+In this chapter we saw two distinct concepts: a weighted backtracking
+framework and a system implemented on top of that framework, namely
+the FluiDB's physical planner. These two combined enable FluiDB to
+search for quality plans within the QDAG in a flexible way. Some
+aspects of the planner, like the GC algorithm, may seem fairly
+naive. Since the planner is fundamentally a heuristic-based system,
+the design space is limited only by the immagination of the engineer
+desgning it. The aim of this part of the work, and by extension of
+this chapter, is to explore ideas relating to the physical planner
+balancing breadth and depth.

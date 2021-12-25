@@ -99,8 +99,6 @@ simply evaluates the physical plan on top of the data, making use of
 the correct algorithms, auxiliary structures like indexes managing
 memory, handling page-level caching, etc.
 
-% TODO: RDBMS diagram
-
 \section{Query optimization and planning}
 
 Query optimization and planning generally refers to the processes that
@@ -472,3 +470,16 @@ Work such as MRShare \cite{nykielMRShareSharingMultiple2010} tries to
 bridge the gap between intermediate result recycling and MQO by
 automatically grouping queries in a workload in such a way that
 computation can be maximally shared.
+
+\section{Conclusion}
+
+We presented an overview of the various techniques and challenges of
+problems that are directly related to the design of FluiDB and also
+some adjacent ones. FluiDB draws inspiration from all these systems to
+explore a new approach to managing in-memory data being queried. It
+subscribes to the relational model of data and queries and parallels
+many techniques introduced for intermediate result recycling and mutly
+query optimization. As an in-memory database it employs code
+generation and takes it to the furthest extreme generating highly
+generic C++ like the HIQUE system, fully compromizing on the
+performance of the C++ compiler.
