@@ -1,77 +1,4 @@
-\dictum[Zizek]{Something about what is good.}
-
-\begin{summary}
-\item FluiDB is well suited for join-heavy star schemata so we
-  evaluated using the SSB-TPC-H benchmark.
-\item Our evaluation shows that FluiDB is able to plan around the
-  space constraints and come up with plans that materialize
-  intermediate results that are useful for future queries.
-\item FluiDB is generally faster than the baseline due to caching but
-  at times may be slower in individual queries when it receives
-  ``unexpected'' queries.
-\item FluiDB generally performs better when allowed larger memory
-  budgets but this speedup is based on heuristic assumptiosn that
-  sometimes break in interesting ways.
-\end{summary}
-
-We based our evaluation on the Star Schema Benchmarkx (SSB)
-\cite{barataOverviewDecisionSupport2015} which is a variation of
-TPC-H. Like TPC-H it models the data warehouse of a wholesale
-supplier.
-
-As the name suggests these queries query a star schama. The star
-schema is derived from the TPC-H schema (figure \ref{fig:tpch_schema})
-by merging the \sql{linenumber}, \sql{orders} and
-\sql{partsupp} and completely dropped tables \sql{nation} and
-\sql{region} tables as shown in figure \ref{fig:ssb_tpch_schema}.
-
-\begin{figure}[p]
-\begin{tikzdiagram}
-  \tikzset{tbl/.style={draw,rectangle,minimum height=2cm,minimum width=2cm}};
-  \node[tbl] (lo) {lineorder};
-  \node[tbl] (p) [above left = of lo] {part};
-  \node[tbl] (c) [above right = of lo] {customer};
-  \node[tbl] (s) [below right = of lo] {supplier};
-  \node[tbl] (d) [below left = of lo] {date};
-  \draw [-stealth] (c) -- (lo);
-  \draw [-stealth] (p) -- (lo);
-  \draw [-stealth] (s) -- (lo);
-  \draw [-stealth] (d) -- (lo);
-\end{tikzdiagram}
-\caption{\label{fig:ssb_tpch_schema}The foreign key links in a SSB-TPC-H}
-\end{figure}
-
-
-\begin{figure}[p]
-\begin{tikzdiagram}
-  \tikzset{tbl/.style={draw,rectangle,minimum height=2cm,minimum width=2cm}};
-  \tikzset{arr/.style={-stealth}};
-  \node[tbl]                     (r) {region};
-  \node[tbl, right=of r]         (n) {nation};
-  \node[tbl, above right = of n] (c) {customer};
-  \node[tbl, right = of n] (s) {supplier};
-  \node[tbl, right = of c]         (o) {orders};
-  \node[tbl, right=of s]         (ps) {partsupp};
-  \node[tbl, below left = of ps] (p) {part};
-  \node[tbl, right= of ps]        (l) {lineitem};
-  % Connection
-  \path [arr]
-  (r) edge (n)
-  (n) edge (c)
-  (c) edge (o)
-  (o) edge (l)
-  (n) edge (s)
-  (s) edge (ps)
-  (ps) edge (l)
-  (p) edge (ps);
-\end{tikzdiagram}
-\caption{\label{fig:tpch_schema}The foreign key links in a traditional TPC-H schema}
-\end{figure}
-
-
-% TODO: Present workloads to the appendix
-The particular queries contained in the workload are presented in
-listing [ref] in the appendix (\ref{chapter:appendix}).
+dix (\ref{chapter:appendix}).
 
 We generated a workload where queries were compiled and planned one by
 one in a loop for and run them over a database of data generated with
@@ -79,7 +6,8 @@ a modified version of the TPC-H dbgen
 \cite{perivolaropoulosFakedrakeSsbdbgen2021a} with scaling of size 1,
 meaning that the total primary data is around 1GB in CSV format. The
 exact size of the data generated after formatting them to the format
-required by FluiDB (described in chapter \ref{chapter:execution}) are
+required by FluiDB (described in chapter
+\ref{chapter:execution_engine}) are
 
 \begin{minted}[]{sh}
 $ du -sh *.dat
@@ -92,8 +20,8 @@ $ du -sh *.dat
 
 Which makes a total of approximately 200k pages.
 
-The lowset budget within which FluiDB was able to plan all 12 queries
-of SSB-TPC-H was 2200k pages.
+The lowset budget within which FluiDB was able to plan all 13 queries
+of SSB-TPC-H was 2300k pages.
 
 In our expriment we use page IO as a proxy for performance, despite
 the fact that FluiDB is an in-memory database. We think that this is a
@@ -104,16 +32,15 @@ cost is dominated by page IO that will certainly cause cache misses at
 the LLC. Another thing to note is that FluiDB generates code that
 focuses on performance and not on compilation time, making heavy use
 of metaprogramming like \cpp{constexpr} and temlpates.  This makes for
-fairly slow compilation times (approximately 1 sec to 2 sec with
-\texttt{-O2}). There are ways to speed up compilation time like using
-pre-compiling header files \cite{PrecompiledHeadersPCH} and
-fine-tuning the compiler optimization passes. These techniques are
-beyond the scope of this work, FluiDB is focused on analytics
-workloads that do not include sub-second queries.
+βfairly slow compilation times. There are ways to speed up compilation
+time like using pre-compiling header files
+\cite{PrecompiledHeadersPCH} and fine-tuning the compiler optimization
+passes. These techniques are beyond the scope of this work, FluiDB is
+focused on analytics workloads that do not include sub-second queries.
 
 \begin{figure}[p]
 \centering
-\includegraphics[width=.9\linewidth]{./plans/io_perf_22000.pdf}
+\includegraphics[width=.9\linewidth]{./plans/io_perf_23000.pdf}
 \caption{\label{fig:min_budget_plot}
   The total page read/writes for each query a sequence of queries. The
   baseline is the query being run by FluiDB directly without any
@@ -135,7 +62,7 @@ intermediate results as demonstrated in figure \ref{fig:large_budget_plot}
 
 \begin{figure}[p]
 \centering
-\includegraphics[width=.9\linewidth]{./plans/io_perf_60000.pdf}
+\includegraphics[width=.9\linewidth]{./plans/io_perf_61000.pdf}
 
 \caption{\label{fig:large_budget_plot}
   The total page read/writes for each query a sequence of queries. The
@@ -146,39 +73,38 @@ intermediate results as demonstrated in figure \ref{fig:large_budget_plot}
   individual query.}
 \end{figure}
 
-An interesting point here is the plan for evaluating query 8 is more
+An interesting point here is the plan for evaluating query 7 is more
 expensive in the workload run under laxer budgetary constraints. This
 may seem starange but it is an example demonstrative of the
 fundamental operation of FluiDB.
 
-% TODO: Provide the plans we are talking about.
 The top level explanation is that the lax-budget plan needs to
 evaluate \(\mathit{lineorder}\) via the reverse trigger of a join as
-it was deleted during evaluation of query 7. Mysteriously during the
+it was deleted during evaluation of query 6. Mysteriously during the
 strict-budget planning the \(\mathit{lineorder}\) relation is readily
-available during planning of query 8! The key lies slightly earlier in
-the workload. FluiDB, materializes in query 5 all the join
+available during planning of query 7! The key lies slightly earlier in
+the workload. FluiDB, materializes in query 4 the join
 
 \[
-Q := \mathit{supplier} \Join_{\mathit{lo\_suppkey} = \mathit{s\_suppkey}} \mathit{lineorder}
+Q_{36} := \mathit{supplier} \Join_{\mathit{lo\_suppkey} = \mathit{s\_suppkey}} \mathit{lineorder}
 \]
 
-and corresponding antijoins \(Q_1\) and \(Q_2\) making the node
+and corresponding antijoins \(Q_{35}\) and \(Q_{37}\) making the node
 \(\mathit{lineorder}\) deletable. However, when running the workload
 under strict budgetary constraints, it is forced to garbage collect
 shortly after materializing said join at a moment while both \(Q\) and
 \(\mathit{lineorder}\) are protected (see section \ref{sec:gc} on
 garbage collection). Therefore, FluiDB is forced to delete both
-\(Q_1\) and \(Q_2\). Making \(\mathit{lineorder}\) non-deletable
-when planning for query 5 finishes.
+\(Q_{35}\) and \(Q_{37}\). Making \(\mathit{lineorder}\) non-deletable
+when planning for query 4 finishes.
 
 On the other hand, whith laxer budgetary constraints, no garbage
-collection is triggered during query 5. In fact the next garbage
-collection is triggered during query 7, at a moment when
+collection is triggered during query 4. In fact the next garbage
+collection is triggered during query 6, at a moment when
 \(\mathit{lineorder}\) is deletable, unprotected, and a prime
 candidate for deletion based on the GC heuristics.
 
-Alas, when query 8 requires \(\mathit{lineorder}\) for its plan,
+Alas, when query 7 requires \(\mathit{lineorder}\) for its plan,
 FluiDB needs to re-construct it in the case of lax budgetary
 constraints but, not in the case of strict constraints.
 
@@ -197,6 +123,23 @@ tragically forced to commit to whatever adveturous or conservative
 decisions it makes at the end of every planning iteration, doomed to
 pay dearly for every misstep but to reap the rewards of every
 insightful choice.
+
+Interestingly this problem goes away when we run with a budget of
+3500k pages (figure \ref{fig:extra_large_budget_plot}).
+
+\begin{figure}[p]
+\centering
+\includegraphics[width=.9\linewidth]{./plans/io_perf_65000.pdf}
+
+\caption{\label{fig:extra_large_budget_plot}
+  The total page read/writes for each query a sequence of queries. The
+  baseline is the query being run by FluiDB directly without any
+  materialized nodes. The workload bars represent the cost of each
+  query in a workload built within the same QDAG. The budget for this
+  is triple the minimum budget within which FluiDB can run each
+  individual query.}
+\end{figure}
+
 
 % TODO: Maybe skip this section?
 \section{A note on size estimation}
@@ -238,3 +181,65 @@ is, that all natural joins are extension joins. Therefore
 This causes FluiDB to vastly overestimate the size of plans that have
 selections pushed down making these plans disproportionately
 unappealing
+
+\begin{code}
+\begin{minted}[escapeinside=||,mathescape=true]{trace-lexer.py:TraceLexer -x}
+# Query 4
+Query |\(s \gamma \pi \sigma (\mathit{supplier} \Join \mathit{lineorder} \Join \mathit{date} \Join \mathit{part})\)| {
+  # There is enough space to keep both and the complements
+  |\(Q_{36}, Q_{35}, Q_{37}\)| := Materialize[|\(\mathit{supplier} \Join \mathit{lineorder}, \mathit{supplier} \cancel\ltimes \mathit{lineorder}, \mathit{supplier} \cancel\rtimes \mathit{lineorder}\)|]
+  |\(Q_{41}, Q_{40}, Q_{42}\)| := Materialize[|\(Q_{36} \Join \mathit{date}, Q_{36} \cancel\ltimes \mathit{date}, Q_{36} \cancel\rtimes \mathit{date}\)|]
+  |\(Q_{46}, Q_{45}, Q_{47}\)| := Materialize[|\(Q_{41} \Join \mathit{part}, Q_{41} \cancel\ltimes \mathit{part}, Q_{41} \cancel\rtimes \mathit{part}\)|]
+  |\(Q_{50}\)| := Materialize[|\(\sigma Q_{46}\)|]
+  |\(Q_{90}\)| := Materialize[|\(\gamma \pi Q_{50}\)|]
+  |\(Q_{91}\)| := Materialize[|\(s Q_{90}\)|]
+}
+
+# Query 5
+Query |\(s \gamma \pi \sigma (\mathit{supplier} \Join \mathit{lineorder} \Join \mathit{date} \Join \mathit{part})\)| {
+  |\(Q_{92}\)| := Materialize[|\(\sigma Q_{46}\)|]
+  |\(Q_{118}\)| := Materialize[|\(\gamma \pi Q_{92}\)|]
+  |\(Q_{119}\)| := Materialize[|\(s Q_{118}\)|]
+}
+
+# Query 6
+Query |\(s \gamma \pi \sigma (\mathit{supplier} \Join \mathit{lineorder} \Join \mathit{date} \Join \mathit{part}))\)| {
+  # FluiDB decides delete lineorder since it has the complements
+  GC { Delete[|\(\ldots, \mathit{lineorder}, \ldots \)|] }
+  |\(Q_{120}\)| := Materialize[|\(\sigma Q_{46}\)|]
+  |\(Q_{146}\)| := Materialize[|\(\gamma \pi Q_{120}\)|]
+  |\(Q_{147}\)| := Materialize[|\(s Q_{146}\)|]
+}
+
+# Query 7
+Query |\(s \gamma \pi \sigma (\mathit{customer} \Join \mathit{date} \Join \mathit{lineorder} \Join \mathit{supplier})\)| {
+  # Ooops... this would be avoided if we hadn't deleted lineorder.
+  |\(\mathit{lineorder}\)| := Materialize[|\(\bar\pi Q_{36} \cup Q_{37}\)|]
+  |\(\mathit{date}\)| := Materialize[|\(\bar\pi Q_{41} \cup Q_{42}\)|]
+  GC { Delete[|\( \ldots \)|] }
+  |\(Q_{149}, Q_{148}, Q_{150}\)| := Materialize[|\(\mathit{date} \Join \mathit{lineorder}, \mathit{date} \cancel\ltimes \mathit{lineorder}, \mathit{date} \cancel\rtimes \mathit{lineorder}\)|]
+  GC { Delete[|\( \ldots \)|] }
+  |\(Q_{154}, Q_{153}, Q_{155}\)| := Materialize[|\(\mathit{customer} \Join Q_{149}, \mathit{customer} \cancel\ltimes Q_{149}, \mathit{customer} \cancel\rtimes Q_{149}\)|]
+  GC { Delete[|\( \ldots \)|] }
+  |\(Q_{165}\)| := Materialize[|\(\sigma Q_{154}\)|]
+  |\(Q_{182}, Q_{181}, Q_{183}\)| := Materialize[|\(Q_{165} \Join \mathit{supplier}, Q_{165} \cancel\ltimes \mathit{supplier}, Q_{165} \cancel\rtimes \mathit{supplier}\)|]
+  GC { Delete[|\( \ldots \)|] }
+  |\(Q_{163}\)| := Materialize[|\(\sigma Q_{182}\)|]
+  |\(Q_{203}\)| := Materialize[|\(\gamma \pi Q_{163}\)|]
+  |\(Q_{204}\)| := Materialize[|\(s Q_{203}\)|]
+}
+
+\end{minted}
+  \caption{\label{fig:reverse_operations}Abbreviated version of the
+    plans of queries 5 to 8 of SSB TPC-H with a high budgetgy.}
+
+\end{code}
+
+\section{Conclusion}
+
+FluiDB is a very complex databse system built from scratch focused on
+a specific idea: making optimal use of the storage budget by fully
+adapting the data layout to the workload. While FluiDB itself it is
+far from stable enough system to be used in a production setting, the
+results presented in this chapter demonstrate that it is an idea worth
+considering to incorporate in the design of a database system.d

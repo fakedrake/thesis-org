@@ -113,7 +113,10 @@ def parse_file(fname):
     with open(fname,'r') as f:
         return parse_file_contents((l.strip() for l in f))
 
-def make_plots(data):
+def my_len(x):
+    return len(x) if isinstance(x,list) else x.shape[0]
+
+def make_plots(data, max_qs):
     """
     >>> make_plots(parse_file('io_perf.txt')[60000]).savefig('io_perf_60000.pdf')
     >>> make_plots(parse_file('io_perf.txt')[22000]).savefig('io_perf_22000.pdf')
@@ -122,19 +125,25 @@ def make_plots(data):
     # create plot
     fig, ax = plt.subplots()
     index = np.arange(SAMPLES)
-    bar_width = 0.35
+    bar_width = 0.5
     opacity = 0.8
 
     main_data = data['main']['ops']
     baseline_data0 = data['baseline']['ops']
-    main_len = main_data.shape[0]
-    base_len = baseline_data0.shape[0]
+
+    if isinstance(main_data,list):
+        raise RuntimeError("Ooops main" + main_data)
+    if isinstance(baseline_data0,list):
+        raise RuntimeError("Ooops baseline" + baseline_data0)
+
+    main_len = my_len(main_data)
+    base_len = my_len(baseline_data0)
     baseline_data = np.tile(baseline_data0, (main_len // base_len + 1) )[:main_len]
 
     baseline = plt.bar(index, baseline_data, bar_width,
-                     alpha=opacity,
-                     color='orange',
-                     label='Baseline')
+                       alpha=opacity,
+                       color='orange',
+                       label='Baseline')
 
     worklad = plt.bar(index + bar_width, main_data, bar_width,
                      alpha=opacity,
@@ -144,8 +153,17 @@ def make_plots(data):
     plt.xlabel('SSB Query')
     plt.ylabel('# Page IO')
     plt.title('FluiDB performance on SSB TPC-H')
-    plt.xticks(index + bar_width, ['%d' % (i%12 + 1) for i in range(SAMPLES)])
+    plt.xticks(index + bar_width,
+               ['%d' % (i % max_qs + 1) for i in range(SAMPLES)],
+               fontsize='small')
     plt.legend()
 
     plt.tight_layout()
     return plt
+
+
+def main():
+    for size,max_qs in [(22000,13), (60000,13), (23000,13),(65000,13),(61000,13)]:
+        pdf_file = 'io_perf_%d.pdf' % size
+        print("building:",pdf_file)
+        make_plots(parse_file('io_perf.txt')[size], max_qs).savefig(pdf_file)
