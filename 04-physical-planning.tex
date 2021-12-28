@@ -7,16 +7,16 @@ equations.}
   backtracking search that supports \emph{once} and \emph{fallback},
   two cut-like operations.
 \item The FluiDB query planner follows an \(A^{\star}\)-like method for
-  seaching plans plans are searched in a top-down fashion, guided by a
+  searching plans are searched in a top-down fashion, guided by a
   cost model that takes into account the cost historical queries.
 \item The query planner can make use of \emph{forward} or
   \emph{reverse} triggering of operators.
-\item The garbage collector clears up space on-demand maintaining the
-  materializability of all the nodes in the graph.
+\item The garbage collector clears up space on demand maintaining the
+  materializability of all nodes in the graph.
 \end{summary}
 
 This chapter goes in detail about the architecture of the logical
-planing of a query. Query planning is based on an A*-like search
+planing of a query. Query planning is based on an A^{\star}-like search
 algorithm for through the space of partial plans. We initially
 describe the fundamental computational structures that facilitate this
 search and their unique properties that allow us the necessary
