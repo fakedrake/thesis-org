@@ -1462,11 +1462,9 @@ information (see section \ref{sec:relation_shapes})
 \section{Query cluster internals}
 \label{sec:cluster_internals}
 
-Clusters are the highest level building blocks of the graph. This
+Clusters are the elements of the highest organization level of the graph. This
 section describes the semantic role of the cluster as a set of
-connected n-nodes and t-nodes.
-
-Clusters represent \emph{logical operations} and they are the connection
+connected n-nodes and t-nodes. Clusters represent \emph{logical operations} and they are the connection
 between the basic graph and the relational algebra semantics.
 
 \subsection{Cluster polymorphism}
@@ -1479,7 +1477,7 @@ structure of the different cluster types. Each type of cluster has
 input, output and intermediate slots, and each of the slots typically
 contains an n-node reference and an RA operator that relates the node
 to the cluster. They also contain slots to accommodate the t-nodes
-connecting said n-nodes. In dealing with clusters, it is assumed that
+connecting the said n-nodes. In dealing with clusters, it is assumed that
 input and output n-nodes contain values that may be shared by other
 clusters. In contrast, intermediate n-nodes and t-node slots are
 always completely private to each cluster.
@@ -1598,7 +1596,7 @@ possible joins, the query is transformed into a forest of plans we can
 insert it into the tree (listing \ref{lst:query_forest}). This is an
 iterative process where each operation in each of the trees in the
 forest is translated to a cluster which is then inserted into the
-QDAG. The process if inserting a sub-forest or subtree into the QDAG
+QDAG. The process is inserting a sub-forest or subtree into the QDAG
 has the effect of extending the QDAG by the connected clusters
 corresponding to the operators at the nodes of the forest, and also
 returns an n-node that corresponds to the subforest or sub-tree
@@ -1614,10 +1612,10 @@ same tree twice during insertion.
     data QueryForest e s =
       QueryForest
       { qfHash :: Int
-        ,qfQueries --
-        :: Either --
-        [(Query e (QueryForest e s))] -- An actual forest
-        (s,RelationShape e s) -- A final leaf
+        ,qfQueries
+          :: Either 
+            [(Query e (QueryForest e s))] -- An actual forest
+            (s,RelationShape e s) -- A final leaf
       }
   \end{haskellcode}
 
@@ -1639,8 +1637,8 @@ generated and the matched nodes all correspond to the same existing
 cluster, we infer that the cluster is already in the QDAG and the
 process finishes . Otherwise, we need to create and insert a cluster
 and a corresponding propagator (see section
-\ref{sec:shape_propagators}). Finally all new nodes, QNFs, and the
-cluster are registered and cross matched so they are easily cross
+\ref{sec:shape_propagators}). Finally, all new nodes, QNFs, and the
+cluster are registered and cross-matched so they are easily cross
 referenced.  We memoize the entire process using the \hask{qfHash} to
 avoid re-traversing the same path.
 
@@ -1656,20 +1654,18 @@ through all 12 queries of the SSB TPC-H benchmark (see chapter
     in the SSB TPC-H.}
 \end{figure}
 
-
-
 \section{Relation shapes}
 \label{sec:relation_shapes}
 
-In the section on QNFs we discussed the need to abstract away
+In section \ref{sec:qnf} on QNFs we discussed the need to abstract away
 information that pertains to the particular structure of a relation in
 favor of semantic information that is rewrite and data
 independent. Relation shapes cover the opposite need: they encode the
 particular cardinality and shape of a relation at a specific point in
 time.
 
-A relation shape is a datastructure that contains information about
-the shape of the result of query.
+A relation shape is a data structure that contains information about
+the shape of the result of a query.
 
 \begin{haskellcode}
   data RelationShape' e' =
@@ -1688,7 +1684,8 @@ the shape of the result of query.
     deriving (Show,Generic)
 \end{haskellcode}
 
-A shape contains all combinations of columns that comprise a unique
+Focusing on the field \hask{rsUnique}, a shape contains 
+all combinations of columns that comprise a unique
 subtuple.  This is useful primarily to determine foreign key
 joins. The expression
 
@@ -1708,7 +1705,7 @@ because each row of \(A\) matches at most one row of \(B \times C\).
 So the unique subtuples are computed using the following rules:
 
 \begin{itemize}
-\item In general the set of unique subtuples of \(A \Join B\) is
+\item The set of unique subtuples of \(A \Join B\) is
   computed by concatenating all combinations of the unique subtuples
   of \(A\) and \(B\).
 \item The unique subtuples of a selection, semijoin, antijoin, and limit are the same as the unique
@@ -1716,8 +1713,11 @@ So the unique subtuples are computed using the following rules:
 \item The unique subtuples of a projection are the unique subtuples of
   the input that are entirely exposed.  The reader is reminded that
   FluiDB's notion of RA requires that there is at least one such
-  unique subtuple.
+  unique subtuple, and that this requirement is facilitated by the
+  query pre-processor.
 \end{itemize}
+
+The rest of the fields are maintained by \emph{shape propagators}.
 
 \subsection{Shape propagators}
 \label{sec:shape_propagators}
@@ -1750,14 +1750,14 @@ As the name of our propagator implementation suggests, our idea is to
 correspond each cluster to a propagator to form a propagator network
 that computes the shapes of the relations corresponding to n-nodes.
 
-Intuitively, we model a propagator as a partial function that changes
+We model a propagator as a partial function that changes
 the values at the edges of a cluster. Each cluster is equipped with a
 propagator which, when triggered synchronizes the values at the edges
 of the cluster. The partiality of the function stems from the fact
 that it might detect irreconcilable inconsistencies between the cells
 (see listing \ref{lst:acpropagator}). This conception of the
 propagator departs slightly form the conception described in the paper
-in that it clearly separates the \emph{cluster} as a datastructure
+in that it clearly separates the \emph{cluster} as a data structure
 that holds a fixed number of interdependent values, and the function
 that updates the values in that cluster.
 
@@ -1777,9 +1777,9 @@ that updates the values in that cluster.
     synchronized.}
 \end{code}
 
-Given a cluster with n-nodes at the edges, we lookup the shape of each
+Given a cluster with n-nodes at the edges, we look up the shape of each
 node and add that to the cluster edge.  Once a cluster is triggered
-and the values synchronized those values are checked against the old
+and the values synchronized, those values are checked against the old
 ones and for the ones that were updated we find the clusters in which
 they participate and run the same process. The convergence of this
 process is justified in \cite{kuperLVarsLatticebasedData2013}.
@@ -1789,7 +1789,7 @@ process is justified in \cite{kuperLVarsLatticebasedData2013}.
 As mentioned, the cells of a propagator involve more structure than
 raw values. Indeed, FluiDB wraps these values in a functor that we dub
 as \emph{defaulting functor (DF)} to reason about the consistency of
-the relation shape. In particular we require that the cell can handle
+the relation shape. In particular, we require that the cell can handle
 cases where
 
 \begin{itemize}
@@ -1844,7 +1844,7 @@ associative. In general, the semigroup implemented by the underlying
 type of the DF is taken to mean
 \(\mathit{better} \diamond \mathit{backup}\), i.e. keep as much of the
 left operand as possible unless the right operand is found to be
-"better" for some definition of better. For example, when calculating
+"better", for some definition of better. For example, when calculating
 the cardinality we include a value of certainty between
 \(\left[0,1\right]\).  A more certain right-hand cardinality is
 preferred over a less certain left-hand side.
@@ -1874,10 +1874,16 @@ generation.
       mempty = DefaultingEmpty
   \end{haskellcode}
 
-  \caption{\label{lst:defaulting_semigroup}The join semilattice that is defined in terms of the}
+  \caption{\label{lst:defaulting_semigroup}The monoid define over the DF 
+  is the right semilattice. A DF contains up  two values, the "default" and the "full" value.
+  The "full" value refers to some property external to the defaulting functor, namely a 
+  materialized relation, and therefore is not subject to change. The "default" value
+  is gradually refined through monoidal combination. Combination of DFs is associative but not
+  commutative: the right operand is expected to be the more recent one. Therefore
+  we keep the left hand side "full" if we are combining two of them.}
 \end{code}
 
-When committing to a query plan we are also committing to full values
+When committing to a query plan, we are also committing to full values
 for the defaulting values in the propagator cells. Every operator of
 the plan corresponds to a relation shape propagator. When committing
 an operator to the plan by translating it into C++ code, we promote
@@ -1898,9 +1904,7 @@ The full part and the default part of the the defaulting value are not
 necessarily structurally synchronized. We \emph{internally
 synchronise} a cell before triggering the propagator to make sure we
 maintain the consistency of the newly promoted cells with the already
-existing full cells.
-
-It is notable that there is no formal guarantee that the propagator
+existing full cells. It is notable that there is no formal guarantee that the propagator
 will be able to create structurally consistent cells. In that case the
 propagator will fail. Handling of this failure gracefully is beyond
 the current scope of this work.
@@ -1926,11 +1930,11 @@ the full state (listing \ref{lst:promote_defaulting}).
 
 \section{Summary and conclusion}
 
-In this chapter, we detailed how FluiDB processes queries. From
+In this chapter we detailed how FluiDB processes queries. From
 parsing to generating a graph of queries (QDAG) and inferring the
 shapes of the relations in that graph. We also discussed different
 conceptions of relational algebra that are used in FluiDB (normal RA
-and QNF) and reverse operations. This will serve as a solid bedrock on
+and QNF) and reverse operations. This will serve as a solid  on
 which we can build the query planner and on top of the code generator.
 
 There are a few shortcomings to this model that we have not yet
@@ -1940,7 +1944,7 @@ FluiDB. The most important ones being:
 \begin{itemize}
 \item As things stand, the QDAG will keep growing infinitely as new
   queries arrive and there is no obvious way to prune it while
-  guaraneeing the materializability of all the nodes.
+  guaranteeing the materializability of all n-nodes.
 \item There is no obvious path to supporting updates in the primary
   tables. There has been a lot of work on materialized view
   maintenance but most of it assumes that the primary tables are
