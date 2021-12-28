@@ -15,28 +15,28 @@ the unchangeable in individuality.}
 With the advent of technologies that make access to information
 scalable and affordable, the mental and temporal gap between
 collection of data and their analysis grows rapidly. At least two of
-the biggest players in the the tech industry, Facebook and Google,
+the biggest players in the tech industry, Facebook and Google,
 base their competitive advantage almost exclusively on vast amounts of
 information that they have collected and their capacity for such
-collection and processing. In cases like these the layout of the
+collection and processing. In cases like these, the layout of the
 stored data is independent of the growing number of applications
 taking advantage of it.
 
-A mantra in database community used to be that ``storage is cheap''
+A mantra in the database community used to be that ``storage is cheap''
 and while that is true a more complete version of the mantra might be
 that ``slow storage is cheap''.
 
-Databases have traditionally been dealing with the tradeoff between
-memory and time efficiency within monetary constraints especially with
+Databases have traditionally been dealing with the trade-off between
+memory and time efficiency within monetary constraints, especially with
 the use of intermediate result recycling technologies which employ
-sophisticated ways of chosing parts of computation to be stored for
+sophisticated ways of choosing parts of computation to be stored for
 reuse. This model has had some impressive results in OLAP
 workloads. We adopt a slightly different view of the problem:
 executing query plans does not only leave some specific intermediate
 results as residue, but rather \emph{transitions the entire storage
   state from one where the result of the query is not materialized to
-  one where it is}. Whith such a notion of query planning what new
-dimensions open up in the desgn space of a query planner? The creation
+  one where it is}. With such a notion of query planning what new
+dimensions open up in the design space of a query planner? The creation
 of FluiDB is an attempt to study some aspects of this question. In
 particular FluiDB is based on the following pillars:
 
@@ -87,7 +87,7 @@ some plan resembling the following following plan following:
       child {node{\(\Join\)}
         child {node{\(\Join\)}
           child {
-            node{\(\sigma_{shipdate > 10-11-2015}\)}
+            node{\(\sigma_{\mathit{l\_shipdate} > 10-11-2015}\)}
             child { node{lineitem}}
           }
           child {node {order}}
@@ -101,7 +101,7 @@ some plan resembling the following following plan following:
     single query.}
 \end{figure}
 
-Notice how the selection (\(\sigma_{shipdate > 10-11-2015}\)) is
+Notice how the selection (\(\sigma_{\mathit(l\_shipdate) > 10-11-2015}\)) is
 pushed all the way to the bottom of the tree because it is a cheap
 operation (worst case a full scan over the input) and can potentially
 shrink the input by a lot rendering the joins higher in the tree much
@@ -266,8 +266,8 @@ selections on \(\li\). For brevity let \(p:=shipdate > 10-11-2015\),
 \(q:=quantity < 24\) and \(r:=discount < .06\). The RDBMS has
 encountered \(\sigma_{p}(\li)\), \(\sigma_{q}(\li)\) and
 \(\sigma_{q} \sigma_{r} (\li)\). For the purposes of this example we
-assume that according to the workload the planner has determined that
-the priority in terms of usefulness of each qury involved is in
+assume that according to the workload, the planner has determined that
+the priority in terms of usefulness of each query involved is in
 descending order of usefulness:
 
 \begin{itemize}
@@ -304,7 +304,7 @@ descending order of usefulness:
     } ;
 \end{tikzdiagram}
 \caption{\label{fig:intro_selectexample}The materialized relations are
-  marked with grey. Assuming the absense of null values and assuming
+  marked with grey. Assuming the absence of null values and assuming
   set semantics \(\li = \sigma_p \li \cup \sigma_{\neg p} \li\),
   FluiDB can find a plan to generate any of the relations in the graph
   from \(\sigma_p \li\) and \(\sigma_{\neg p} \li\).  }
@@ -335,14 +335,14 @@ space.
   \li \rightarrow \sigma_{q}(\li)
 \]
 
-Finally we need to create the final relation \(\sigma_{q \land
-  r}(\li)\) . However it's space requirement is .5 and we we would
+Finally, we need to create the final relation \(\sigma_{q \land
+  r}(\li)\) . However its space requirement is .5 and we we would
 be exceeding our budget. We can't delete \(\li\) even though it
 is our least beneficial table because we would have no way of
 recreating it.
 
 Here we have two options. One is to delete \(\sigma_{\neg
-  p}(\li)\), our most benefit al table. The other, which is the one
+  p}(\li)\), our most benefitial table. The other, which is the one
 that the system should opt for, is to backtrack. When we created
 \(\sigma_{q}(\li)\), instead we create both
 \(\sigma_{q}(\li)\) and \(\sigma_{\neg q}(\li)\).
@@ -381,16 +381,16 @@ represented as:
     the workload amortized cost and involving reverse operations.}
 \end{figure}
 
-This radical approiach to adaptation of data to the workload is
+This radical approach to adaptation of data to the workload is
 particularly useful in contexts where (fast) memory is scarce compared
 to the data, particularly in-memory databases. In that vain we lean
 heavily on executing plan by transpiling the plan to C++ code.
 
 This thesis describes in detail how we implemented FluiDB, a system
-targeted at performing this kind of reasoning to planning and
+targeted at performing this kind of reasoning for planning and
 executing queries. In chapter \ref{chapter:background} we provide a
 brief overview of the state of the art and common practices that
-pretain to query processing; in chapter
+pertain to query processing; in chapter
 \ref{chapter:fluidb_logical_planning} we describe how queries are
 processed and stored at a logical level; in chapter
 \ref{chapter:physical_planning} we describe how FluiDB performs
@@ -401,6 +401,6 @@ requirements of the physical planner; in chapter
 \ref{chapter:execution_engine} we go over the algorithms and
 particular techniques that FluiDB employs to transpile the physical
 plan into C++ code; finally at chapter \ref{chapter:evaluation} we
-describe our exprimental evaluation of FluiDB on the benchmark
+describe our experimental evaluation of FluiDB on the benchmark
 SSB-TPC-H. We present a conclusion and some future directions in the
 final chapter \ref{chapter:conclusion}

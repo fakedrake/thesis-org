@@ -7,9 +7,9 @@
 \item Relational databases are question answering systems that deal
   with information organized in tables or relations.
 \item Query optimization and planning revolves around finding an
-  efficient alorithm for answering a query.
-\item In-mamory databases keep all the data in main memory so they are
-  closer to the processer
+  efficient algorithm for answering a query.
+\item In-memory databases keep all data in main memory so they are
+  closer to the processor
 \item many in-memory databases employ some variant of code generation
   to execute the query plans.
 \item Intermediate result recycling is the practice of reusing
@@ -22,11 +22,11 @@ idea about where FluiDB fits in the design space and the historical
 context in which it was developed.  First, we outline a very high
 level overview of the \emph{query language and operators} involved in
 database management, as well as the the overall architecture of such
-systems. Following that we will focus on the \emph{query planning}
+systems. Following that, we will focus on the \emph{query planning}
 subsystems of relational query databases and some traditional
 approaches to query evaluation. Afterwards, we will focus particularly
 on \emph{in-memory relational databases} and the trade-offs that
-govern their design. Finally, we look into systems that utilize
+govern their design. Finally, we look into the systems that utilize
 \emph{intermediate result recycling} and how they solve the problem of
 automatically selecting and maintaining intermediate results for
 workloads.
@@ -81,7 +81,7 @@ implementation.
 Each RA operator is typically implemented by several different
 algorithms, each being efficient and even possible in some situations
 but not in others. For example, a join can be implemented by nested
-loops or with merge join among others.  While the former algorithm is
+loops or with merge join, among others.  While the former algorithm is
 general and can implement any join, it is very inefficient. On the
 other hand a merge join is much more efficient but can only implement
 joins of the form \(\Join_{a=b}\) (equijoins or natural
@@ -160,7 +160,7 @@ comprised of the following components:
 These subsystems are presented here as separate for simplicity and
 because in many database systems they are clearly delineated, but it is
 also common that they blur into each other. For example, in some RDBMSes
-the physical and logical planner are merged into one
+the physical and logical planners are merged into one
 \cite{graefeCascadesFrameworkQuery1995,shankarQueryOptimizationMicrosoft2012,solimanOrcaModularQuery2014}. In
 fact, it is increasingly common for systems to intersperse query
 planning with query execution, adapting the optimization strategy
@@ -243,7 +243,7 @@ An important optimizer, on which most modern optimizers are still
 being based, is the \emph{cascades optimizer}
 \cite{graefeCascadesFrameworkQuery1995}. In short, cascades keeps
 track of \emph{groups} of equivalent query expressions and uses those
-as the fundamental atom that it manipulates. For example instead of
+as the fundamental atom that it manipulates. For example, instead of
 keeping track of \(A \Join (B \Join C)\) and \((A \Join B) \Join C\)
 separately they would be part of the same query group. It then uses a
 global hash table (the "memo" structure) to match the best plan that
@@ -276,16 +276,16 @@ a cost model relate to the fact that we are fundamentally operating
 with scarce and highly uncertain information. Especially relating to
 cardinality estimation, uncertainty and bad predictions propagate and
 make make it extremely hard for the planners to make correct
-decisions. Consider, for example a join. Some joins are similar to
+decisions. Consider, for example, a join. Some joins are similar to
 Cartesian products, producing large output tables, and some joins are
 more similar to lookups producing only a few rows. A cost model that
 confuses the kind of join will make very bad predictions w.r.t.\ the
 cost of any relational algebra expression that uses the said join,
-causeing an optimizer to select an expensive plan or avoid a cheap
+causing an optimizer to select an expensive plan or avoid a cheap
 one.
 
 Cardinality estimation most commonly takes the form of selectivity
-estimation, i.e.\ what percentage of tuples from the input make it to
+estimation, i.e., what percentage of tuples from the input make it to
 the output of a selection or a join. This is sensitive to the
 statistical properties of the values and the selection/join
 predicates.
@@ -357,7 +357,7 @@ One increasingly common technique to address many of these issues,
 which is also used by FluiDB, is \emph{code generation}. Since
 workloads for in-memory databases are typically CPU bound, there are
 major gains in performance to be had by specializing the code being
-executed. A typical interpereter based plan execution engine makes
+executed. A typical interpreter-based plan execution engine makes
 heavy use of virtual function calls and conditionals inside tight
 loops, which kills performance on virtually all modern
 architectures. The value proposition of code generation is to inline
@@ -374,7 +374,7 @@ problem:
 Transpilation of a physical plan to a systems language like C or C++
 and then fed to an off-the-shelf compiler
 \cite{krikellasGeneratingCodeHolistic2010} is expensive but it
-generates highly efficient code more easily debuggable execution
+generates highly efficient code and more easily debuggable execution
 plans. The most notable complete database systems that used this
 technique were Microsoft Hekaton that generates C code from SQL
 queries and older versions of MemSQL. For FluiDB, we reuse a lot of
@@ -460,7 +460,7 @@ Researchers have further looked at opportunistically reusing
 intermediate results that would be materialized. Both in traditional
 databases
 \cite{ivanovaArchitectureRecyclingIntermediates2010,nagelRecyclingPipelinedQuery2013}
-and on non-database xontexts like MapReduce
+and on non-database contexts like MapReduce
 \cite{elghandourReStoreReusingResults2012a}, and there have been
 attempts to unify the planner with the materialized view selection
 engine \cite{perezHistoryawareQueryOptimization2014a}. Notable in this
@@ -481,8 +481,8 @@ problems that are directly related to the design of FluiDB and also
 some adjacent ones. FluiDB draws inspiration from all these systems to
 explore a new approach to managing in-memory data being queried. It
 subscribes to the relational model of data and queries and parallels
-many techniques introduced for intermediate result recycling and mutly
-query optimization. As an in-memory database it employs code
-generation and takes it to the furthest extreme generating highly
-generic C++ like the HIQUE system, fully compromizing on the
+many techniques introduced for intermediate result recycling and mutli-query
+optimization. As an in-memory database, it employs code
+generation and takes it to the furthest extreme, generating highly
+generic C++ like the HIQUE system, fully compromising on the
 performance of the C++ compiler.
