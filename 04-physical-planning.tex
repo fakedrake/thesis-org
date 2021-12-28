@@ -16,8 +16,8 @@
 \end{summary}
 
 This chapter goes in detail about the architecture of the logical
-planing of a query. Query planning is based on an A^{\star}-like search
-algorithm for through the space of partial plans. We initially
+planing of a query. Query planning is based on an \(A^{\star}\)-like
+search algorithm for through the space of partial plans. We initially
 describe the fundamental computational structures that facilitate this
 search and their unique properties that allow us the necessary
 flexibility. Then we discuss the basic backtracking algorithm and the
@@ -234,7 +234,7 @@ type Brnch h r m = ReaderT (HeapKey v)
 \end{code}
 
 We define a recursive relationship between the monad within which the computation
-takes place --\hask{HCntT} -- and the value returned to the scheduler at
+takes place -- \hask{HCntT} -- and the value returned to the scheduler at
 each step -- \hask{HRes}. In particular \hask{HRes} contains a priority queue
 (heap) of continuations and a set of final results. The heap type is parametric to allow
 flexibility with respect to how to best handle the particular key
