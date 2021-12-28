@@ -1,0 +1,400 @@
+Here we will descride the the basic model of computation as understood
+by ML-like languages, and specifically Haskell. These languages define
+computations as first class values that have parametric types. A
+computation of type \hask{f a} can be understood as a computation that
+when executed would generate a value of type \hask{a}. In that sense
+\hask{f} is a generic type with one type parameter \hask{a}, thereby
+being of kind \hask{* -> *}, whereas \hask{a} and \hask{f a} are both
+of kind \hask{*}. For example, in Haskell, we represent as \hask{IO
+  Int} the type of a computation that interacts with the outside world
+in order to compute an integer, e.g. by reading user input, by writing
+files, or, as the meme in the community goes, by launching missiles.
+
+From the perspective of a programming language, in order to manipulate
+computation it is useful to be able to change computations, i.e., to
+be able to create morphisms \hask{f a -> f b} from simpler primitives
+in the language. The notation of a the arrow \hask{->} used here is a
+function within the basic framework of the language, a simple mapping
+between a value of type \hask{f a} to a value of type \hask{f b}. This
+is indeed already computation carried out by the runtime.  In that
+sense it is \emph{implicit} computation. We have little control over
+the conditions under which it is carried out, especially in a lazy
+language like haskell, and we consider it to be pure, with no
+effects. This will become important when we discuss arrows and
+profunctors.
+
+Returning to our higher kinded (of kind \hask{* -> *}), explicit
+computations, commonly in haskell a hierarchy of 3 typeclasses
+(interfaces) that computations conform to has been established, each
+of which provides a different way of producing morphisms of the
+computation itself, and therefore each of which allowing different
+computations to be expressed by type \hask{f}. While these typeclasses are
+more general than refering only to computations, we will try to
+provide an intuition of each for them in reference to computations, to
+avoid overwhelming the reader with the full generality of these
+constructs. The reader is encouraged to notice how the weaker, more
+general, typeclasses presented first, more intuitively describe
+containers of values and as we strengthen the constraints and require
+more operations of our objects it becomes harder to think of
+containers that fit the constraints and notions of the values as
+computations becomes more natural.
+
+\subsection{Functor}
+
+For computations implementing the \hask{Functor} typeclass we can
+create a morphism of the computation from a normal haskell
+function. For every functor \hask{f} then, there must be a function
+\hask{fmap :: (a -> b) -> f a -> f b} that abides by the functor (see
+listing \ref{lst:functor_def})
+\cite{mcbrideApplicativeProgrammingEffects2008}. In plain english,
+given a computation and a function that can transform the result of
+the computation we can get a new computation that is equivalent to the
+original computation but yielding the transformed result. The functor
+laws (see listing \ref{lst:functor_laws}), which all valid
+implementations of a functor must follow, assert that applying the
+identity function to the result of a computation does not change the
+computation itself and that \hask{fmap} ing has no other effect on the
+computation other than changing its result.
+\begin{code}
+\begin{haskellcode}
+class Functor f where
+  fmap :: (a -> b) -> f a -> f b
+\end{haskellcode}
+\caption{\label{lst:functor_def}The functor inteface in haskell.}
+\end{code}
+
+It is common to understand functors in the context of haskell as
+mappable containers that can hold any type value. One could think of a
+computation that supports the functor interface as a computation that
+results in a functorial container. An example of a computation that is
+\emph{not} a functor might be one that produces a set of values,
+because a set of values requires that the values are comparable, and
+not all per element value transformations of a set are valid. For
+example a set of integers \hask{Set Int} can be unambiguous for the
+language but a set of functions \hask{Set (Int -> String)} is not
+unless we define a notion of equality for functions.
+
+\begin{code}
+\begin{minted}{text}
+-- Identity
+fmap id == id
+-- Composition
+fmap (f . g) == fmap f . fmap g
+\end{minted}
+\caption{\label{lst:functor_laws}Laws that any valud functor inteface interface must obay.}
+\end{code}
+
+
+  \subsection{Applicative}
+
+  Computations that are applicative
+  \cite{mcbrideApplicativeProgrammingEffects2008} functors are
+  computations that can be combined in "no particular order". In
+  particular an applicative functor must implement \hask{ap :: f (a ->
+    b) -> f a -> f b} (more commonly written as \hask{<*>} which is a bit
+  harder to pronounce) and \hask{pure :: a -> f a} (see listing
+  \ref{lst:applicative_def}). Applicatives are more often described in
+  terms of computation than functors. Firstly, this means that we must
+  be able to construct a trivial computation that just returns a given
+  value, meaning that there must be no restriction on the kinds of
+  values an applicative computation can yield. For example a computation
+  that yields only integers is not an applicative because then there
+  would no way to universally quantify the argument of
+  \hask{pure}. Incidentally it is not a functor either for the same
+  reason, namely that we wouldn't be able to universally quantify the
+  output of the input function of \hask{fmap}.
+
+  \begin{code}
+\begin{haskellcode}
+class Functor f => Applicative f  where
+  (<*>) :: f (a -> b) -> f a -> f b
+  pure :: a -> f a
+\end{haskellcode}
+    \caption{\label{lst:applicative_def}The interface of a haskell applicative functor.}
+  \end{code}
+
+  Furthermore, from the definition of \hask{ap} or \hask{<*>} we
+  understand that two computations that are applicative functors can be
+  combined into one computation with no restriction on the order thtat
+  they are evaluated. There are a few examples of applicatives being
+  used to represent parallelizable computation, the most prominent of
+  which being Facebook's Haxl \cite{marlowHaxlProjectFacebook2013}
+
+  Like with \hask{Functor} the interface of applicative must be subject
+  to the applicative laws presented in
+  \ref{lst:applicative_laws}. Essentially these formalize the triviality
+  of \hask{pure}.
+
+  \begin{code}
+\begin{minted}{text}
+-- Identity
+pure id <*> v = v
+-- Composition
+pure (.) <*> u <*> v <*> w = u <*> (v <*> w)
+-- Homomorphism
+pure f <*> pure x = pure (f x)
+-- Interchange
+u <*> pure y = pure ($ y) <*> u
+\end{minted}
+    \caption{\label{lst:applicative_laws}Laws that any valid applicative
+      intreface must obay}
+  \end{code}
+
+  \subsection{Monad}
+
+  A meme in the functional community defines monads as "monoids in the
+  category of endofunctors". To the unfamiliar reader this may take a
+  second to parse, but it is really just a fancy way of saying something
+  fairly simple: we can transform any nested monadic functor \hask{f (f
+    a)} into a flat one \hask{f a}, and if the stack is large \hask{f (f
+    (... f (f a)))} the order in which the functors are collapsed does
+  not matter. In the context of computations this implies that nested
+  computations run from inside out, the inner computation is run first
+  and then the outer one is run. The "and then" part is what a monad is
+  meant to bring to the table. Viewed as computations monads must have
+  all the properties of functors and applicatives but they must also
+  implement the operation \hask{(>>=) :: f a -> (a -> f b) -> f b} where
+  \hask{>>=} is pronounced \hask{bind}. The computation described by the
+  first argument of \hask{>>=} must be executed \textbf{first} in order
+  to generate the argument for the function in the second argument which
+  must \textbf{then} produce the result. We commonly represent a monadic
+  functor by the characer \hask{m} rather than the character \hask{f}
+  that we used for functors and applicatives. Monads are the most
+  commonly used abstraction to describe computations comprised of
+  interdependent steps. The haskell interface for monads is succinctly
+  presented in listing \ref{lst:monad_def}
+
+  \begin{code}
+\begin{haskellcode}
+class Applicative m => Monad m where
+  return :: a -> m a
+  (>>=) :: m a -> (a -> m b) -> m b
+\end{haskellcode}
+    \caption{\label{lst:monad_def}Definition of the interface of a
+      haskell monad.}
+  \end{code}
+
+  Monad implementations need to adhare to laws laid out in listing
+  \ref{lst:monad_laws}. These laws are similar to the applicative laws
+  in that they formalize the trivality of \hask{pure}, now called
+  \hask{return}, in relation to the \hask{bind} operator this
+  time. However, unlike the applicative laws, monadic laws introduce the
+  law of associativity that may seem strange to a reader unfamiliar with
+  Kleisli arrows \cite{dawsonCompoundMonadsKleisli2007}. The essence of
+  the monad, when focusing on the second argument of bind (the one typed
+  \hask{a -> m b}), and which is codified by the monad laws is that a
+  monad \hask{m} must give rise to a category, referred to in the
+  literature as the Kl category.
+
+  A category needs a set of objects and a domain of arrows that can be
+  composed. Further we need the arrow composition to be associative
+  and an identity arrow that maps objects to themselves. An obvious
+  category is formed by all objects in haskell, haskell functions as
+  arrows and \hask{id :: a -> a} as the identity arrow. This is
+  commonly referred to as the hask category. As aluded to earlier,
+  this category does describe computation albeit in a more implicit
+  manner. The monad laws assert that each monad gives rise to a
+  kleisly category where objects are the objects of hask, arrows
+  \hask{a ~> b == a -> m b} and the identity arrow is \hask{return}.
+  Moving forward we will see how, capitalizing on this conception we
+  can come up with a more flexible
+
+\begin{code}
+\begin{minted}{text}
+-- Left identity
+return a >>= k = k a
+-- Right identity
+m >>= return = m
+-- Associativity
+m >>= (\x -> k x >>= h) = (m >>= k) >>= h
+\end{minted}
+    \caption{\label{lst:monad_laws}Laws that any valid monad
+      implementation must abide \cite{yorgeyTypeclassopedia2009}.}
+  \end{code}
+
+
+  \subsubsection{Monad examples}
+
+  To make the concept tangible we provide a few examples of how monads
+  encapsulate computational effects by looking at four monads: \hask{Maybe},
+  \hask{State} , \hask{IO}, and \hask{Free}.
+
+  \paragraph{Maybe}
+
+  The \hask{Maybe} functor (defined in listing \ref{lst:maybe_def})
+  implments partiality. In other languages the same concept may be
+  called \hask{opt} or \hask{Option}. A partial function is denoted
+  \hask{a -> Maybe b} because it may return a value or not return a
+  value.
+
+  \begin{code}
+\begin{haskellcode}
+data Maybe a = Just a | Nothing
+\end{haskellcode}
+    \caption{\label{lst:maybe_def}Definition of the \hask{Maybe} monad.}
+  \end{code}
+
+  Composability of the Kleisli arrow allows us to compose multiple
+  partial functions into new ones, thus creating computations that can
+  trivially fail. \hask{Maybe} provides a good opportunity to
+  distinguish between \hask{Applicative} and \hask{Monad}. Considering
+  the two programs in listing \ref{lst:maybe_example} where we only care
+  about \hask{Maybe} as an \hask{Applicative}. The semantics of the
+  program do not specify whether calling \hask{invAdd} will cause
+  \hask{inverse a} or \hask{inverse b} to be computed first or if they
+  will be computed in parallel. No order is imposed between
+  them. However, in the program presented in \ref{lst:maybe_example2}
+  when evaluating the function \hask{f} the expression \hask{inverse a}
+  \textbf{must} be evaluated before the \hask{toInt} so that
+  \hask{toInt} has an input to operate on.
+
+  \begin{code}
+\begin{haskellcode}
+inverse :: Double -> Maybe Double
+inverse a = if a == 0 then Nothing else Just (1 / a)
+
+invAdd :: Double -> Double -> Maybe Double
+invAdd a b = (+) <$> inverse a <*> inverse b
+\end{haskellcode}
+    \caption{\label{lst:maybe_example}Example usage of the \hask{Maybe}
+      applicative functor.}
+  \end{code}
+
+  \begin{code}
+\begin{haskellcode}
+inverse :: Double -> Maybe Double
+inverse a = if a == 0 then Nothing else Just (1 / a)
+
+toInt :: Double -> Maybe Int
+toInt a =
+  if a == fromInteger (round a)
+    then Just (round a)
+    else Nothing
+
+f :: Double -> Maybe Int
+f a = inverse a >>= toInt
+\end{haskellcode}
+    \caption{\label{lst:maybe_example2}Example usage of the \hask{Maybe} monad functor.}
+  \end{code}
+
+  \paragraph{State}
+
+  A \hask{State} monad (listing \ref{lst:state_monad_def}) encapsulates
+  a computation that depends on mutable state of type \hask{s}.
+
+  \begin{code}
+\begin{haskellcode}
+newtype State s a = State (s -> (a,s))
+\end{haskellcode}
+
+    \caption{\label{lst:state_monad_def}The state monad describes
+      mutable state.}
+  \end{code}
+
+  \hask{State} is essentially a function that accepts some state, modifies it
+  and returns it along with a value. In C-like languages the operator to
+  compose different components that operate on the and local state is
+  \cpp{;}. \cpp{f() ; g() ;} means that \hask{f()} can have arbitrary side effects on
+  the global state and must be computed entirely before \hask{g()}. In our
+  slightly more precise flavor of effectful computations \hask{f >> g} as a
+  \hask{State} composes a state functor that expects some state value, passes
+  it to \hask{f} which modifies it and passes it to \hask{g}.
+
+  \paragraph{IO}
+
+  The \hask{IO a} monad is "magical" in the sense that it is completely
+  opaque to the runtime. It represents the interaction of our haskell
+  program with the outside world, and since all haskell functions are
+  pure haskell can be thought of as metalanguage that defines programs
+  composed of different \hask{IO a} components called the \hask{main ::
+    IO ()}. The components of an \hask{IO} computation are guaranteed to
+  be evaluated one after the other.
+
+  This is demonstrated in \ref{lst:io_naive_example}. Because monads are so
+  ubiquitous haskell provides some syntactic sugar called the \hask{do}
+  notation. The same program is presented in a much more readable for in
+  \ref{lst:io_sugar_example}.
+
+  The functions \hask{putStrLn :: String -> IO ()} takes a string and returns
+  a computation that would show the string on stdout. \hask{getLine :: IO
+    String} is a computation that reads a line from stdin and retains its
+  value. The \hask{main :: IO ()} is a special variable that a haskell
+  program needs to define, all the haskell runtime essentially does is
+  run the IO computation that \hask{main} refers to.
+
+  \begin{code}
+\begin{haskellcode}
+main :: IO ()
+main = putStrLn "What's your name?"
+       >> getLine
+       >>= (\name -> putStrLn ("Hello " ++ name))
+\end{haskellcode}
+    \caption{\label{lst:io_naive_example}Sequanecing IO interactions
+      using the \hask{IO} monad.}
+  \end{code}
+
+  \begin{code}
+\begin{haskellcode}
+main :: IO ()
+main = do
+  putStrLn "What's your name?"
+  name <- getLine
+  putStrLn ("Hello " ++ name)
+\end{haskellcode}
+    \caption{\label{lst:io_sugar_example}Sequanecing IO interactions
+      using the \hask{IO} monad also using the \hask{do} notation.}
+  \end{code}
+
+  \paragraph{Free monad}
+
+  The free monad is slightly more convoluted than the ones we talked
+  about so far. Without getting to deep into what free structures are in
+  generalk (\cite{bartoszmilewskiDaoFunctionalProgramming} is a
+  recommended source), a free monad is a structure that only supports
+  the monad interface in a law-abiding way. The only difference is that
+  instead of focusing on the \hask{>>=} operator that we saw so far, it
+  instead has a constructor corresponding to the equivalent operator
+  \hask{join} presented in listing \ref{lst:join_monad_op}.
+
+  \begin{code}
+\begin{haskellcode}
+join :: Monad m => m (m a) -> m a
+join m = m >>= id
+
+-- and also
+(>>=) :: Monad m => m a -> (a -> m b) -> m b
+m >>= f = join (fmap f m)
+\end{haskellcode}
+
+    \caption{\label{lst:join_monad_op}The bind (\hask{>>=}) and join
+      operations on a monad are equivalent given that monads are also
+      functors.}
+  \end{code}
+
+  A free monad \hask{Free f m} then is equivalent to the \emph{functor}
+  \hask{f} that is stacked on top of itself zero or more times \hask{f
+    (f ( ... f (f a)))}. It essentially turns a functor into a monad for
+  "free" -- as long as you don't mind that it actually a stack of nested
+  functor rather than a single layer like monads are. Listing
+  \ref{lst:free_def_naive} presents a simple implementation, although
+  the implemetation in \ref{lst:free_def} is more common. Free monads
+  are particularly important for our implementation of Antisthenis.
+
+  \begin{code}
+\begin{haskellcode}
+data Free f a
+  = Pure a
+  | Free (f (Free f a))
+\end{haskellcode}
+    \caption{\label{lst:free_def_naive}A simple implementation of the free
+      monad type.}
+  \end{code}
+
+  \begin{code}
+\begin{haskellcode}
+newtype FreeF f a x = Pure a | Free (f x)
+data FreeT f m a = m (FreeF f a (FreeT f m a))
+\end{haskellcode}
+    \caption{\label{lst:free_def}A simple implementation of the free
+      monad type.}
+  \end{code}

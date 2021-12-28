@@ -5,18 +5,16 @@
 \maketitle%
 
 \begin{precontent}
-\begin{normalsize}%
- If the scientists, brought to heel by self-interested rulers, limit
- themselves to piling up knowledge for knowledge’s sake, then science
- can be crippled and your new machines will lead to nothing but new
- impositions. You may in due course discover all that there is to
- discover, and your progress will nonetheless be nothing but a
- progress away from mankind. The gap between you and it may one day
- become so wide that your cry of triumph at some new achievement will
- be echoed by a universal cry of horror.
-\end{normalsize}%
-Life of Galileo -- Bertolt Brecht%
-
+\dictum[Bertolt Brecht -- Life of Galileo]{ If the scientists, brought
+ to heel by self-interested rulers, limit themselves to piling up
+ knowledge for knowledge’s sake, then science can be crippled and your
+ new machines will lead to nothing but new impositions. You may in due
+ course discover all that there is to discover, and your progress will
+ nonetheless be nothing but a progress away from mankind. The gap
+ between you and it may one day become so wide that your cry of
+ triumph at some new achievement will be echoed by a universal cry of
+ horror.}
+%
 
 \chapter{Abstract}%
 It is a popular practice to use materialized intermediate results to
@@ -71,9 +69,35 @@ code, and the low level data organization of the database. The thesis
 closes with a chapter that describes our methods for benchmarking and
 some experimental results.
 
-
 \chapter{Lay Summary}%
-TODO: lay summery
+
+A database is a computer program thet can answer questions
+(\emph{queries}) based on a set of data stored in a medium accessibly
+by the computer running the database, as well as provides an interface
+to manipulate said data. A database system will rephrase the queries
+it receives in such a way that they can be answered efficiently,
+breaking them down to sub-queries. A well studied method of increasing
+efficiency is to store the answers to commonly encoutnered subqueries
+so they are readily available. Among many other concerns that govern
+the design of a database system we focus on three: deciding how to
+rewrite and break down the query, inferring which subquery answers are
+worth keeping around after the final answer is found, and deciding
+which subquery ansers are taking up too much valuable space and should
+be deleted.
+
+This work describes the development of FluiDB, an experimental
+database system that explores the idea that the three concerns in
+focus are codependent and therefore could be addressed
+simultenously. The design of FluiDB aspires to take one more step in
+that direction by instead of allowing or evicting intermediate
+results, as the probelm is traditionally conceptualized, by adapting
+the very organization of the data managed by the database system to
+the patterns observed by the sequence of queries.
+
+TODO: relations between queries
+TODO: antisthenis
+TODO: code generation
+TODO: evaluation
 
 \chapter{Acknowledgements}%
 
