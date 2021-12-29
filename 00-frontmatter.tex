@@ -71,28 +71,33 @@ some experimental results.
 
 \chapter{Lay Summary}%
 
-A database is a computer program thet can answer questions
+A database is a computer program that can answer questions
 (\emph{queries}) based on a set of data stored in a medium accessibly
-by the computer running the database, as well as provides an interface
-to manipulate said data. A database system will rephrase the queries
-it receives in such a way that they can be answered efficiently,
-breaking them down to sub-queries. A well studied method of increasing
-efficiency is to store the answers to commonly encoutnered subqueries
-so they are readily available. Among many other concerns that govern
-the design of a database system we focus on three: deciding how to
-rewrite and break down the query, inferring which subquery answers are
-worth keeping around after the final answer is found, and deciding
-which subquery ansers are taking up too much valuable space and should
-be deleted.
+by the computer running the database, as well as provide an interface
+to manipulate the said data. A \emph{relational database} is a database that deals with units of data
+that have the form of tables or \emph{relations}.
+Database systems rephrase the queries
+they receive in such a way that they can be answered efficiently,
+breaking them down to sub-queries, each subquery defined by an operator and
+one or more input operands. This is called a \emph{query plan}.
 
+A well-studied method of increasing efficiency is to store the answers to commonly encountered subqueries (\emph{materialized views})
+so they are readily available.
 This work describes the development of FluiDB, an experimental
-database system that explores the idea that the three concerns in
-focus are codependent and therefore could be addressed
-simultenously. The design of FluiDB aspires to take one more step in
-that direction by instead of allowing or evicting intermediate
-results, as the probelm is traditionally conceptualized, by adapting
-the very organization of the data managed by the database system to
-the patterns observed by the sequence of queries.
+database system that explores the idea that the design decisions pertaining
+to planning and maintaining a set of materialized views are interdependent and therefore should be addressed
+simultaneously from the start. 
+
+The design of FluiDB aspires to take one more step in that direction by, instead of asking which materialized views should be 
+allowed to survive the execution of a query plan, as the problem is traditionally conceptualized, 
+by instead trying to adapt the organization of the underlying data
+managed by the database system to patterns observed in the sequence of queries (workload).
+
+This is achieved by designing FluiDB around two principles: 
+incorporating reversible operators into the plans, 
+and organizing the entire workload up to each point in time into a graph of possible subqueries connected by reversible operators. 
+This allows FluiDB to create plans that may both safely delete primary tables to make space for more useful materialized views 
+and more efficiently use these materialized views using reverse operations.
 
 \chapter{Acknowledgements}%
 
