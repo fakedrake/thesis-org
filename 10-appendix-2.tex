@@ -1,4 +1,4 @@
-Here we will descride the the basic model of computation as understood
+Here we will describe the the basic model of computation as understood
 by ML-like languages, and specifically Haskell. These languages define
 computations as first class values that have parametric types. A
 computation of type \hask{f a} can be understood as a computation that
@@ -6,22 +6,21 @@ when executed would generate a value of type \hask{a}. In that sense
 \hask{f} is a generic type with one type parameter \hask{a}, thereby
 being of kind \hask{* -> *}, whereas \hask{a} and \hask{f a} are both
 of kind \hask{*}. For example, in Haskell, we represent as \hask{IO
-  Int} the type of a computation that interacts with the outside world
+  Int} the type of computation that interacts with the outside world
 in order to compute an integer, e.g. by reading user input, by writing
 files, or, as the meme in the community goes, by launching missiles.
 
 From the perspective of a programming language, in order to manipulate
 computation it is useful to be able to change computations, i.e., to
 be able to create morphisms \hask{f a -> f b} from simpler primitives
-in the language. The notation of a the arrow \hask{->} used here is a
+in the language. The notation of the arrow \hask{->} used here is a
 function within the basic framework of the language, a simple mapping
 between a value of type \hask{f a} to a value of type \hask{f b}. This
-is indeed already computation carried out by the runtime.  In that
+is indeed already a computation carried out by the runtime.  In that
 sense it is \emph{implicit} computation. We have little control over
 the conditions under which it is carried out, especially in a lazy
-language like haskell, and we consider it to be pure, with no
-effects. This will become important when we discuss arrows and
-profunctors.
+language like Haskell, and we consider it to be pure, with no
+effects. 
 
 Returning to our higher kinded (of kind \hask{* -> *}), explicit
 computations, commonly in haskell a hierarchy of 3 typeclasses
@@ -398,3 +397,5 @@ data FreeT f m a = m (FreeF f a (FreeT f m a))
     \caption{\label{lst:free_def}A simple implementation of the free
       monad type.}
   \end{code}
+  
+% todo: write and refer to ListT
