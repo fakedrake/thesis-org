@@ -3,30 +3,21 @@
  ultimate guardian.}
 
 \begin{summary}
-\item Tables are stored in a memory file systems and records are
+\item Tables are stored in a memory file system and records are
   stored as POD binary objects organized in 4K pages.
 \item The extent of each relation involved in a plan is converted to
-  C++ struct and each predicate is converted to a C++ callable
+  C++ \cpp{struct} and each predicate is converted to a C++ callable
   class.
-\item These parameterize the templatized operators to allow the
-  compiler to generate highly specifialized code.
-\item In this chapter we discuss the implementation important
-  operations and their reverse.
+\item These parameterize the template-based operator implementations to allow the
+  compiler to generate highly specialized code.
+\item In this chapter we discuss the implementation of important
+  operations and their reverses.
 \end{summary}
 
-The logical plan is translated into a physical plan that has the form
-of a c++ program. The motivation for using code generation relates to
-expression level optimizations so it’s less work on some fronts
-(although more work in others). Also gdb for debugging. Remember that
-compilation time is not pure overhead, we would have to duplicate at
-least some low level optimizations in the haskell.
-
-\section{Codegen introduction}
-
-Code generation is becoming a more and more common in RDBMSs. Used
+Code generation is becoming increasingly common in RDBMSs. Used
 mainly in in-memory databases, where disk IO does not dominate the
 runtime, it aims to minimize the overhead of data access function
-calls, to optimize the operdicates and numerical expressions and to
+calls, to optimize the predicates and numerical expressions and to
 avoid indirection in tight loops. Approaches to code generation fall
 generally on a spectrum between two extremes:
 
@@ -39,29 +30,31 @@ generally on a spectrum between two extremes:
 
 FluiDB follows the approach of Krikellas
 et. al. \cite{krikellasGeneratingCodeHolistic2010} falling far to the
-former end of the spectrum. We generate very specific, template-heavy
-C++ code for every query and we call to an off-the-shelf compiler to
+former end of the spectrum. We generate very specific template-heavy
+C++ code for every query and we use an off-the-shelf compiler to
 generate highly optimized machine code.
+
+In this chapter we will describe in detail all aspects of code generation and 
+the form of data the generated code manipulates.
 
 \section{Storage memory management}
 
-We opted for delegating the task to the OS and use use use the tmpfs
+We opted for delegating the task of memory management to the OS and use use use tmpfs
 as a storage layer to our database. The tmpfs filesystem depends on
-the the \emph{shmem} module (as of linux v5.13) for handling file
-operations. shmem is a resizable virtual memory filesystem for
+the the \emph{shmem} module (as of Linux v5.13) for handling file
+operations, a resizable virtual memory filesystem for
 linux. Where a typical persistent filesystem stores files in a block
 device and caches pages in memory for efficiency, shmem keeps files
 exclusively as pages in the page cache. The OS tries to keep all pages
-in memory but when resources start running out it writes pages in
+in memory but when resources start running out, it writes pages in
 swap.
 
 Assuming that the pages are not in swap, normal reads for shmemfs
 using \cpp{read()} are equivalent to copying pages from the page cache to
-the user space. \cpp{shmem} writes on the other hand operate directly to
+the user space, while shmem \cpp{writes()}operate directly to
 the pages. We can mitigate the copying overhead of reads using \cpp{mmap}
-which will remap the page to the address space of the application.
-
-The problem with this approach is that, while it allows us to minimize
+which will remap the page to the address space of the application. 
+The problem with this approach, however, is that, while it allows us to minimize
 copying, we still need to run system calls in tight loops, which can
 be very computationally expensive. This can't be completely mitigated
 unless we move the "storage" layer to the userspace, re-implementing
@@ -69,12 +62,13 @@ the memory management that we get for "free", in terms of engineering
 effort, from the shmem module so we leave that for a future version of
 FluiDB.
 
-On the other hand this approach allows FluiDB to easily be adapted to
+On the other hand, assuming a normal file system layer allows  FluiDB to easily be adapted to
 operate over any filesystem backed by different storage technologies
-like non-volatile memories.
+like non-volatile memory.
 
 \section{Data layout}
 
+% TODO: spell check
 Before we get into the details of the actual physical plan (in the
 form of C++ code) we need to state some assumptions about the layout
 of the code that is assumed by the primary data.
