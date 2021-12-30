@@ -13,7 +13,6 @@ let
       mdframed
         needspace
         zref
-      todonotes
       biblatex
       xcolor
       tcolorbox

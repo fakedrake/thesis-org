@@ -1155,7 +1155,7 @@ type Zipper w p = Zipper' w Identity p (ZPartialRes w)
   \caption{\label{lst:zipper_def}The definition of the zipper.}
 \end{code}
 
-Finally, each operator defines the type of the partial result (\hask{ZPartialRes}) 
+Finally, each operator defines the type of the partial result (\hask{ZPartialRes})
 maintained in the zipper, as well as functions for putting and replacing values in
 it. When the subprocess of the cursor is evaluated the result needs to
 be either "appended" into the partial result if the new cursor is
@@ -1203,11 +1203,11 @@ type ZProc e m =
 
 \hask{Cmds} is a union type encapsulating different directions to which the
 zipper can be evolved. Its definition is provided in listing
-\ref{lst:cmds_def}. The point of \hask{Cmds} is to separate the logic of 
-\emph{how} each possible zipper transition is carried out which is largely 
-operator agnostic, from the logic of 
+\ref{lst:cmds_def}. The point of \hask{Cmds} is to separate the logic of
+\emph{how} each possible zipper transition is carried out which is largely
+operator agnostic, from the logic of
 \emph{which} transition should be carried out which is higly operator dependent.
-\hask{ZProc} is therefore a process that simulataneously encapsulates all possible evolution paths 
+\hask{ZProc} is therefore a process that simulataneously encapsulates all possible evolution paths
 for the zipper.
 The command constructors reflect the different evolution steps that can be taken at each time:
 
@@ -1220,7 +1220,7 @@ The command constructors reflect the different evolution steps that can be taken
   anymore.
 \end{itemize}
 
-\hask{ZProc} internally takes care of the logic related to pushing the 
+\hask{ZProc} internally takes care of the logic related to pushing the
 evaluated process of the cursor into the appropriate set.
 
 \begin{code}
@@ -1301,7 +1301,7 @@ An abridged example is presented in figure \ref{fig:cmds_tree}.
 
 \subsection{Resetting processes}
 \label{sec:process_resetting}
-% todo: spell check.
+
 In subsection \ref{sec:cmds_functor} discussing the \hask{Cmds} functor we
 mentioned that the operator needs to always be able to reset the process. Why create a reset
 process when reusing the initial process would reset the computation
@@ -1391,7 +1391,7 @@ well as caps/bounds and epochs/coepochs.
 
 Since all types and implementations can be derived from the
 \hask{ZipperParams} type \hask{w}, the Antisthenis process creation
-is a completely generic process 
+is a completely generic process
 \hask{mkProc} (see listing \ref{lst:mkproc}) which combines a list of subprocesses into a parent process
 that evaluates the operator described by the tag \hask{w} without
 requiring any further information other than the implementation of \hask{ZipperParams}.

@@ -806,21 +806,21 @@ is described in listing \ref{lst:possible_joins}.
         # into
         # [p1,p2,p3,..], [q1,q2,q3,...]
         and_props,subqueries =  as_prod(q)
-        
+
         # If the query is product just reject it.
         if len(and_props) == 0 and len(subqueries) > 1:
             return
-            
+
         # if the query is not a join get the possible joins of the subqueries.
         if len(and_props) == 0 and len(subqueries) == 1:
             yield q.map_children(possible_joins)
-            return 
-              
+            return
+
         # All possible partitions where the partitions are non-empty
         for lqs,rqs in possible_partitions(subqueries):
             # has_free_vars(p,[q1,q2,q3...]) checks if all the atoms in p
             # are either literals or columns in one of the q1,q2,...
-            
+
             # The props that can be pushed in the left partition
             lps = filter(lambda p: not has_free_vars(p,lqs), and_props)
             # The props that can be pished in the right partition
@@ -1004,7 +1004,7 @@ of QNFs can be one of three different kinds:
       -- ^ a column of a QNF.
       | NonSymbolName e
       -- ^ A literal.
-      
+
     -- A column is a QNF that has one element in the projection set
     -- (Identity) and no debug query.
     type QNFColSPC s p c = QNFQuerySPDCF s p EmptyF c Identity
@@ -1258,7 +1258,7 @@ It returns an \hask{NQNFResult} (listing \ref{lst:qnf_result}) contains
       -- Map the names exposed by the input qnf to names on the output
       -- qnf. Unless qnfResOp is QProj, QGroup each input name corresponds
       -- to 0 or 1 name in the output. Thus, if qnfResOp is QProj or
-      -- qnfResInOutNames has no meaning and will be `const Nothing`      
+      -- qnfResInOutNames has no meaning and will be `const Nothing`
     }
   \end{haskellcode}
   \caption{\label{lst:qnf_result}The internal QNF building functions
@@ -1293,7 +1293,7 @@ form \(\sigma_{a_0=1 \land a_1=2} (A_0 \times A_1)\) and also
         conflicts = [c for c in qnf1.qnfProd if c in qnf2.qnfProd]
         for c in conflicts:
             # Python does not support non-determinism but with ListT we
-            # can do it in haskell. The `nondet' function non-deterministically 
+            # can do it in haskell. The `nondet' function non-deterministically
             # selects one of the arguments and returns
             # it. The result of the overall computation is a stream of all
             # possible results.
@@ -1332,7 +1332,6 @@ particular, it covers the following RA properties:
 \item \(A \cup B = B \cup A \) *
 \end{itemize}
 
-% TODO: Symbol correspondence is a disaster
 \begin{comment}
 \subsection{Symbol correspondence}
 \label{sec:symbol_correspondence}
@@ -1348,22 +1347,22 @@ more central issues for FluiDB.
 
 Normalizing the queries that correspond to n-nodes is of little use
 if we do not also normalize the symbols that refer to the columns
-of each n-node. 
+of each n-node.
 
 To produce the code implementing
 an operator we need to be able to establish a stable correspondence
 between
 
 \begin{itemize}
-\item the symbols that refer to the \emph{columns of the input tables} of an operator 
+\item the symbols that refer to the \emph{columns of the input tables} of an operator
   and the symbols that refer to \emph{columns of the output tables}.
-\item the symbols in the \emph{predicates and expressions} of the RA operators 
+\item the symbols in the \emph{predicates and expressions} of the RA operators
   that t-nodes correspond to.
 \end{itemize}
 
 For example, in the operator \(\pi_{a \mapsto a + 1}\) we need a stable correspondence between
-the symbol \(a\) as the output column (the one in \(a \mapsto ...\)) 
-as opposed to the symbol \(a\) as the input column (the one in \(... \mapsto a + 1\) part). 
+the symbol \(a\) as the output column (the one in \(a \mapsto ...\))
+as opposed to the symbol \(a\) as the input column (the one in \(... \mapsto a + 1\) part).
 
 This is a problem unique to FluiDB because most systems will produce
 variants of QDAGs that are specific to the query being planned and therefore
@@ -1612,7 +1611,7 @@ same tree twice during insertion.
       QueryForest
       { qfHash :: Int
         ,qfQueries
-          :: Either 
+          :: Either
             [(Query e (QueryForest e s))] -- An actual forest
             (s,RelationShape e s) -- A final leaf
       }
@@ -1683,7 +1682,7 @@ the shape of the result of a query.
     deriving (Show,Generic)
 \end{haskellcode}
 
-Focusing on the field \hask{rsUnique}, a shape contains 
+Focusing on the field \hask{rsUnique}, a shape contains
 all combinations of columns that comprise a unique
 subtuple.  This is useful primarily to determine foreign key
 joins. The expression
@@ -1873,9 +1872,9 @@ generation.
       mempty = DefaultingEmpty
   \end{haskellcode}
 
-  \caption{\label{lst:defaulting_semigroup}The monoid define over the DF 
+  \caption{\label{lst:defaulting_semigroup}The monoid define over the DF
   is the right semilattice. A DF contains up  two values, the "default" and the "full" value.
-  The "full" value refers to some property external to the defaulting functor, namely a 
+  The "full" value refers to some property external to the defaulting functor, namely a
   materialized relation, and therefore is not subject to change. The "default" value
   is gradually refined through monoidal combination. Combination of DFs is associative but not
   commutative: the right operand is expected to be the more recent one. Therefore
