@@ -114,7 +114,7 @@ focused on analytics workloads that do not include sub-second queries.
 
 \newcommand{\ioperfdescr}{The total page read/writes for
   each query of SSB TPC-H. The baseline is the query being
-  run by FluiDB directly without any materialized nodes. The workload
+  run by FluiDB directly without any materialized n-nodes. The workload
   bars represent the cost of each query in a workload being
   accumulated into the same QDAG.}
 \begin{figure}[p]
@@ -275,7 +275,7 @@ heuristics for the GC should avoid this problem in most cases.
 \label{sec:size_estimation_problems}
 The size of the budget may seem fairly excessive for the size required
 for the primary tables. To understand why that is, we need to look at
-the largest nodes in the QDAG:
+the largest n-nodes in the QDAG:
 
 \begin{center}
 \begin{tabular}{rl}
@@ -292,7 +292,7 @@ Pages & Expr\\
 
 From looking at those n-nodes it seems that a sufficiently advanced
 garbage collector should be able to support plans that materialize the
-nodes in about half the budget as FluiDB should have been able to plan
+n-nodes in about half the budget as FluiDB should have been able to plan
 the query needing around double the pages required to store the largest equijoin
 which for us is \(customer\) date \(lineorder\).
 

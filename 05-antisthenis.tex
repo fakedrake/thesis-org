@@ -34,7 +34,7 @@
   \item boolean functions -- used determine \emph{node materializability}
   \item calculate min/sum of numbers annotated with certainty metrics
     -- used to calculate the estimated cost of materialization of
-    nodes give nodes that \emph{might} be materialized.
+   n-nodes give nodes that \emph{might} be materialized.
   \end{itemize}
 \end{summary}
 
@@ -1279,24 +1279,68 @@ leaf and return the leaf.
 
 An abridged example is presented in figure \ref{fig:cmds_tree}.
 
-
-% TODO: Check this figure.
 \begin{figure}[H]
-\centering
-\includegraphics[width=\textwidth]{./imgs/cmds_tree.pdf}
-\caption{\label{fig:cmds_tree}A tree of different evolution paths a
-  zipper may undergo during between the calling of a process and the
-  accumulated bound exceeding the cap. \(p_0\), \(p_4\), \(p_3\) and
-  \(p_4\) are subprocesses. The values returned, the specific
-  iteration subset data structure are not presented for brevity and to
-  shift focus to the movement of the subprocesses within the
-  zipper. Nodes in this tree that have two children correspond to the
-  \hask{ItInit} constructor, nodes with one node correspond to the
-  \hask{CmdIt} or \hask{CmdInit} constructor depending on which
-  process set the process in the nex cursor is drawn from. When a
-  concrete value is reached or the cap is exceeded the process stops
-  and the free monad that wraps \hask{Cmds} takes the value
-  \hask{Pure}.}
+  \centering
+
+  \newcommand{\el}[1]{\ifstrempty{#1}{\emptyset}{#1}}
+  \newcommand{\z}[4]{
+    \begin{minipage}{2cm}
+      \begin{align*}
+        Z\{&ini&=&\el{#1}\\
+           &it&=&\el{#2}\\
+           &coit&=&\el{#3}\\
+           &curs&=&#4\}
+      \end{align*}
+    \end{minipage}
+  }
+  \newcommand{\zn}[4]{node {\z{#1}{#2}{#3}{#4}}}
+  \newcommand{\ze}[2]{
+    edge from parent node[above] {#1} node[below] {res:#2}
+  }
+  \begin{tikzdiagram}
+    \tikzset{
+      grow=right,
+      edge from parent/.style={sloped,above,draw},
+      level distance=5cm,
+      z/.style={rectangle,draw},
+      sibling distance=4cm}
+
+    \node {\z{p_1,p_2,p_3}{}{}{p_0}} child {
+      \zn{p_2,p_3}{}{p_0}{p_1} child {
+        \zn{p_3}{p_1}{p_0}{p_2} child {
+          \zn{}{p_2,p_1}{p_0}{p_3}
+          child { node { Cap exceeded, yield bound }}
+          \ze{pop init:\(p_3\)}{bound}
+        } child {
+          \zn{p_3}{p_1}{p_0}{p_2}
+          child { node { ... }}
+          \ze{pop it:\(p_2\)}{bound}
+        }
+        \ze{pop init:\(p_2\)}{bound}
+      } child {
+        \zn{p_3}{p_1}{p_0}{p_2}
+        child { node { ... }}
+        \ze{pop it:\(p_2\)}{bound}
+      }
+      \ze{pop init:\(p_1\)}{result}
+    };
+  \end{tikzdiagram}
+
+  \caption{\label{fig:cmds_tree}A tree of different evolution paths a
+    zipper may undergo during between the calling of a process and the
+    accumulated bound exceeding the cap. \(p_0\), \(p_4\), \(p_3\) and
+    \(p_4\) are subprocesses. The values returned, the specific
+    iteration subset data structure are not presented for brevity and
+    to shift focus to the movement of the subprocesses within the
+    zipper. Nodes in this tree that have two children correspond to
+    the \hask{ItInit} constructor, nodes with one node correspond to
+    the \hask{CmdIt} or \hask{CmdInit} constructor depending on which
+    process set the process in the nex cursor is drawn from. When a
+    concrete value is reached or the cap is exceeded the process stops
+    and the free monad that wraps \hask{Cmds} takes the value
+    \hask{Pure}. A tree like this is reified by the \hask{Free Cmds}
+    monad, the traversal of the tree is a completely separate logical
+    process that is operator specific.}
 \end{figure}
 
 \subsection{Resetting processes}
@@ -1480,20 +1524,21 @@ iteration set which has the interface of a heap. The zipper evolution
 strategy is described by the pseudo-python code in listing
 \ref{lst:min_zipper_evolution}
 
-% TODO: check the code
 \begin{code}
 \begin{pycode}
 def exceeds_cap(cap, zipper):
+    """A cap is exceded by the current state of a process computing
+    a minimum value when both the best (minimum) concrete result and the
+    best bound exceed it.
+    """
     return zipper.iter_procs.min().bound > conf.cap \
         and zipper.coiter_procs.min().result > conf.cap \
 
 
 def minimum_zipper_evolution(conf,zipper):
-    # Run each initial process with a zero bound
+    # Run each initial process with a zero cap
+    res,nxt_proc = zipper.cursor.run(conf{cap = 0})
     while len(zipper.initial_procs) > 0:
-        zipper.inter_procs.push(cursor)
-        zipper.cursor = zipper.initial_procs.pop()
-        res,nxt_proc = zipper.cursor.run(conf{cap = 0})
         # We cant hope to get a cost lower than zero
         if res == BndRes(0):
             # Until the epoch is updated
@@ -1505,14 +1550,18 @@ def minimum_zipper_evolution(conf,zipper):
         else:
             zipper.coiter_procs.push(res,nxt_proc)
 
+        zipper.iter_procs.push(zipper.cursor)
+        zipper.cursor = zipper.initial_procs.pop()
+        res,nxt_proc = zipper.cursor.run(conf{cap = 0})
+
     # Run the iterating processes
     while True:
         # If the result is better than the best iteration, it's the final result
         if zipper.coiter_procs.min().result < zipper.iter_procs.min().bound:
             return BndRes(zipper.coiter_procs.min().result)
 
-        # If there are two iter processes
-        if not exceeds_cap(conf.cap,zipper):
+        # If there are two iter processes there's work to do
+        if not exceeds_cap(conf.cap, zipper):
             # Run the best iterating process until it exceeds the
             # second best iterating process or the final result
             cap = min(zipper.iter_procs.second_min().bound,
@@ -1524,6 +1573,7 @@ def minimum_zipper_evolution(conf,zipper):
             else:
                 zipper.coiter_procs.push(res,nxt_proc)
         else:
+            # Otherwise yield the bound and get a new conf
             conf = yield zipper.iter_procs.second_min().bound
 \end{pycode}
   \caption{\label{lst:min_zipper_evolution}Pseudo-python for the
@@ -2025,8 +2075,8 @@ develop the \emph{stochastic costs model}.
 The correct way of calculating the expected cost of a node in the
 future, which we very informally and heuristically attempt to
 approximate, would be to instead of considering the cost of
-materialized nodes to be zero, to calculate the likelihood that a
-materialized node will still be materialized when we encounter it
+materialized n-nodes to be zero, to calculate the likelihood that a
+materialized n-node will still be materialized when we encounter it
 again. This is related not only to an estimation of how many
 page-writes separate the moment of cost estimation and the actual plan
 the cost of which is being estimated, but also all the decisions that
@@ -2038,7 +2088,7 @@ chooses random pages or random tables, but we could find none that was
 useful and computationally viable.
 
 For this reason, we decided to follow a pragmatic approach to the
-problem and simply assume that for every materialized node there is a
+problem and simply assume that for every materialized n-node there is a
 constant probability that it will not still be materialized when we
 need it, scaling the cost by that factor to get the stochastic
 cost. Furthermore, under this regime, Antisthenis would encounter many
@@ -2053,7 +2103,7 @@ for cap, bound and result values. Particularly, we qualify each value
 with two numbers:
 
 \begin{itemize}
-\item The materialized nodes encountered
+\item The materialized n-nodes encountered
 \item A quantification of the non-computability of the value
 \end{itemize}
 
@@ -2061,7 +2111,7 @@ Some care needs to be taken so that the values remain independent of
 the root of the computation.
 
 The cap (listing \ref{lst:def_histcap}) is only qualified by the number of
-machines corresponding to the materialized nodes that are currently in the
+machines corresponding to the materialized n-nodes that are currently in the
 computation stack, i.e., machines that would have otherwise yielded
 zero cost.
 
@@ -2083,7 +2133,7 @@ The bounds and results are augmented by two new dimensions (listing
 
 \begin{itemize}
 \item The \([0,1]\) semi-computability metric
-\item The maximum chain of materialized nodes encountered.
+\item The maximum chain of materialized n-nodes encountered.
 \end{itemize}
 
 And the comparison between bounds and caps is presented in listing
@@ -2094,7 +2144,7 @@ And the comparison between bounds and caps is presented in listing
 data HistRes a =
   HistRes
   { hrComp :: Double  -- [0,1] computability metric.
-   ,hrMaxMatTrail :: Int -- Maximum trail of materialized nodes
+   ,hrMaxMatTrail :: Int -- Maximum trail of materialized n-nodes
                          -- encountered.
    ,hrRes :: a
   }
@@ -2121,7 +2171,7 @@ compare (HistRes c1 t1 r1) (HistRes c2 t2 r2) =
     thr = 0.7
 
 -- There are no circumstances under which we are going to choose a
--- value that has come through more materialized nodes. The scaling
+-- value that has come through more materialized n-nodes. The scaling
 -- will have damped it enough.
 instance Ord a => Ord (Cert a) where
   compare (Cert _ a') (Cert _ b') = compare a' b'

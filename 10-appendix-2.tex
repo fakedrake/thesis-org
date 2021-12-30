@@ -20,7 +20,7 @@ is indeed already a computation carried out by the runtime.  In that
 sense it is \emph{implicit} computation. We have little control over
 the conditions under which it is carried out, especially in a lazy
 language like Haskell, and we consider it to be pure, with no
-effects. 
+effects.
 
 Returning to our higher kinded (of kind \hask{* -> *}), explicit
 computation types, commonly in Haskell implement a hierarchy of 3 typeclasses
@@ -93,8 +93,8 @@ fmap (f . g) == fmap f . fmap g
     b) -> f a -> f b} (more commonly written as \hask{<*>} which is a bit
   harder to pronounce) and \hask{pure :: a -> f a} (see listing
   \ref{lst:applicative_def}). Applicatives are more often described in
-  terms of computation than functors. 
-  
+  terms of computation than functors.
+
   Implementing an applicative interface means first and foremost that we must
   be able to construct a trivial computation that just returns a given
   value, meaning that there must be no restriction on the kinds of
@@ -151,7 +151,7 @@ u <*> pure y = pure ($ y) <*> u
     a)} into a flat one \hask{f a}, and for a nested monad \hask{f (f
     (... f (f a)))} the order in which the \hask{f}s are collapsed does
   not matter.
-  
+
   In the context of computations, this implies that nested
   computations run from inside out, the inner computation is run first
   and then the outer one is run. The "and then" part is what a monad is
@@ -402,5 +402,3 @@ data FreeT f m a = m (FreeF f a (FreeT f m a))
     \caption{\label{lst:free_def}A simple implementation of the free
       monad type.}
   \end{code}
-  
-% todo: write and refer to ListT

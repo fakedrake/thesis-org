@@ -34,7 +34,7 @@ The first non-introductory chapter (chapter
 semantics of reversible operations and how they, along with possible
 intermediate results for each query form the QDAG. It covers topics
 that relate to the construction of the QDAG, the use of the QDAG for
-enumerating plans, higher levels of organization of the QDAG nodes
+enumerating plans, higher levels of organization of the QDAG n-nodes
 into clusters and how those cluseters are used by FluiDB to infer
 properties of intermediate query results like cardinality and relation
 extent using propagators.
@@ -96,7 +96,7 @@ better is cardinality estimation. As mentioned in section
 (\ref{sec:size_estimation_problems}) FluiDB is very naive w.r.t. to
 how it estimates sizes. That said the propagator network structure
 used to estimate cardinalities can be augmented to propagate
-information about selectivity and statistics about each node. These
+information about selectivity and statistics about each n-node. These
 statistics could be collected for every materialized intermediate
 relation to enrich the much needed information available during
 planning.

@@ -34,7 +34,7 @@ former end of the spectrum. We generate very specific template-heavy
 C++ code for every query and we use an off-the-shelf compiler to
 generate highly optimized machine code.
 
-In this chapter we will describe in detail all aspects of code generation and 
+In this chapter we will describe in detail all aspects of code generation and
 the form of data the generated code manipulates.
 
 \section{Storage memory management}
@@ -53,7 +53,7 @@ Assuming that the pages are not in swap, normal reads for shmemfs
 using \cpp{read()} are equivalent to copying pages from the page cache to
 the user space, while shmem \cpp{writes()}operate directly to
 the pages. We can mitigate the copying overhead of reads using \cpp{mmap}
-which will remap the page to the address space of the application. 
+which will remap the page to the address space of the application.
 The problem with this approach, however, is that, while it allows us to minimize
 copying, we still need to run system calls in tight loops, which can
 be very computationally expensive. This can't be completely mitigated
@@ -72,7 +72,7 @@ Before we get into the details of the actual physical plan (in the
 form of C++ code) we need to state some assumptions about the layout
 of the code that is assumed by the primary data.
 
-FluiDB is a \emph{row store system} which stores tables as files, 
+FluiDB is a \emph{row store system} which stores tables as files,
 each of which is a collection of pages, each of which is a collection of records (rows).
 Using a filesystem rather than direct heap memory is not an ideal solution
 performance-wise and in the future we plan on using a less OS-reliant
@@ -352,7 +352,7 @@ is the only iterator pointing inside a page and moves
 out of the page, said page is
 written back to the file and the new page is read. When the only
 iterator pointing to a page is deleted the page is written to the
-file. 
+file.
 
 Multiple iterators pointing to the same page do not
 maintain different copies of that page and the last one to be
@@ -372,7 +372,7 @@ are materialized and the trigger itself materializes a subset of the
 output n-nodes
 \item Reverse trigger of a t-node, which represents the
 materialization of a subset of the input n-nodes from materialized
-output nodes
+output n-nodes
 \item The deletion of an n-node.
 \end{itemize}
 
@@ -384,13 +384,13 @@ corresponds to a cluster of connected t-nodes. The first step of the
 code generator, therefore, is to group the low-level transitions
 received by the planner into higher level batches that correspond to
 exactly one operation. This process is driven by intermediate n-nodes,
-i.e. helper nodes that do not correspond to materializable relations,
+i.e. helper n-nodes that do not correspond to materializable relations,
 but are rather part of the graph to reify the valid combinations that
 the planner is allowed to materialize. The constraint we are trying to
 preserve while batching the low level transitions such that the
-cluster level transitions do not materialize any intermediate nodes.
+cluster level transitions do not materialize any intermediate n-nodes.
 
-Since intermediate nodes are always internal to clusters and no
+Since intermediate n-nodes are always internal to clusters and no
 cluster shares a t-node with another cluster, each batch of
 transitions corresponds to exactly one cluster, except for deletion
 transitions which are standalone. Furthermore, each cluster
@@ -674,7 +674,7 @@ its arguments.
 It is important to remind the reader that no order is expected to be
 preserved by union, which is to say that the transition \(A
 \Rightarrow \{\sigma_p A, \sigma_{\neg p} A\} \Rightarrow A\) does not
-preserve the order of the nodes. The reader is also reminded that
+preserve the order of the rows. The reader is also reminded that
 FluiDB does not support \hask{NULL} values to preserve the correctness of
 the reverse select operation.
 
@@ -770,7 +770,6 @@ tables are unordered and use merge join after sorting the input tables
 in-place. A sketch of the algorithm is presented in listing
 \ref{lst:join_algorithm}
 
-% TODO: check the algorithm
 \begin{code}
 \begin{pycode}
 # This is our pythonic way of detecting which input stream finished.
@@ -822,7 +821,7 @@ def merge_equijoin(in_l,in_r,anti_l,out,anti_r):
                 # Gather a sequence of equal-key values from the right
                 tmp = val_r
                 val_rs = []
-                while extractl(val_r) == extractl(tmp):
+                while extractr(val_r) == extractr(tmp):
                     val_rs.append(val_r)
                     val_r = rnext(it_r)
 
@@ -837,10 +836,14 @@ def merge_equijoin(in_l,in_r,anti_l,out,anti_r):
             while extractl(val_r) < extractr(val_l):
                 anti_r.write(val_l)
                 val_l = lnext(it_l)
-    except LeftFinished:
+    except RightFinished:
+        # if we ran out of records from the right operand
+        # Push the remaining if the left operand to left antijoin
         for l in it_l:
             left_anti.write(r)
-    except RightFinished:
+    except LeftFinished:
+        # if we ran out of records from the left operand
+        # Push the remaining if the right operand to right antijoin
         for r in it_r:
             right_anti.write(r)
 \end{pycode}

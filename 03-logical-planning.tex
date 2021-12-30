@@ -158,10 +158,17 @@ listing \ref{lst:expr_types}.
 
 \begin{code}
   \begin{haskellcode}
+   -- | Algebraic type for a relational algebra query.
+   -- `e` denotes the type of the column symbol and `s` denotes
+   -- the type of the primary table symbol.
+   data Query e s = Q2 (BQOp e) (Query e s) !(Query e s)
+    | Q1 (UQOp e) !(Query e s)
+    | Q0 s
+
     -- | Algebraic type of a proposition
-    data Prop a = P2 BPOp (Prop a) (Prop a)
-      | P1 UPOp (Prop a)
-      | P0 a
+    data Prop e = P2 BPOp (Prop e) (Prop e)
+      | P1 UPOp (Prop e)
+      | P0 e
     data UPOp = PNot
     data BPOp = PAnd | POr
 
@@ -190,7 +197,7 @@ listing \ref{lst:expr_types}.
       | EAdd | ESub | EMul | EDiv
 
     -- | Algebraic type of a relation.
-    data Rel a = R2 BROp a a
+    data Rel e = R2 BROp e e
     data BROp
       = REq
       | RGt
@@ -210,7 +217,7 @@ listing \ref{lst:expr_types}.
   \end{haskellcode}
   \caption{\label{lst:expr_types} Types of algebraic expressions that compose the non-RA parts of the queries.}
 \end{code}
-%TODO: Definition of the query.
+
 \section{QDAG: The unified query graph}
 \label{sec:qdag}
 
@@ -257,7 +264,7 @@ that would result in the corresponding node being materialized.
 The QDAG of a query is created by unifying all logical plans that
 would derive it by means of merging n-nodes that are equivalent. For
 example the mentioned trees \((A \Join B) \Join C\) and \(A \Join (B
-\Join C)\) shared the nodes \(A \Join B \Join C\), \(A\), \(B\) and
+\Join C)\) shared the n-nodes \(A \Join B \Join C\), \(A\), \(B\) and
 \(C\). A global QDAG is maintained by unifying the QDAG of each query
 encountered into the global QDAG, again, by merging equivalent
 n-nodes.
@@ -265,7 +272,7 @@ n-nodes.
 From a QDAG we can derive logical plans for queries. The planner
 operates in terms of the global QDAG. It traverses the QDAG searching
 for a plan (i.e., a sequence of t-node triggers) that will cheaply
-materialize the requested node(s). This way, historical nodes can be
+materialize the requested n-node(s). This way, historical nodes can be
 naturally considered. The problem of reusing materialized intermediate
 results is thereby conceptualized as a graph traversal problem.
 
@@ -317,7 +324,7 @@ presented in figure \ref{fig:multiple_selections}
   \end{tikzdiagram}
 
   \caption{\label{fig:just_a_selection}A selection t-node may generate
-    both output nodes, \(\sigma_pA\) and \(\sigma_{\neg p}A\),
+    both output n-nodes, \(\sigma_pA\) and \(\sigma_{\neg p}A\),
     rendering it a partition operation.}
 \end{figure}
 
@@ -481,7 +488,7 @@ t-nodes and RA operators. Rather, operators correspond primarily to
 
 The left antijoin node partitions \(A\) into \(A \lsemi B\) and
 \(A \lnsemi B\), which is left semijoin in our null-less
-context. Similarly for the right antijoin node which partitions \(B\)
+context. Similarly for the right antijoin t-node which partitions \(B\)
 to \(A \rsemi B\) and \(B \rnsemi A\). Joining the semijoin relations
 \(A \lsemi B\) and \(B \lsemi A\) is equivalent to joining \(A\) and
 \(B\).
@@ -507,7 +514,7 @@ reversibility of such operations completely and mark the input edge as
 irreversible. This is generally not a big problem as on the one hand
 the results of aggregations tend to be small compared to the input
 relations, and in the case of anti-join t-nodes, which are only found
-in join clusters, for every anti-join node \(A \lnsemi B\) that is
+in join clusters, for every anti-join n-node \(A \lnsemi B\) that is
 unable to generate \(B\) by reverse triggering, there is a \(A \rnsemi
 B\) that will happily generate \(B\) albeit refusing to generate
 \(A\).
@@ -1037,7 +1044,7 @@ expressions that differ syntactically will produce different QNFs.
 As mentioned, the columns in the QNF name, both primary and of general
 relations, are indexed in the case that there are more than one
 equivalent. This is an edge case that can cause problems because
-different indexing can cause equivalent nodes to have different QNF
+different indexing can cause equivalent n-nodes to have different QNF
 representations. For example, the query \sql{select * from A as A1, A
 as A2 where A1.a = A2.a} is symmetric in all respects and therefore
 the way QNF names representing columns \sql{A1.a} and \sql{A2.a} are
@@ -1196,8 +1203,8 @@ the following features:
   it is to be expected that a lot of the computation might be
   duplicated. The cache object is also shared between different QNF
   building processes that we know are likely to have have a lot of
-  overlap, for example, when inserting nodes into the graph without
-  shared caching FluiDB would be repeatedly computing the QNF of the
+  overlap, for example, when inserting n-nodes into the graph without
+  shared caching between QNF computatuions, FluiDB would be repeatedly computing the QNF of the
   same RA subqueries. This takes the form of simply memoizing the
   interface functions for building the QNF.
 \item The process of building a QNF can fail when processing malformed
@@ -1271,7 +1278,7 @@ It returns an \hask{NQNFResult} (listing \ref{lst:qnf_result}) contains
 
 The details of most QNF functions are fairly mundane and easy to infer
 with the possible exception of products (listing
-\ref{lst:qnd_product}). When calculating the the product of two NQNFs
+\ref{lst:qnf_product}). When calculating the the product of two NQNFs
 \(Q_1\) and \(Q_2\) we first find conflicts, where columns of \(Q_1\)
 can be found in the product collection of \(Q_2\). If none are found,
 we can simply merge all of their fields and recalculate the hashes.
@@ -1307,8 +1314,8 @@ form \(\sigma_{a_0=1 \land a_1=2} (A_0 \times A_1)\) and also
         return ncnf1 + ncnf2
 \end{pycode}
   \caption{\label{lst:qnf_product}The QNF product algorithm finds name conflicts between the
-    operands and non-deterministically increments one of the sides. In FluiDB non-determinism
-    is handled by the \hask{ListT} monad.}
+    operands and non-deterministically increments one of the sides. In
+    FluiDB non-determinism is handled by the \hask{ListT} monad.}
 \end{code}
 
 \subsection{Pragmatism of QNFs}
@@ -1453,7 +1460,7 @@ associated with a schema which contains information about:
 \item What is the order in which the columns are stored.
 \end{itemize}
 
-Thereby, each node is coupled with a structure containing all this
+Thereby, each n-node is coupled with a structure containing all relevant
 information (see section \ref{sec:relation_shapes})
 \end{comment}
 
@@ -1473,7 +1480,7 @@ clusters come in different shapes depending on what the underlying
 operator is. In this section we will take a closer look at the
 structure of the different cluster types. Each type of cluster has
 input, output and intermediate slots, and each of the slots typically
-contains an n-node reference and an RA operator that relates the node
+contains an n-node reference and an RA operator that relates the n-node
 to the cluster. They also contain slots to accommodate the t-nodes
 connecting the said n-nodes. In dealing with clusters, it is assumed that
 input and output n-nodes contain values that may be shared by other
@@ -1576,11 +1583,11 @@ the cluster itself.
 
   \caption{\label{fig:joinclust}The structure of a \hask{JoinClust}
     contains a \hask{BinClust} and includes two intermediate and two
-    complementary output nodes to facilitate data related to
+    complementary output n-nodes to facilitate data related to
     antijoins.}
 \end{subfigure}
 \caption{\label{fig:joinclust}There are four cluster types. The
-  \hask{NClust} is trivial, just a single node. The other 3 are
+  \hask{NClust} is trivial, just a single n-node. The other 3 are
   \hask{BinClust}, \hask{JoinClust}, and \hask{UnClust} representing
   binary, join, and unary operations respectively.}
 
@@ -1648,7 +1655,7 @@ through all 12 queries of the SSB TPC-H benchmark (see chapter
 \begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{./imgs/ssb_graph.pdf}
-  \caption{\label{fig:ssb_graph}A QDAG accumulated out of every node
+  \caption{\label{fig:ssb_graph}A QDAG accumulated out of every query
     in the SSB TPC-H.}
 \end{figure}
 
@@ -1776,7 +1783,7 @@ that updates the values in that cluster.
 \end{code}
 
 Given a cluster with n-nodes at the edges, we look up the shape of each
-node and add that to the cluster edge.  Once a cluster is triggered
+n-node and add that to the cluster edge.  Once a cluster is triggered
 and the values synchronized, those values are checked against the old
 ones and for the ones that were updated we find the clusters in which
 they participate and run the same process. The convergence of this
@@ -1795,7 +1802,7 @@ cases where
   about the value.
 \item The shape is inferred via the propagator network and is
 therefore subject to change and
-\item The shape stored in the cell corresponds to a materialized node
+\item The shape stored in the cell corresponds to a materialized n-node
 and other parts of the FluiDB's internal state depend on it.
 \end{itemize}
 
@@ -1851,7 +1858,7 @@ Bringing our attention to the implementation of the \hask{Def <> Full}
 combination in the semigroup definition \ref{lst:defaulting_semigroup}
 it is worth noting that it inverts the order of the combination of the
 default values. The reason we do this is to give priority the the full
-valued (materialized) nodes when propagating to their immediate
+valued (materialized) n-nodes when propagating to their immediate
 neighbors. We need this when committing an operator to the code
 generation.
 
