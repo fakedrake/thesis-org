@@ -1,6 +1,6 @@
 \dictum[K. Varnalis]{
   I am not the sow of chance, the forger of new life\\
-  I am a child of necessity, a child of rage
+  I am a child of necessity, a mature offspring of rage
 }
 
 \begin{summary}
@@ -10,18 +10,18 @@
   efficient algorithm for answering a query.
 \item In-memory databases keep all data in main memory so they are
   closer to the processor
-\item many in-memory databases employ some variant of code generation
+\item Many in-memory databases employ some variant of code generation
   to execute the query plans.
 \item Intermediate result recycling is the practice of reusing
   computation between queries.
 \end{summary}
 
-FluiDB is a system that generally focuses on relational query,
+FluiDB is a system that generally focuses on relational query
 optimization and planning. This chapter aims to give the reader some
 idea about where FluiDB fits in the design space and the historical
 context in which it was developed.  First, we outline a very high
 level overview of the \emph{query language and operators} involved in
-database management, as well as the the overall architecture of such
+relational database management systems (RDBMSes) as well as the the overall architecture of such
 systems. Following that, we will focus on the \emph{query planning}
 subsystems of relational query databases and some traditional
 approaches to query evaluation. Afterwards, we will focus particularly
@@ -29,12 +29,12 @@ on \emph{in-memory relational databases} and the trade-offs that
 govern their design. Finally, we look into the systems that utilize
 \emph{intermediate result recycling} and how they solve the problem of
 automatically selecting and maintaining intermediate results for
-workloads.
+sharing computation within workloads.
 
 \section{Relational databases}
 
 Databases are more than just a method of accessing data. In their
-essence they are machines for question answering. The typical database
+essence they are question answering machines. The typical database
 works in a perpetual loop of reading queries and coming up with
 answers based on a set of data points. There are two important aspects
 that every database needs to define in order to delineate its
@@ -46,11 +46,11 @@ operational semantics:
   expressed and the results are presented.
 \end{itemize}
 
-The oldest, most studied, and most common model is the relational model
+The oldest, most studied, and most common model is the \emph{relational} model
 which defines queries in terms of \emph{relational algebra} and organizes
 data in \emph{tables} or relations.
 
-A relation is typically an unordered set of tuples
+A relation is typically defined as an unordered set of tuples
 \(\{d_1,d_2,...,d_k\}\) where each element \(d_i\) represents an
 attribute. The core relational algebra is an extension of the algebra
 of sets (that defines operators of set union \(\cup\), intersection
@@ -74,14 +74,14 @@ of the mathematical properties of RA and often gathering statistics
 about the underlying data itself. This process leads to the formation
 of a relational algebra expression called the \emph{logical plan}. It
 is a high level description of a sequence of operations required to
-produce a result. A logical plan only includes the denotational
+produce a result. A logical plan only assumes the denotational
 semantics of these operations, making no assumptions about their
 implementation.
 
 Each RA operator is typically implemented by several different
 algorithms, each being efficient and even possible in some situations
 but not in others. For example, a join can be implemented by nested
-loops or with merge join, among others.  While the former algorithm is
+loops or by the merge join algorithm, among others.  While the former algorithm is
 general and can implement any join, it is very inefficient. On the
 other hand a merge join is much more efficient but can only implement
 joins of the form \(\Join_{a=b}\) (equijoins or natural
@@ -90,11 +90,10 @@ implied information about the scheduling of the operators, for
 example, the logical plan \((\pi A) \Join (\sigma B)\) implies that
 the join can not begin being evaluated before the projection and
 selection but the latter can be evaluated in any order, or even
-simultaneously via pipelining. All these details about the execution
+simultaneously. All these details about the execution
 of the query are resolved by the \emph{physical planner}. The physical
 planner accepts a logical plan and emits an unambiguous algorithm that
 will produce the result of the query, called the \emph{physical plan}.
-
 
 The final step is actually executing the physical plan which is
 handled by the \emph{query execution engine}. The execution engine
@@ -104,7 +103,7 @@ memory, handling page-level caching, etc.
 
 \section{Query optimization and planning}
 
-Query optimization and planning generally refers to the processes that
+\emph{Query optimization and planning} generally is a set of processes that
 take place between reading a query and executing a physical plan. The
 concerns of query optimization are the correctness of the final result and
 the efficiency of the plan generated, usually in terms of time, but
@@ -112,9 +111,9 @@ also in terms of space.
 
 Finding an optimal plan is in the general case NP-complete
 \cite{ullmanInformationIntegrationUsing1997}, but query optimizers can
-do a good job at finding good plans using heuristics. The selection
+do a good job of finding good plans using heuristics. The selection
 and organization of these heuristics as well as query cost estimation
-are the main problems that make a query optimizer nontrivial. In
+are the main problems that make the design of a query optimizer nontrivial. In
 particular one could separate the the tasks of a query optimizer
 into three broad categories:
 
@@ -129,7 +128,7 @@ At a very high level, the architecture of a query optimizer is
 demonstrated in figure \ref{fig:optimizer_arch} and is broadly
 comprised of the following components:
 
-\begin{figure}[p]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{./imgs/optimizer_architecture.pdf}
 \caption{\label{fig:optimizer_arch}Common architecture of a query
@@ -186,7 +185,7 @@ in later queries
 \cite{perezHistoryawareQueryOptimization2014,nagelRecyclingPipelinedQuery2013,ivanovaArchitectureRecyclingIntermediates2010}.
 
 The final query processing concern that is relevant to the design of
-FluiDB regards the traversal and pruning of the search space. As
+FluiDB regards the traversal and pruning of the query plan search space. As
 mentioned, query optimization is generally NP-complete, so the viable
 options DBMS designers are left with are randomized algorithms, ML
 approaches, and heuristics. Virtually all systems implement heuristics
@@ -199,16 +198,19 @@ incorporate randomized algorithms
 
 The \emph{logical planner} transforms a syntax tree in the form of
 relational algebraic expressions, where the operators only contain
-information about the semantic meaning of operations and none relating
-to the algorithms that will eventually be executed on the input
+information about the semantic meaning of the operations and none relating
+to, the algorithms that will eventually be executed on the input
 data. It is for all intents and purposes a rewrite engine for
 relational algebra. Typical transformations performed by the logical
 query optimizer are
 
 \begin{itemize}
-\item Predicate normalization to conjunctive normal form, e.g. \((a_0 = 1
+\item Predicate normalization to conjunctive normal form, e.g. 
+
+ \[(a_0 = 1
   \land a_1 = b_1) \lor b_2 = 3 \hookrightarrow (a_0 = 1 \lor b_2 = 3)
-  \land (a_1 = b_1 \lor b_2 = 3)\)
+  \land (a_1 = b_1 \lor b_2 = 3)\]
+  
 \item Predicate push-down e.g. \(A \Join_{a_0 = 1 \land p} B
   \hookrightarrow (\sigma_{a_0 = 1} A) \Join_p B\).
 \item Cartesian product to joins \(\sigma_p ( A \times B )
@@ -222,7 +224,7 @@ be used. A physical query planner therefore requires low level
 information about the query that relates to the indexes available,
 possible ordering of the data, materialized views, etc.
 
-Either of the planners needs to enumerate the plans under
+Each of the planners needs to enumerate the plans under
 consideration while traversing the search space. There are two major
 approaches to this:
 
@@ -245,9 +247,10 @@ being based, is the \emph{cascades optimizer}
 track of \emph{groups} of equivalent query expressions and uses those
 as the fundamental atom that it manipulates. For example, instead of
 keeping track of \(A \Join (B \Join C)\) and \((A \Join B) \Join C\)
-separately they would be part of the same query group. It then uses a
+separately they would be part of the same query group. Cascades then uses a
 global hash table (the "memo" structure) to match the best plan that
-corresponds to each group.
+corresponds to each group. These plans are stitched together to form larger 
+plans until the plan for the required query is created in the memo structure.
 
 Many database systems use optimizers similar to cascades (like the
 Microsoft SQL server, Postgres,
@@ -258,22 +261,23 @@ descendants of cascades is Apache Calcite
 implementing query planning used by a number of commercial and
 research databases \cite{nunesalonsoBuildingPolyglotData2020}.
 
-\subsection{Cost estimation}
+% \subsection{Cost estimation}
 
-Probably the hardest aspect of the planner design is the cost
-estimation algorithm, which is required by the optimizers, especially
-the physical planner. These are required in order to select plans and
-to navigate the search space. A good cost model can help basic
-planners make decent plans and a bad one can cause sophisticated
-planners make horrible plans \cite{leisHowGoodAre2015}. As cost
+Probably the hardest aspect of the planner design is the \emph{cost
+estimation algorithm}, which is required by the optimizers, especially
+the physical planner.  As cost
 estimation, we generally refer to a number of different related
 procedures that are broadly the \emph{estimation of the cost} of an
 arbitrary plan and include the prediction of the \emph{cardinality} of
-not yet materialized relations.
+not yet materialized relations. The role of cost estimation is
+detrimental to plan selection and
+to the navigation of the plan search space. A good cost model can help basic
+planners make decent plans, and a bad one can cause sophisticated
+planners make horrible plans \cite{leisHowGoodAre2015}.
 
 It seems that the most important challenges involved in the design of
-a cost model relate to the fact that we are fundamentally operating
-with scarce and highly uncertain information. Especially relating to
+a cost model relate to the fact that during planning we are fundamentally operating
+with sparse and highly uncertain information. Especially relating to
 cardinality estimation, uncertainty and bad predictions propagate and
 make make it extremely hard for the planners to make correct
 decisions. Consider, for example, a join. Some joins are similar to
@@ -282,8 +286,10 @@ more similar to lookups producing only a few rows. A cost model that
 confuses the kind of join will make very bad predictions w.r.t.\ the
 cost of any relational algebra expression that uses the said join,
 causing an optimizer to select an expensive plan or avoid a cheap
-one.
+one. What is worse, misestimating the input of an operator caps our
+ability to estimate the output. 
 
+\begin{comment}
 Cardinality estimation most commonly takes the form of selectivity
 estimation, i.e., what percentage of tuples from the input make it to
 the output of a selection or a join. This is sensitive to the
@@ -317,6 +323,7 @@ micro-benchmarks on the production system to make these estimations.
 Cost estimation is beyond the current scope of FluiDB and we only
 implement the most naive cardinality estimation, but it is worth
 mentioning how more mature systems approach the issue.
+\end{comment}
 
 \section{In-memory relational databases}
 
@@ -349,7 +356,7 @@ runtime the bottlenecks for an in-memory database are much more
 complex and they can include things like locking, cache misses,
 predicate evaluation, and data movements.
 \item As main memory is a much less abundant resource than persistent
-storage, in-memory databases are often distributed, making network a
+storage, in-memory databases are often distributed, making network performance a
 major concern.
 \end{itemize}
 
@@ -359,7 +366,7 @@ workloads for in-memory databases are typically CPU bound, there are
 major gains in performance to be had by specializing the code being
 executed. A typical interpreter-based plan execution engine makes
 heavy use of virtual function calls and conditionals inside tight
-loops, which kills performance on virtually all modern
+loops which kills performance on virtually all modern
 architectures. The value proposition of code generation is to inline
 or hard-code the virtual functions and erase the conditionals at
 runtime to reduce the number of operations and make better use of
@@ -375,9 +382,9 @@ Transpilation of a physical plan to a systems language like C or C++
 and then fed to an off-the-shelf compiler
 \cite{krikellasGeneratingCodeHolistic2010} is expensive but it
 generates highly efficient code and more easily debuggable execution
-plans. The most notable complete database systems that used this
+plans. The most notable complete database system that used this
 technique were Microsoft Hekaton that generates C code from SQL
-queries and older versions of MemSQL. For FluiDB, we reuse a lot of
+queries and older versions of MemSQL. For FluiDB, we reuse many
 techniques introduced in HIQUE
 \cite{krikellasGeneratingCodeHolistic2010} to translate physical plans
 to template-heavy C++ code, making the assumption that query
@@ -387,7 +394,7 @@ compilation will be much faster than the query runtime.
 
 JIT compilation has received a lot of attention in the compiler
 community, especially in the context of the JVM. A number of database
-systems have taken advantage of this to speed up query execution. Most
+systems have taken advantage of this trend to speed up query execution. Most
 notable of these are SPARK \cite{armbrustSparkSQLRelational2015}, which
 generates Scala AST which is then converted to JVM byte code, and
 Neo4j that directly generates bytecode out of the queries.
@@ -413,8 +420,8 @@ directly generate highly specific machine code out of the physical
 plan. The first system to attempt that, like most techniques used
 today, was System-R, which originally compiled SQL statements directly
 to machine code by stitching together code fragments from a "fragment
-library" \cite{chamberlinHistoryEvaluationSystem1981} but it was
-quickly deprecated due to the large engineering effort
+library" \cite{chamberlinHistoryEvaluationSystem1981}. The technique was
+quickly deprecated, however, due to the large engineering effort
 required. Oracle also includes similar to some of their databases and
 MemSQL express their plans in a custom language called MPL (MemSQL
 Plan Language) for which they have a custom compiler that translates
@@ -422,20 +429,22 @@ it directly to machine code.
 
 \subsection{Custom execution engines}
 
-The final category is per database code generation rather than per-query
-code generation. Volcano/EXODUS
+The final category of databases that use code generation is is per database 
+code generation rather than per-query code generation. Volcano/EXODUS
 \cite{graefeVolcanoOptimizerGenerator1993a} and more recently SageDB
 \cite{kraskaSageDBLearnedDatabase} generate an optimizer and execution
 engine that is specific to the database schema but not to the queries.
+Essentially, these database systems compile the database schema into a 
+custom RDBMS. 
 
 \section{Intermediate result recycling}
 
 A materialized view is a relation defined by a query that is
-persistently stored. A view that is not stored is said to be
-virtual. \emph{View selection} is the process of selecting an
+persistently stored while a view that is not stored is said to be
+\emph{virtual}. \emph{View selection} is the process of selecting an
 appropriate set of materialized views to improve the performance of a
 workload \cite{mamiSurveyViewSelection2012}.  Automated materialized
-view selection or intermediate view recycling has been on the radar of
+view selection or intermediate view recycling has occupied
 the database research community for a while now. A few approaches to
 this problem have to do with AND/OR directed acyclic graphs
 \cite{guptaSelectionViewsMaterialize1997}, modeling the problem as a

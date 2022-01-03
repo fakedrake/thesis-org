@@ -1,5 +1,5 @@
 \dictum[G. W.F. Hegel]{In [dialectical] movement, consciousness
-experiencesthe emergence of individuality in the unchangeable, and of
+experiences the emergence of individuality in the unchangeable, and of
 the unchangeable in individuality.}
 
 \begin{summary}
@@ -8,7 +8,7 @@ the unchangeable in individuality.}
 \item The main novelty relates to the introduction of reversible
   relational operations which affords a new perspective on query
   planning and view selection.
-\item She materializes all intermediate results and deletes garbage
+\item FluiDB materializes all intermediate results and deletes garbage
   collects when she runs out of space.
 \end{summary}
 
@@ -90,11 +90,11 @@ some plan resembling the following following plan following:
             node{\(\sigma_{\mathit{l\_shipdate} > 10-11-2015}\)}
             child { node{lineitem}}
           }
-          child {node {order}}
+          child {node {nation}}
         }
         child {node{customer}}
       }
-      child {node{nation}}
+      child {node{order}}
     };
   \end{tikzdiagram}
   \caption{\label{fig:single_plan}An efficient logical plan for a
@@ -143,18 +143,19 @@ we would like to materialize the large join and only run
         child {node{\(\Join\)}
           child {node{\(\Join\)}
             child { node{lineitem}}
-            child { node {order}}
+            child { node {nation}}
           }
           child {node{customer}}
         }
-        child {node{nation}}
+        child {node{order}}
       }
     };
     \node[draw=none] (n) [left = of mat] {Keep materialized}
     edge [-stealth] (mat);
   \end{tikzdiagram}
   \caption{\label{fig:multi_plan}An efficient logical plan for a
-    template based workload.}
+    template based workload. The relational algebra operators used are:
+    \(\gamma\) for aggregations. \(\sigma\) for selection, and \(\Join\) for joins.}
 \end{figure}
 
 This shift of focus from per-query optimization to considering the
@@ -168,7 +169,7 @@ is used to decide the benefit of materializing a sub-expression, and a
 \emph{view pool} that keeps track of the materialized tables at every
 moment. Both these sets are taken into account during planning to
 produce a plan that will likely minimize the amortized cost of the
-workload. After the query is planned the sets are updated. A
+workload. After each query is planned the sets are updated. A
 limitation of such an approach is that when dealing with relations
 like \(\li \Join \ord\) in budget restricted settings, materialized
 view storage can quickly become a scarce resource.
@@ -179,9 +180,9 @@ frequently subsumed by the same intermediate result. In our example
 workload \(\li\) is fully subsumed by \(\li \Join \ord\), \(\li \Join
 \ord \Join \cust\), and \(\li \Join \ord \Join \cust \Join
 \nation\). Similarly \(\ord\), \(\cust\), and \(\nation\) are fully or
-partially subsumed by these relations. It seems wasteful to always
+partially subsumed by similar relations. It seems wasteful to always
 keep the rows of all primary tables separately \emph{and} concatenated
-in the rows \(\li \Join \ord \Join \cust \Join \nation\).
+in the rows of \(\li \Join \ord \Join \cust \Join \nation\).
 
 In particular we can retrieve the rows of \(\li\) by projecting
 on the latter relation and deduplicating the resulting rows we can
@@ -234,12 +235,18 @@ can indeed generate workload plans similar to the one described.
 
 The solution we experiment with by implementing FluiDB resembles the
 solution provided in \cite{gouSupSearchEfficient2006} by Gou et.al for
-multi-quer. In their work they embed aggregations \sql{group by x1,
-  .., xk} into the \(\subseteq\)-lattice that arises from the powerset
+multi-query optimization (MQO). In their work they embed aggregations \sql{group by x1,
+..., xk} into the \(\subseteq\)-lattice that arises from the powerset
 \(P(\{x_1, ..., x_k\})\). Thereby they encode the fact that \sql{group
-  by A, B, C} is subsumed, or can be computed by, either of \sql{group
-  by A, B}, \sql{group by A, C} or \sql{group by B, C}. Once the
-lattice is constructed a variant of the \(A^{\star}\) path finding is
+  by A, B, C} is subsumed, or can be computed from of:
+\begin{itemize}
+\item \sql{group by A, B}, 
+ \item \sql{group by A, C}
+ \item \sql{group by B, C}. 
+ \item[...]
+\end{itemize}
+
+Once the lattice is constructed a variant of the \(A^{\star}\) path finding is
 used algorithm to search for the optimal aggregation plan. However
 they make no attempt to recycle tables, ie. garbage collect tables,
 whose data can be found in other relations, and narrows it's attention
@@ -249,22 +256,31 @@ From the aforementioned work we keep the basic notion of using a graph
 to represent relationships between queries and to derive the benefit
 of materializing a relation. We also use path finding techniques in
 that graph to create plans. However we introduce a more complex and
-ad-hoc hierarchy of relations to account for subsumptions the entire
-relational algebra, rather than just aggregations. That is very
+ad-hoc hierarchy of relations to account for subsumptions in the entire
+relational algebra, rather than just aggregations that is very
 similar to AND-OR dags as found in
 \cite{mistryMaterializedViewSelection2001}.  The relations we express
 in that graph are bidirectional, so rather than only finding paths
 towards the goal and deleting relations when they are no longer needed
-via GC plan fragments. We simultaneously plan for moving towards the
+via GC plan fragments, we simultaneously plan for moving towards the
 goal query and performing "backwards" operations to enrich the space
-of possible plans. We clarify this with an example which demonstrates
-a slightly simplified version of our system's functionality.
+of possible plans. This process will become clear with an example which demonstrates
+a slightly simplified version of our system's functionality:
 
 In figure \ref{fig:intro_selectexample} we provide representation of a
 subsumption graph that our RDBMS might create after witnessing
-selections on \(\li\). For brevity let \(p:=shipdate > 10-11-2015\),
-\(q:=quantity < 24\) and \(r:=discount < .06\). The RDBMS has
-encountered \(\sigma_{p}(\li)\), \(\sigma_{q}(\li)\) and
+selections on \(\li\):
+\begin{itemize}
+    \item \sql{select * from lineitem where l_quantity < 24}
+    \item \sql{select * from lineitem where l_shipdate > 10-11-2015}
+    \item \sql{select * from lineitem where l_discount < 0.06}
+    \item \sql{select * from lineitem where l_discount < 0.06 and l_shipdate > 10-11-2015}
+\end{itemize}
+
+For brevity let \(p:=shipdate > 10-11-2015\),
+\(q:=quantity < 24\) and \(r:=discount < .06\). In relational algebraic
+representation the queries the RDBMS has
+encountered are \(\sigma_{p}(\li)\), \(\sigma_{q}(\li)\) and
 \(\sigma_{q} \sigma_{r} (\li)\). For the purposes of this example we
 assume that according to the workload, the planner has determined that
 the priority in terms of usefulness of each query involved is in
@@ -293,40 +309,38 @@ descending order of usefulness:
     \newcommand{\n}[1]{node {\(#1\)}}
     \newcommand{\bn}[1]{node[mat] {\(#1\)}}
 
-    \node {\(\li\)} % \li
-    child { \bn{\sigma_{q}(\li)}} % σ_q
+    \node {\(\li\) : 1} % \li
+    child { \bn{\sigma_{q}(\li) : }} % σ_q
     child { \bn{\sigma_{\neg q}(\li)}} % σ_nq
-    child { \n{\sigma_{\neg p}(\li)}}  % σ_np
+    child { \n{\sigma_{\neg p}(\li) : 0.4}}  % σ_np
     child {
-      \n{\sigma_{p}(\li)} % σ_p
-      child {\n{\sigma_{p \land r}(\li)} } % σ_pq
-      child {\n{\sigma_{p \land \neg r}(\li) }} % σ_rpq
+      \n{\sigma_{p}(\li) : 0.6} % σ_p
+      child {\n{\sigma_{p \land r}(\li)} : 0.5 } % σ_pq
+      child {\n{\sigma_{p \land \neg r}(\li) : 0.1 }} % σ_rpq
     } ;
 \end{tikzdiagram}
-\caption{\label{fig:intro_selectexample}The materialized relations are
+\caption{\label{fig:intro_selectexample}The currently materialized relations are
   marked with grey. Assuming the absence of null values and assuming
   set semantics \(\li = \sigma_p \li \cup \sigma_{\neg p} \li\),
-  FluiDB can find a plan to generate any of the relations in the graph
-  from \(\sigma_p \li\) and \(\sigma_{\neg p} \li\).  }
+  FluiDB can find a plan to generate any relation involving \(\li\).. }
 \end{figure}
 
 The query that we are planning is
 \(\sigma_{quantity < 24} \sigma_{discount < .06} (\li)\), which is
-denoted in the figure as \(\sigma_{q \land r}(\li)\). Our total size
+denoted in the figure as \(\sigma_{p \land r}(\li)\). Our total size
 budget is 2.5.
 
-Following the edges in the graph, to plan \(\sigma_{q \land r}(\li)\)
-we need \(\sigma_{q}(\li)\) and for that we need \(\li\) and is least
-beneficial. So first we plan the union
+Following the edges in the graph, to plan \(\sigma_{p \land r}(\li)\)
+we need \(\sigma_{p}(\li)\) and for that we need \(\li\). So first we plan the union
 
 \[
-  \sigma_{\neg p}(\li) \cup \sigma_{p}(\li) \rightarrow \li
+  \sigma_{\neg q}(\li) \cup \sigma_{q}(\li) \rightarrow \li
 \]
 
-Then we need \(\sigma_{q}(\li)\) but we are now using 2 units of space
+Then we need \(\sigma_{p}(\li)\) but we are now using 2 units of space
 and adding .6 more would exceed our space budget of 2.5. \(\li\) is
 the least beneficial of our materialized views but it is required for
-our next step, ie. creating \(\sigma_{q}(\li)\) . \(\sigma_{\neg
+our next step, i.e., creating \(\sigma_{q}(\li)\) . \(\sigma_{\neg
 p}(\li)\) is deleted since it's derivable from \(\li\). Then
 \(\sigma_{q}(\li)\) is created and now we are using 2.1 units of
 space.
@@ -384,7 +398,7 @@ represented as:
 This radical approach to adaptation of data to the workload is
 particularly useful in contexts where (fast) memory is scarce compared
 to the data, particularly in-memory databases. In that vain we lean
-heavily on executing plan by transpiling the plan to C++ code.
+heavily on executing plans by transpiling the plan to C++ code.
 
 This thesis describes in detail how we implemented FluiDB, a system
 targeted at performing this kind of reasoning for planning and
@@ -392,7 +406,8 @@ executing queries. In chapter \ref{chapter:background} we provide a
 brief overview of the state of the art and common practices that
 pertain to query processing; in chapter
 \ref{chapter:fluidb_logical_planning} we describe how queries are
-processed and stored at a logical level; in chapter
+processed and stored at a logical level and various methods we employ for
+overcoming the challenges of assembling queries in a graph; in chapter
 \ref{chapter:physical_planning} we describe how FluiDB performs
 planning and garbage collection to come up with a concrete physical
 plan for each query; in chapter \ref{chapter:antisthenis} we go over

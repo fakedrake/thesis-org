@@ -95,7 +95,7 @@ is unique for each row (see section \ref{sec:query_processing} on
 query pre-processing).
 
 The semantics of the sorting operation are preserved by making a small
-concession to the set semantics: The \emph{only} time when records of
+concession regarding the set unordered semantics: The \emph{only} time when records of
 a relation are assumed by the planner to be ordered is for expressions
 of the form \(s_e(X)\) and only for the duration between it running
 and the next operation. In practice, this means that the FluiDB
@@ -104,26 +104,26 @@ planner generally treats \(s\) like an identity operation.
 Besides these caveats, all operators known to FluiDB behave as expected.
 The first of the extensions adopted is the antijoin operator
 \(\lnsemi_p\) . It is equivalent to
-\(A \lnsemi_p B \equiv A \backslash \pi_A(A \Join_p B)\) and it is
+\(A \lnsemi_p B \equiv A - \pi_A(A \Join_p B)\) and it is
 primarily useful for creating a bidirectional join by capturing the
 rows left over from a join (see subsection \ref{sec:qdag} on the
 QDAG). The important property we will be interested in is:
 
 \[
-  A \lnsemi_p B \cup \bar\pi_{cols(A)}(A \Join_p B) \equiv A
+  A \lnsemi_p B \cup A \lsemi_p B \equiv A \lnsemi_p B \cup \bar\pi_{cols(A)}(A \Join_p B) \equiv A
 \]
 
 \(\bar{\pi}_{cols(A)}\) meaning "group by the unique columns of \(A\)"
-As syntactic sugar, we also define:
+We also define:
 
 \[
-  A \rnsemi_p B := A \lnsemi_{\neg p} B
+  A \lnsemi_p B := A \rnsemi_p B
 \]
 
 \subsection{Expressions}
 \label{sec:expressions_predicates}
 
-Relational algebra expressions contain expressions that operate at the
+Relational algebra expressions contain numeric, Boolean, string, etc expressions that operate at the
 field level. These appear in projection column definitions, selection
 predicates, aggregation column definitions, etc. These expressions are
 organized in up to 4 nested layers based on the kinds of operators:
@@ -251,9 +251,9 @@ symmetric: a subset of n-nodes are on the output side and another on
 the input side. Each n-node can be materialized by \emph{triggering}
 one of the input t-nodes, by running a connected operation to which
 said n-node is on the output. It is clear then where the name OR-node
-found in other literature originates: any of the input nodes may
+found in other literature originates: \emph{any} of the input nodes may
 participate to a plan involving the OR-node (n-node for
-us). Conversely, each t-node can be triggered \(\iff\) all of it's
+us). Conversely, each t-node can be triggered iff all of it's
 input n-nodes are materialized. Because \emph{all} input nodes must be
 materialized, t-nodes are elsewhere referred to as AND-nodes. We
 depart from the standard nomenclature to avoid confusion in the
@@ -270,11 +270,11 @@ encountered into the global QDAG, again, by merging equivalent
 n-nodes.
 
 From a QDAG we can derive logical plans for queries. The planner
-operates in terms of the global QDAG. It traverses the QDAG searching
+operates in terms of the \emph{global} (aggregate) QDAG, it traverses the QDAG searching
 for a plan (i.e., a sequence of t-node triggers) that will cheaply
-materialize the requested n-node(s). This way, historical nodes can be
-naturally considered. The problem of reusing materialized intermediate
-results is thereby conceptualized as a graph traversal problem.
+materialize the requested n-node(s). This way, the cost of historical queries can be
+easily considered at every step of the process. The problem of reusing materialized intermediate
+results is thereby conceptualized as similar to a graph traversal problem.
 
 This technique is heavily inspired by multiquery optimization (MQO)
 approaches like \cite{mistryMaterializedViewSelection2001} where they
@@ -380,7 +380,7 @@ are taken to be unordered sets of tuples.
     composed to create larger networks.}
 \end{figure}
 
-In figure \ref{fig:multiple_selections} if \(sigma_{\neg p}A,\sigma_{q
+In figure \ref{fig:multiple_selections} if \(\sigma_{\neg p}A,\sigma_{q
 \land p} A,\sigma_{p \land \neg q}A\) are all materialized, then \(A\)
 is materializable as their union. This way \(\sigma_{p \land q} A\) is
 readily available with no space overhead. Instead, the price paid is
@@ -400,7 +400,7 @@ reverse
     \hline
     Aggregation (\(\gamma_e(X)\)) & \(\bot\) \\
     Sorting \(s_e(X)\) & \(\bot\) \\
-    Limit (\(l_i(X)\)) & \(l_i A \cup d_i A \equiv A\) \\
+    Limit (\(l_i(X)\)), drop (\(\d_i(X)\)) & \(l_i A \cup d_i A \equiv A\) \\
     Join (\(X \Join_p Y\)) / Anti-semijoin (\(X \lnsemi_p Y\)) & \( \bar{\pi}_{cols(A)}(A \Join B) \cup (A \rnsemi B) \equiv A\)  \\
     Selection (\(\sigma_p(X)\)) & \(\sigma_p A \cup \sigma_{\neg p} A \equiv A\) \\
     Projection (\(\pi_r(X)\)) & \(\pi_r A \Join \pi_{\bar{r}} A \equiv A\) \\
@@ -443,24 +443,15 @@ t-nodes and relational operators. Usually that is the case but
 there is an exception: the join operator. As we made clear, a t-node
 can generate any number of its inputs by reverse triggering it as
 long as all of the outputs are materialized. Then one approach to
-implementing a join operator might be:
+implementing a join operator might be figure \ref{fig:join_single_tnode}
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.5\textwidth]{./imgs/naivejoinnet.pdf}
-  \caption{\label{fig:org78bb458}Representing a reversible join as a single t-node.}
+  \caption{\label{fig:join_single_tnode}Representing a reversible join as a single t-node.}
 \end{figure}
 
-The \(\lnsemi\) operator is the antijoin operator, \(A \lnsemi B\)
-includes the tuples in \(A\) that to not participate in \(A \Join B\). It
-is the complement of the semijoin \(\lsemi\). Therefore
-
-\[ \bar{\pi}_{cols(A)}(A \Join B) \cup (A \rnsemi B) \equiv A \]
-
-\(\bar{\pi}_{cols(A)}\) means project on the columns of \(A\) group by
-the unique columns of \(A\). Therefore, by having materialized \(\{A
-\rnsemi B, A \Join B, A \lnsemi B\}\) we can create \({A,B}\) and vise
-versa. We could, however be slightly more flexible than that, as we
+We could, however be slightly more flexible than that, as we
 might want to materialize \(A \rnsemi B\) but not \(A \lnsemi B\) to
 the end of ensuring the materializability of only \(A\) and not
 \(B\).
@@ -471,9 +462,9 @@ overcome the limitation that this poses, we make the graph a bit more
 complex and a bit more flexible by breaking the join into two stages
 (see figure \ref{fig:joinnet}). First, we separate the join operands
 (\(A\) and \(B\)) into the part that will be used in the join (\(A
-\lsemi B\) and \(B \lsemi A\) respectively), and the part that will
-not (\(A \rnsemi B\) and \(B \rnsemi A\) respectively) and then we
-join only the useful parts \((A \lsemi B) \Join (B \lsemi A) \equiv A
+\lsemi B\) and \(A \rsemi B\) respectively), and the part that will
+not (\(A \lnsemi B\) and \(A \rnsemi B\) respectively) and then we
+join only the useful parts \((A \lsemi B) \Join (A \rsemi B) \equiv A
 \Join B\). Thus, we fundamentally break the 1-1 correspondence between
 t-nodes and RA operators. Rather, operators correspond primarily to
 \emph{clusters} of nodes. As we will see in detail in
@@ -495,7 +486,7 @@ to \(A \rsemi B\) and \(B \rnsemi A\). Joining the semijoin relations
 
 In figure \ref{fig:joinnet} we used an antijoin t-node. From the
 semantics of the antijoin \(A \lsemi B\) it is clear that no tuples
-from \(B\) are included in either \(A \lnsemi B\) or \(A \rnsemi B\)
+from \(B\) are included in either \(A \lnsemi B\) or \(A \lsemi B\)
 as \(B\) acts as a kind of predicate for selecting over \(A\). This
 means that even though \(B\) is an input, there is no natural way of
 creating \(B\) from the t-node's output. For these cases, we introduce
@@ -524,7 +515,7 @@ B\) that will happily generate \(B\) albeit refusing to generate
   \includegraphics[width=.9\linewidth]{./imgs/joinnetdir.pdf}
   \caption{\label{fig:joinnetdir}The QDAG corresponding to a join is
     broken down in multiple t-nodes to facilitate greater
-    flexibility.}
+    flexibility. Notice that the the edges \(B \to \lnsemi\) and \(A \to \rnsemi\) are now directed.}
 \end{figure}
 
 \section{Deterministic query processing}
@@ -544,8 +535,9 @@ into account the rest of the workload.
 
 We use a custom library for parsing SQL queries into relational
 algebra based on parser combinator monads
-\cite{leijenParsecDirectStyle}. Our parser handles both the parsing
-and decorrelation of the queries. In brief, parser combinators is a
+\cite{leijenParsecDirectStyle}. For an introduction to monads see appendix \ref{chapter:appendix2}.
+Our parser handles both the parsing
+and decorrelation of the queries. In brief, parser combinators are a
 functional interface to combining parsers to make larger, more complex parsers. A
 parser \hask{p} has the form \hask{p a} which means that if the parser
 is used to parse the matching text, it will return a result of type
@@ -557,9 +549,9 @@ is used to parse the matching text, it will return a result of type
   use the result of the former.
 \item the 'alternative' parser combinator \hask{<|> : p a -> p a -> p
     a} which tries one parser and if that fails tries another.
-\item \hask{MonadGen e p} can generate a value of type \hask{p
-    e}. Useful for creating names for unnamed expressions in
-  projections, groups.
+\item Our parser implemenst \hask{MonadGen e p} which means it can generate a value of type \hask{p
+    e}  and does not consume any input. Useful for creating names for unnamed expressions in
+  projections, groups. The function reifying this feature is called \hask{mkSymbol}.
 \end{itemize}
 
 Simple parsers, like the \hask{parseInt} parser combinators, are then
@@ -611,7 +603,7 @@ RA, and which remove redundancies. In brief, those are the following:
   \(\sigma_p\sigma_q\) becomes \(\sigma_{p \land q}\) and \(\pi_m
   \pi_{m'}\) becomes \(\pi_{m \circ m'}\).
 \item Date intervals are translated to dates. This is because the
-  physical planner does not handle dates specially so all dates and
+  execution engine does not handle dates specially so all dates and
   date intervals are converted to timestamps and second intervals. For
   example the expression \sql{date '2020-12-01' - interval '90' day} is
   immediately turned into \sql{date 2021-03-01}. Note that an
@@ -638,11 +630,11 @@ RA, and which remove redundancies. In brief, those are the following:
 Once the preliminary sanitization and simple optimization steps are
 done we mark each instance of the primary table symbols with the
 columns and their types. This is simply information derived by the
-database schema. Then we do some processing and annotation on symbols
-referring to symbols:
+database schema.
 
-\begin{itemize}
-\item First \emph{remap unique sub-tuples}. Each intermediate result,
+\paragraph{Remapping Unique subtuples}
+
+  Each intermediate result,
   and each relation that we want to be able to reason about needs to
   have uniquely identifiable rows. For each relation in the QDAG we
   are keeping track of a set of columns, the unique sub-tuple, the
@@ -655,9 +647,11 @@ referring to symbols:
   in aggregations the unique sub-tuple is the same as the columns on
   which we aggregate, etc. The main challenge is projections and, in a
   similar manner aggregations, where it is possible that the operation
-  does not project on the entire unique sub-tuple of the input. To
+  does not project on the entire unique sub-tuple of the input. 
+  
+  To
   mitigate this, we perform a pre-processing step to rewrite the
-  projections to expose the entire unique sub-tuple. It is worth
+projections to expose the entire unique sub-tuple. It is worth
   mentioning that there are cases where there are more than one
   combinations of fields that form a unique sub-tuple. We opt to keep
   track of all of them to have more flexibility in this
@@ -668,27 +662,31 @@ referring to symbols:
   \(\pi_{p\_color}\mathit{part}\) would become
   \(\pi_{p\_color,p\_partkey} \mathit{part}\).
 
-\item Annotate each symbol referring to a column with the
+
+\paragraph{Symbol annotation}
+
+We annotate each symbol referring to a column with the
 corresponding primary table if there is one (named columns of
-projections do not correspond to a primary table). This is useful both
-in determining possible joins (as we will see in section
-\ref{sec:possible_joins}) and in determining the types of
-columns. This inference is sometimes trivial, for example, in the case
+projections do not correspond to a primary table), and with the type of the column.
+
+This inference is sometimes trivial, for example, in the case
 of references to columns of primary tables, or when annotating literal
 values, but when references to columns of projections it is more
 complex.  For example, in the query \(\sigma_{p(a)} \pi_{a \mapsto
 f(X)}\), we need to infer the type of \(a\).  FluiDB will apply some
-very simple heuristics to fake proper type inference. This is usually
-enough to come up with accurate types as SQL's type system is basic.
+very simple heuristics to fake proper type inference and that is usually
+enough to come up with accurate types as SQL's type system is fairly simle.
 
-\item Projection sharing is determined. As we will see in detail in
+\paragraph{Shared unique subtuple annotation on projections}
+
+As we will see in detail in
 section \ref{sec:projection_algorithm} where we will be discussing the
 implementation details of the projection algorithm and its reverse, it
 is important that at least one unique tuple of a projection is shared
 between a projection and its complement. At this stage, it is decided
 which unique subtuple is to be shared and it is recorded in the RA
 expression tree.
-\end{itemize}
+
 
 \subsection{Possible joins}
 \label{sec:possible_joins}
@@ -748,7 +746,7 @@ final form would be better expressed as \(\sigma_{\{p_1 \lor p_2,p_1
 \(Q[\sigma_{\{p_0,p_1,...,p_l\}}\{Q_0,Q_1,...,Q_k\}]\) where each term
 \(p_i\) refers to columns in one or more \(Q_j\) relations and
 \(Q[\cdot]\) is a query tree with \(\cdot\) as a subtree. We will
-refer to such a selection-product pair as an SP-term.
+refer to such a selection-product pair as an \emph{SP-term}.
 
 To turn this representation into a forest, we will turn each SP-term
 into a set of regular join trees, the Cartesian product of which will
@@ -948,19 +946,19 @@ hash-set (via the instantiation of \hask{prod\_f} as
 \item A primary table
 \item A QNF with an opposite kind \hask{qnfCol} (if \(Q\) is a
   projection an \(A_i\) may be an aggregation)
-\item A set of equivalent RA expressions that are not reducible to the
-  \(\pi \sigma(A_1 \times ... \times A_n\), for example \(\{A \lnsemi
+\item A set of equivalent RA expressions that are not reducible to
+  \(\pi \sigma(A_1 \times ... \times A_n)\) form, for example \(\{A \lnsemi
   B,B \rnsemi A\}\) or \(\{l_N(A)\}\)
 \end{itemize}
 
 Focusing on the latter case, there are certain equivalent rewrites
-that are not easily expressible in the QNF. For that reason instead of
+that are not easily expressible in a QNF. For that reason instead of
 perpetually extending the QNF system we provide this expensive method
 of simply enumerating equivalent queries in RA form. These RA queries
 have at the leaves of the expressions either QNFs or primary
 tables. The only restriction that we place on these queries is that
 the schema of the inputs is simply forwarded to the output without
-modification of the individual fields so that the \hask{cnfCol} vector can
+modification of the individual fields so that the \hask{cnfColumns} vector can
 refer directly to them.
 
 \subsubsection{QNF Columns, projections and aggregations}
@@ -977,8 +975,9 @@ Whenever a \hask{QNFQuery} is found outside of the QNF sub-module
 \hask{col_f} will be instantiated as \hask{Either}, which is to say
 that a query may be an aggregation (\hask{Right}) or a projection
 (\hask{Left}). A query with no explicit projection operand at its root is
-translated to QNF by enumerating the columns into this field. In all of
-these storing them in a container of parametric type \hask{f}, which is
+translated to QNF by enumerating the columns into this field. 
+
+In each case, the columns themselves are stored in a container of parametric type \hask{f}, which is
 the main distinguishing factor between QNF columns and QNF queries: a query
 projection exposes an unordered bag of columns through the projection/aggregation
 field (\hask{f} is instantiated to \hask{HashBag}) while a QNF column exposes
@@ -1074,7 +1073,8 @@ f(l_1)} \gamma_{l_1 \mapsto g(l_0)} \pi_{l_0 \mapsto h(x)} S\).
 \begin{code}
   \begin{haskellcode}
     type QNFAggr f e s =
-    (f (Aggr (QNFName e s)),HS.HashSet (Expr (QNFName e s)))
+      (f (Aggr (QNFName e s))
+      , HS.HashSet (Expr (QNFName e s)))
   \end{haskellcode}
   \caption{\label{lst:qnf_aggr} The QNF aggregation form of the
     projection field is similar to projection only, much like the
@@ -1195,7 +1195,7 @@ The entire process of computing QNFs works within a monad stack with
 the following features:
 
 \begin{itemize}
-\item A \hask{ListT} monad allows for non-deterministic computation in
+\item A \hask{ListT} monad transformer allows for non-deterministic computation in
   order to account for the different possible column index assignments
   described in subsection \ref{sec:qnf_proj_aggr} on QNF
   projections/aggregation.
@@ -1225,8 +1225,8 @@ the QNF (listing \ref{lst:qnf_build_monad})
     non-determinism, caching, and error handling.}
 \end{code}
 
-Every QNF building function accepts one or two {NQNFQuery} forms and an
-operator unary or binary relational algebra operator to be applied to the query.
+Every QNF building function accepts one or two \hask{NQNFQuery} forms and a
+unary or binary relational algebra operator to be applied to the query.
 It returns an \hask{NQNFResult} (listing \ref{lst:qnf_result}) contains
 
 \begin{itemize}
@@ -1244,7 +1244,7 @@ It returns an \hask{NQNFResult} (listing \ref{lst:qnf_result}) contains
   \(\{n_0 \mapsto K_0, n_1 \mapsto K_1, ...\}\), and outputs a \hask{QNFResult} containing the
   QNF \(Q_{OUT}\).
   In the projection operator output, the left hand side atoms of the projection \(\{n_0, n_1, ...\}\) are
-  columns of \(Q_{OUT}\) and the atoms in the right hand side expressions \(Q_0,Q_1,...\) are columns of \(Q_{IN}\).
+  columns of \(Q_{OUT}\) and the atoms in the right hand side expressions \(K_0,K_1,...\) are columns of \(Q_{IN}\).
   This is for convenience assuming that the RA
   query that was just normalized is a logical plan. The top level
   operator can then be used to annotate QDAG elements that relate to
@@ -1335,8 +1335,8 @@ particular, it covers the following RA properties:
 \item \(\sigma_\theta (A \times B) = A \Join_\theta B\)
 \item \(\pi_m \gamma_{n,g} A = \gamma_{m \circ n,g} A \)
 \item \(\gamma_{m,g} \pi_n A = \gamma_{m \circ n,g \circ n} A \)
-\item \(A \lnsemi B = B \rnsemi A \)*
-\item \(A \cup B = B \cup A \) *
+\item \(A \lnsemi B = B \rnsemi A \) \textit{(via explicit enumeration in \hask{QNFProd})}
+\item \(A \cup B = B \cup A \) \textit{(via explicit enumeration in \hask{QNFProd})}
 \end{itemize}
 
 \begin{comment}
@@ -1509,6 +1509,8 @@ We define are three different kinds of clusters and a unified type
 Every cluster must always be hashable and the hash is cached inside
 the cluster itself.
 
+
+% TODO: this exceeds the page
 \begin{figure}[H]
   \begin{subfigure}{0.4\linewidth}
   \begin{tikzdiagram}
@@ -1640,7 +1642,7 @@ edges. The QNF forms are then matched against existing QNFs in the
 QDAG and the missing ones are generated. If no new nodes were
 generated and the matched nodes all correspond to the same existing
 cluster, we infer that the cluster is already in the QDAG and the
-process finishes . Otherwise, we need to create and insert a cluster
+process finishes. Otherwise, we need to create and insert a cluster
 and a corresponding propagator (see section
 \ref{sec:shape_propagators}). Finally, all new nodes, QNFs, and the
 cluster are registered and cross-matched so they are easily cross
@@ -1694,15 +1696,17 @@ all combinations of columns that comprise a unique
 subtuple.  This is useful primarily to determine foreign key
 joins. The expression
 
-\[Q_1 := A \Join_{bId_A = id_B \land cId_A = id_C} (B \times C)\]
+\[Q_1 := A \Join_{id_{A \to B} = id_B \land id_{A \to C} = id_C} (B \times C)\]
 
 behaves like a foreign key join while the join when \(id_B\) is the
 only element of the unique subtuple of \(B\) and \(id_C\) is the only
 element of the unique subtuple of \(C\).
 
-\[Q_2 := A \Join_{bId_A = id_B} (B \times C)\]
+The following, however, does not
 
-does not because for the expression\(B \times C\) neither \(id_B\) nor
+\[Q_2 := A \Join_{id_{A \to B} = id_B} (B \times C)\]
+
+\noindent because for the expression \(B \times C\) neither \(id_B\) nor
 \(id_C\) are unique on their own.  Only their combination
 is. Therefore, the cardinality \(|Q_1|\) is at most the size of \(A\)
 because each row of \(A\) matches at most one row of \(B \times C\).
@@ -1841,7 +1845,7 @@ adhering to Kmett's approach to cell value maintenance, we define a
 semilattice over the DF and define it in terms of a monoid (listing
 \ref{lst:defaulting_semigroup} ).
 
-Semigroups are not commutative, so we give meaning to the order. The
+Semigroups are not commutative, so we afford meaning to the order of the operands. The
 left operand of the semigroup operator is the newer value and the
 right one is the older value. Therefore, the DF does not require all
 the properties of the semilattice which is required to commutative and
@@ -1935,16 +1939,16 @@ the full state (listing \ref{lst:promote_defaulting}).
 
 \section{Summary and conclusion}
 
-In this chapter we detailed how FluiDB processes queries. From
+In this chapter we detailed how FluiDB processes queries at the logical level. From
 parsing to generating a graph of queries (QDAG) and inferring the
 shapes of the relations in that graph. We also discussed different
 conceptions of relational algebra that are used in FluiDB (normal RA
-and QNF) and reverse operations. This will serve as a solid  on
+and QNF) and reverse operations. This will serve as a solid bedrock on
 which we can build the query planner and on top of the code generator.
 
 There are a few shortcomings to this model that we have not yet
-addressed that we plan to implement in later incarnations of
-FluiDB. The most important ones being:
+addressed but we believe do not bar FluiDB from being a complete system.
+The most important ones being:
 
 \begin{itemize}
 \item As things stand, the QDAG will keep growing infinitely as new
