@@ -1,6 +1,10 @@
-\dictum[Edsger W. Dijkstra]{The question of whether a computer can
-  think is no more interesting than the question of whether a
-  submarine can swim.}
+\dictum[F. Dostevski -- Crime and Punishment]{We may note in passing,
+one peculiarity in regard to all the final resolutions taken by
+[Raskolnikov] in the matter; they had one strange characteristic: the
+more final they were, the more hideous and the more absurd they at
+once became in his eyes. In spite of all his agonising inward
+struggle, he never for a single instant all that time could believe in
+the carrying out of his plans.}
 
 \begin{summary}
 \item We introduce a monad-based functional method of weighted
@@ -484,7 +488,7 @@ marker. There are 3 possible scenaria that may play out at this point:
 What is the life cycle of the fallback entries? For a visual aid to the
 following see figure \ref{fig:marker_branches}: When an expression
 \hask{A <//> B} appears we create a new fallback entry in the lookup
-table containing \hask{B} and recursively "infect" all spawned
+table containing \hask{B} and recursively ``infect'' all spawned
 sub-branches of \hask{A} to perform the following actions immediately
 after they generate new branches and results:
 
@@ -552,7 +556,7 @@ after they generate new branches and results:
     \draw [-stealth] (m3) to [bend left =10] (rec_id);
     \draw  [-stealth] (rec_br)  to [bend left = 10] (m3);
   \end{tikzdiagram}
-\caption{\label{fig:marker_branches}Marker "branches" are injected in
+\caption{\label{fig:marker_branches}Marker ``branches'' are injected in
   the heap of prioritized branches to possibly trigger the fallback
   branch. Each marker gives the scheduler the opportunity to run a
   particular fallback branch. The entry of the fallback branch entry

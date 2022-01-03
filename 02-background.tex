@@ -1,7 +1,6 @@
-\dictum[K. Varnalis]{
-  I am not the sow of chance, the forger of new life\\
-  I am a child of necessity, a mature offspring of rage
-}
+\dictum[K. Varnalis -- The Guide \emph{(from ``The Light That
+  Burns'')}]{ I am not the sow of chance, the forger of new life\\ I
+  am a child of necessity, a mature offspring of rage }
 
 \begin{summary}
 \item Relational databases are question answering systems that deal
@@ -205,12 +204,12 @@ relational algebra. Typical transformations performed by the logical
 query optimizer are
 
 \begin{itemize}
-\item Predicate normalization to conjunctive normal form, e.g. 
+\item Predicate normalization to conjunctive normal form, e.g.
 
  \[(a_0 = 1
   \land a_1 = b_1) \lor b_2 = 3 \hookrightarrow (a_0 = 1 \lor b_2 = 3)
   \land (a_1 = b_1 \lor b_2 = 3)\]
-  
+
 \item Predicate push-down e.g. \(A \Join_{a_0 = 1 \land p} B
   \hookrightarrow (\sigma_{a_0 = 1} A) \Join_p B\).
 \item Cartesian product to joins \(\sigma_p ( A \times B )
@@ -249,7 +248,7 @@ as the fundamental atom that it manipulates. For example, instead of
 keeping track of \(A \Join (B \Join C)\) and \((A \Join B) \Join C\)
 separately they would be part of the same query group. Cascades then uses a
 global hash table (the "memo" structure) to match the best plan that
-corresponds to each group. These plans are stitched together to form larger 
+corresponds to each group. These plans are stitched together to form larger
 plans until the plan for the required query is created in the memo structure.
 
 Many database systems use optimizers similar to cascades (like the
@@ -287,7 +286,7 @@ confuses the kind of join will make very bad predictions w.r.t.\ the
 cost of any relational algebra expression that uses the said join,
 causing an optimizer to select an expensive plan or avoid a cheap
 one. What is worse, misestimating the input of an operator caps our
-ability to estimate the output. 
+ability to estimate the output.
 
 \begin{comment}
 Cardinality estimation most commonly takes the form of selectivity
@@ -429,13 +428,13 @@ it directly to machine code.
 
 \subsection{Custom execution engines}
 
-The final category of databases that use code generation is is per database 
+The final category of databases that use code generation is is per database
 code generation rather than per-query code generation. Volcano/EXODUS
 \cite{graefeVolcanoOptimizerGenerator1993a} and more recently SageDB
 \cite{kraskaSageDBLearnedDatabase} generate an optimizer and execution
 engine that is specific to the database schema but not to the queries.
-Essentially, these database systems compile the database schema into a 
-custom RDBMS. 
+Essentially, these database systems compile the database schema into a
+custom RDBMS.
 
 \section{Intermediate result recycling}
 
