@@ -46,7 +46,7 @@ materializable during the evolution of the inventory.
 
 The chapter starts with an introduction about the motivation for
 developing Antisthenis as a collection of synchronously communicating
-processes performing incremental computation. Next we look at our
+processes performing incremental computation. Next, we look at our
 conception of a Mealy arrow that enables the construction of
 Antisthenis processes. In the following section we describe the core
 of Antisthenis, which is the structure of a single Antisthenis
@@ -56,6 +56,17 @@ systems that facilitate intercommunication and high level organization
 of Antisthenis processes. Finally, we conclude with some caveats and
 some future future work that can be done to make Antisthenis easier to
 apply to solutions other than FluiDB.
+
+The name Antisthenis is a reference to the proto-empiricist 
+and proto-nominalist philosophy expressed by Socrates' 
+pupil Antistenes. Antisthenes promoted particular objects as 
+preceding universal concepts, encapsulated in his famous
+declaration that one can only interact with a horse but not 
+with the abstract concept of ``horseness''. Antisthenis-the-framework can
+compute correct values taking advantage of properties
+that are highly specific to the particular computation, potentially
+even making use of unfinished intermediate computations. 
+All that matters to Antisthenis is the computation at hand.
 
 \section{Introduction}
 \label{sec:antisthenis_intro}

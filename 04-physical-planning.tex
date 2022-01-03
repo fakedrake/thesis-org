@@ -28,7 +28,7 @@ flexibility. Then we discuss the basic backtracking algorithm and the
 way the graph is traversed. We move on to discussing the garbage
 collection that generates plan fragments that allow the plan to free
 up space in the underlying storage. Finally, we talk about the cost
-model that guides the evolution of the plan.
+model that guides the plan search process.
 
 \section{HCntT logic monad}
 
@@ -45,16 +45,16 @@ backtracking monad that is described in this section.
 \subsection{Background}
 
 Monads for backtracking in a functional context have been proposed in
-various incarnations.  The most common monad that encapsulates
+various incarnations.  The most common monad that encapsulates this functionality is the \hask{ListT} monad transformer
 \hask{ListT m a = forall b . (a -> m b -> m b) -> m b -> m b}, also
 dubbed the Church encoding of lists or an application of the Cayley
-theorem on lists. It was first proposed (in an untyped format in
-scheme) in \cite{haynesLogicContinuations1987} where they explicitly
-use it for implementing a logic programming framework back in 1987, but
+theorem on lists. It was first proposed (in an untyped form in
+scheme) in \cite{haynesLogicContinuations1987} where Haynes explicitly
+uses it to implement a logic programming framework back in 1987, but
 most authors in the field cite
 \cite{hinzeDerivingBacktrackingMonad2000a} as the seminal work on the
-concept where the authors seem to have independently re-discovered an
-application of the concept in 2000, and also
+concept where the authors seem to have independently re-discovered the
+application of the concept in 2000 this time in strongly typed ML, and also
 \cite{kiselyovBacktrackingInterleavingTerminating} where the authors
 focused on a notion of fairness in backtracking. As shown in
 \cite{kidneyAlgebrasWeightedSearch2021} this representation has
@@ -70,8 +70,8 @@ newtype ListT m a = ListT (Maybe (a,ListT m a))
 Which mirrors precisely the idea behind \hask{MonadLogic} from
 \cite{kiselyovBacktrackingInterleavingTerminating}. As demonstrated in
 listing \ref{lst:monad_logic} the \hask{MonadLogic} able to
-\hask{cons} (dubbed \hask{reflect}) and \hask{uncons} (dubbed
-\hask{msplit}).
+\hask{cons} (dubbed \hask{reflect} which directly corresponds to the \hask{ListT} constructor) and \hask{uncons} (dubbed
+\hask{msplit} which directly corresponds to the underlying type wrapped by \hask{newtype}).
 
 \begin{code}
 \begin{haskellcode}
@@ -91,22 +91,23 @@ reflect Just (a,as) = pure a <|> as
 In \cite{kiselyovBacktrackingInterleavingTerminating}, on top of this
 framework the authors build an \hask{interleave} and a monadic bind
 (\hask{>>-}) operator that works with it to make computation be
-slightly more ``fair''. In this context, fair means that each of the
-branches gets equal computation resources. Interleaving is in a
-certain sense fair between two computations, but when more than two
+slightly more "fair". In this context, fair means that the
+branches share computation resources, as opposed to an "unfair" approach where a branch is evaluated to 
+completion or failure before other branches are considered. Interleaving is 
+fair between two computations, but when more than two
 are involved, half the time goes to the first computation, out of the
 half that is left, half (\(1/4\) of the total) goes to the second, out
 of the \(1/4\) left, half (\(1/8\)) goes to the third and so on. While
-this powerseries that describes the way the way resources are
+this power-series that describes the way the way resources are
 allocated to branches may seem arbitrary, in practice, it may mean the
 difference between terminating and non-terminating computations. For
 example, the code in listing \ref{lst:list_logic_example} can be
 translated to something like the code in listing
 \ref{lst:interl_logic_example} which does terminates due to the fact
-that while it does not give the same change to all the branches it
+that while it does not give the same chance to all the branches it
 does not completely starve any of them.
 
-% merge the listing as subfigures
+% TODO: merge the listing as subfigures
 \begin{code}
 \begin{haskellcode}
 nonTerm :: [(Int,Int,Int)]
@@ -133,7 +134,7 @@ interleaveTest = runLogic @[] $ do
     it does not give all the processes}
 \end{code}
 
-Can we do better than unnecessarily avoiding nontermination?
+Can we do better than avoiding non-termination due to branch starvation?
 Sometimes we can with \emph{weighted search}. Weighted search refers
 to the backtracking search where branches are weighted, or
 \emph{prioritized}, and branches with higher priority are scheduled
@@ -185,23 +186,26 @@ solve the query within the space are equally admissible. We need to
 find as good plans as possible and we do not want the planner to spend
 time looking into plans that are unlikely to be efficient. For that
 reason neither breadth-first nor depth-first traversals are ideal for
-our purpose. We need a robust way to search in a weighted manner.
+our purpose. We need a robust way to search in a \emph{weighted} or \emph{best first} manner.
 
 \paragraph{Soft-cut/fallback}
-As we will see in more detail in the next section, the planner is
+As we will see in more detail in section \ref{sec:planner}, he planner is
 initially optimistic about being able to materialize a n-node until it
-hits the budget limit. If the n-node can not be materialized within the
+hits the budget limit. If the required n-node can not be materialized within the
 available budget, the branch fails and a new branch tries running the
 garbage collector first and then trying to materialize the n-node.  If
 the budget turns out to be large enough, FluiDB should completely
 disregard the the latter branch.  The reason is that the later a GC
 pass happens the more options it will have and therefore the better
-job is likely to do w.r.t. deleting useless relations.  To achieve
-that we implement the operator \hask{<//>} (pronounced
-\emph{fallback}) which is similar to prolog's soft-cut. As we will
-discuss in detail later, unlike other similar approaches our fallback
+job is likely to do w.r.t. deleting less useful relations \footnote{This assumption depends heavily on the quality of the garbage collection heuristics. As we will see in \ref{chapter:evaluation} it is not always the case that this will lead to better results.}. To achieve
+this we implement the operator \hask{<//>} (pronounced
+\emph{fallback}) which is similar to prolog's soft-cut. Unlike other 
+similar approaches our conception of the fallback
 operator refers to the \emph{continuation} of the left-hand operand
-rather than the content of the operand itself.
+rather than the content of the operand itself, which is to say that the right hand side operand 
+is considered if the current branch fails taking into account 
+the value on the left hand side, \emph{not} if the left operand fails
+to yield a value.
 
 \paragraph{Once}
 In the context of non-weighted search it is fairly
@@ -211,8 +215,8 @@ in-place requesting one result and if it does not fail, return that
 result. This approach can still work with weighted but we would like
 the \hask{halt} calls inside the computation to have global effect for the
 scheduler. In other words, we want the scheduler to be able to
-interleave this branch with other branches while preserving the
-semantics of \textbf{once}.
+interleave the current branch with other branches while preserving the
+semantics of \hask{once}.
 
 
 \subsection{The \hask{HCntT} monad}
@@ -244,11 +248,15 @@ takes place -- \hask{HCntT} -- and the value returned to the scheduler at
 each step -- \hask{HRes}. In particular \hask{HRes} contains a priority queue
 (heap) of continuations and a set of final results. The heap type is parametric to allow
 flexibility with respect to how to best handle the particular key
-types (see listing \ref{lst:heap_def}). The heap is required to be stable,
-i.e. items with the same key are returned in the order they were
-inserted, and the \hask{HeapKey} \hask{mempty} must be higher priority than all
-other \hask{HeapKey}s.
+types (see listing \ref{lst:heap_def})
 
+\begin{itemize}
+\item is required to be stable,
+i.e. items with the same key are returned in the order they were
+inserted.
+\item The \hask{HeapKey} \hask{mempty} must be higher priority than all
+other \hask{HeapKey}s.
+\end{itemize}
 \begin{code}
 \begin{haskellcode}
 class (forall v . Monoid (h v),Functor h,Monoid (HeapKey h),Ord (HeapKey h))
@@ -264,16 +272,17 @@ class (forall v . Monoid (h v),Functor h,Monoid (HeapKey h),Ord (HeapKey h))
     the user to decide an efficient priority queue for the branches.}
 \end{code}
 
-The \hask{HCntT} needs to be \emph{dissolved} to run the actual
+\hask{HCntT} values are built using the combinators we mention and which we will 
+describe in more detail an it needs to be run or \emph{dissolved} to run the actual
 search. Dissolution (listing \ref{lst:dissolve_func}) is the process
 of turning an \hask{HCntT} value to a \hask{ListT} value. The
 \hask{ListT} object will lazily produce just as many results as are
-required, and of course just as many effects as required, and not
-more. This indicates that the process of building computations is
+required, and will produce just as many side-effects\footnote{A value of type \hask{ListT m a} can produce values of type \hask{a} and the production of each value may involve side-effects defined by the monad \hask{m}.} as required. 
+This indicates that the process of building computations is
 composable but not incremental. The price of the \hask{<//>}
-combinator that we described is that, unlike in other non-continuation
-based monad, once we start drawing results from the computation we can
-not apply further constraints on the resulting objects, at least not
+combinator is that, unlike in other non-continuation
+based logic  monads, once we start drawing results from the computation we can
+not apply further constraints on the rest of the computation, at least not
 in terms of the \hask{HCntT} object.  Contrast that with the case of
 \hask{ListT} where we can draw the first couple of results and then
 use the rest in a different computation.
@@ -294,21 +303,21 @@ Then, if the heap is not empty, the highest priority branch is popped and schedu
 a new \hask{HRes}. The concrete results are yielded into \hask{ListT} and the
 new heap is combined with the old one. Scheduling a branch entails
 running the reader layer of the monad transformer using its previous
-value. This is how the values provided to halt by the computation are accumulated within the branch.
-thereby incrementally updating the priority value.
+value.
 
 As mentioned, when describing the heap, a valid heap for \hask{HCntT}
 must be stable. While this is a weighted search, it remains a question
-of how the options that have the same priority should be ordered.  To
+how the branches that have the same priority should be ordered.  To
 avoid complicating things, up to this point, we have been implying that
 continuations are accumulated in a single heap. However, with just one
 heap, appending the newly produced heaps to the left would make for a
 depth first traversal of the \emph{same-priority search space} while
-appending on the right would result in a breath-first traversal. We
+appending on the right would result in a breath-first traversal of the same-priority search space. We
 want the operators to have the flexibility to decide on which side
 each branch should be appended. For that reason the \hask{HRes}
 actually contains a \emph{pair} of heaps: one appended to the left (DFS), and one
-to the right (BFS). This is of particular importance to the correct
+to the right (BFS) of the scheduler's (priority) queue (see listing \ref{lst:dissolve_algo}).
+This is of particular importance to the correct
 implementation of \hask{<//>} as we will see shortly.
 
 \begin{code}
@@ -321,18 +330,17 @@ def dissolve(branches):
         for r in results:
             yield r
 \end{pycode}
-  \caption{\label{lst:dissovle_algo}The dissolution algorithm in
+  \caption{\label{lst:dissolve_algo}The dissolution algorithm in
     pseudo-python}
 \end{code}
 
-
 In the following, we will briefly describe the implementations of
-various combinators of \hask{HCntT}.
+the various combinators of \hask{HCntT}.
 
 \subsubsection{Alternative/MonadPlus}
 
 The most fundamental combinator for any backtracking monad is the one
-spawning branches, the implementation of \hask{Alternative} or, its
+spawning branches, the implementation of \hask{Alternative} or,
 equivalently in our case, \hask{MonadPlus}. These typeclasses require
 that we can compose non-deterministic values (\texttt{a <|> b} or
 \texttt{mplus a b} that non deterministically takes the value of
@@ -363,14 +371,17 @@ instance (IsHeap h,Monad m) => Alternative (HCntT h r m) where
 
 \subsubsection{Halt: passing control to the scheduler}
 
-We mentioned the \hask{halt} \hask{HCntT} process. Because we want to
-be able to transform the \hask{HCntT} monad we define the class of
+We mentioned the special \hask{halt} process that is fundamental to \hask{HCntT}.
+\hask{halt} accepts a value indicating the updated
+priority of the current branch and passes control to the scheduler. The provided priority is offset by the previous
+priority of the branch using the \hask{ReaderT} monad transformer that is internal to \hask{HCntT}.
+
+Because we want to be able to transform the \hask{HCntT} monad we define the class of
 \hask{MonadHalt} that can support this operation. The most common monad
 transformers of \hask{HCntT} (like \hask{ReaderT},\hask{StateT}, etc)
 can trivially support \hask{halt}. The implementation of \hask{halt}
 for \hask{HCntT} itself is demonstrated in listing
-\ref{lst:halt_class}. The provided priority is offset by the previous
-priority of the branch using the \hask{ReaderT} monad transformer.
+\ref{lst:halt_class}. 
 
 \begin{code}
 \begin{haskellcode}
@@ -412,17 +423,16 @@ There are two challenges that our particular feature set imposes to
 implementing this:
 
 \begin{itemize}
-\item We want \hask{<//>} to operate on the entire operation, unlike
+\item We want \hask{<//>} to operate on the continuation, unlike
   \cite{kiselyovBacktrackingInterleavingTerminating} that makes the
   decision on whether to run the fallback solely based on whether the
   left hand side returns a value. For example, in listing \ref{lst:holistic_fallback_example}
-  the none of the branches of the fallback operator fail individually
+  none of the operands of the fallback operator fail individually
   but the entire branch fails for one of the two.
 \item In the context of a weighted search, control needs to be able to
   escape a branch that passes through the left hand side operand
   before it is exhausted. Therefore, we can not simply dissolve the
-  left hand side and reconstruct it. However, then how would the operator
-  know when the branches are exhausted?
+  left hand side and decide based on the number of results obtained.
 \end{itemize}
 
 \begin{code}
@@ -440,24 +450,23 @@ comp = do
 We solve these problems with the use of a special kind of branch we
 call a \emph{marker}, and a global state that keeps track of all
 markers in the branch heap. Since branches are arbitrary processes we
-equip them with access to global state (local to the computation), a
-lookup table (\hask{CompState}) full of fallback branches (see figure
+equip them with access to global state \footnote{\emph{global} here means that it is shared between the branches of the computation. The state is visible from different schedulers},
+which is a lookup table (\hask{CompState}) full of fallback branches (see figure
 \ref{fig:marker_branches}).  The main idea is that a fallback branch
 corresponds to an entry in the lookup table. This entry is modified
-accordingly by the children of the right hand side. At the time of the
-cut, we push a marker into the heap with priority lower than the child
-branches so that when it is scheduled, it will perform some checks
-based on the lookup table entry and schedule the fallback function if
-all the children branches have finished without yielding a concrete
+accordingly by the children of the right hand side. When \hask{<//>} is evaluated,
+we push a marker into the heap with priority lower than the child
+branches so that when it is scheduled, it will itself schedule the 
+fallback function if all the children branches have finished without yielding a concrete
 result. At any time there is exactly one valid marker per active
 fallback and it is denoted as such by the fallback entry in the lookup
 table. The rest of the makers are invalid and should be equivalent to
-\texttt{noops}.
+\texttt{noop}s.
 
 More precisely, about the internals of the marker processes, each one
 refers to a location in the lookup table via its closure. Also each
 marker is uniquely identifiable, so each valid entry in the lookup
-table references one marker, the lowest priority one that corresponds
+table references the lowest priority one that corresponds
 to it. When a marker is scheduled, it looks up the fallback branch
 entry in the table and checks if the entry also refers to that
 marker. There are 3 possible scenaria that may play out at this point:
@@ -476,7 +485,7 @@ marker. There are 3 possible scenaria that may play out at this point:
   and removed from the table.
 \end{itemize}
 
-What is the lifecycle of the fallback entries? For a visual aid to the
+What is the life cycle of the fallback entries? For a visual aid to the
 following see figure \ref{fig:marker_branches}: When an expression
 \hask{A <//> B} appears we create a new fallback entry in the lookup
 table containing \hask{B} and recursively ``infect'' all spawned
@@ -484,13 +493,13 @@ sub-branches of \hask{A} to perform the following actions immediately
 after they generate new branches and results:
 
 \begin{itemize}
-\item If there is at least one valid concrete result, invalidate the
+\item If there is \emph{at least one valid concrete result}, invalidate the
   fallback in the lookup table and stop infecting child branches with
   the currently described hook.
-\item If the fallback is invalid it means there have already been
+\item If the \emph{fallback is invalid} it means there have already been
   valid results that rendered the fallback obsolete. Stop infecting
   sub-branches.
-\item If none of the above happened, check the \emph{priority} of the
+\item If \emph{none of the above} happened, check the \emph{priority} of the
   last marker corresponding to the fallback (registered in the lookup
   table entry).
 
@@ -561,7 +570,7 @@ There are a few optimizations that can be implemented to avoid too many
 lookups in the fallback table in the case of deep fallback nesting that
 take advantage of the fact that new markers for outer fallbacks may
 only be created when new markers for inner fallbacks are
-created. However, for FluiDB we did not find \hask{CntT} to be a performance
+created. However, for FluiDB we did not find \hask{HCntT} to be a performance
 bottleneck so we leave it for a future iteration.
 
 \subsubsection{Once}
@@ -587,8 +596,9 @@ subbranch of the nested computation. When scheduled by the outer
 scheduler, the inner scheduler internally schedules the next branch of
 the nested process. When the process yields results or completely
 fails, the corresponding hook is run. \hask{once} implements these
-hooks as ``return the result and stop'' and as "propagate the failure"
-respectively. Since the implementation of \hask{once} is fairly small
+hooks as "return the result and stop" and as "propagate the failure"
+respectively. Since the implementation of \hask{once} based on the 
+nested scheduler(\hask{nested}) is fairly small
 it is provided along with the types in listing \ref{lst:once_def}.
 
 \begin{code}
@@ -613,23 +623,22 @@ once = nested (\_h r _rs -> HRes (Pair mempty mempty,[r])) emptyHRes
 \label{sec:planner}
 
 The planner is the subsystem of FluiDB that given the state of the
-QDAG and a target n-node to be materialized, produces a logical plan
-that will materialize the query.  Our notion of a logical plan is
-slightly more specific than what is commonly considered a logical
-plan, i.e. the RA representation of the query. In our case it is a
-sequence of \emph{transitions} that are to be transpiled to C++ by the
+QDAG and a target n-node to be materialized, produces a plan
+that will materialize the query.  Our notion of a plan is
+slightly more specific than what is commonly considered, i.e. the RA representation of the query.
+In our case it is a sequence of \emph{transitions} that are to be transpiled to C++ by the
 code generator. There are three kinds of transitions:
 
 \begin{itemize}
-\item t-node trigger that assumes the input n-nodes are materialized and
+\item The \emph{t-node trigger} that assumes the input n-nodes are materialized and
 produces a subset of the output n-nodes.
-\item t-node reverse trigger that assumes that the output n-nodes are materialized
-\item n-node deletion
+\item The \emph{t-node reverse trigger} that assumes that the output n-nodes are materialized
+\item The n-node \emph{deletion}
 \end{itemize}
 
-The planner operates by backtracking using \hask{CntT} monad. Each branch
+The planner operates by backtracking using \hask{HCntT} monad. Each branch
 maintains some branch-internal effects that are reified as monad
-transformers on top of the \hask{CntT} defining the \hask{PlanT} monad
+transformers on top of the \hask{HCntT} defining the \hask{PlanT} monad
 transformer (listing \ref{lst:plant_def}).
 
 \begin{code}
@@ -644,7 +653,7 @@ type PlanT t n m =
   \caption{\label{lst:plant_def}The monad that defines all the useful
     effects used by the planner. \hask{GCConf t n} is an immutable,
     from the perspective of the planner, configuration that includes
-    the QDAG, the n-node sizes, etc. \hask{GCState t n} is state that is
+    the QDAG, the n-node estimated sizes, etc. \hask{GCState t n} is state that is
     mutated and private to each branch of the planner like the
     materialized status of the n-nodes, the set of transitions
     registered so far and various caches. The \hask{PlanningError t n}
@@ -653,20 +662,22 @@ type PlanT t n m =
     backtracking is just the value of unit type (\hask{()}).}
 \end{code}
 
-It is important to clarify the way we use the term ``materialized n-node''
-(\hask{Mat} as opposed to ``not materialized'' -- \hask{NoMat}) from the planner's
+We maintain the partial plan (sequence of transitions) as part of the
+state of each of the planner's branches. \emph{Registering a
+  transition} means that a transition is added to the partial plan.
+  
+It is important to clarify the way we use the term "materialized n-node"
+(\hask{Mat} as opposed to "not materialized" -- \hask{NoMat}) from the planner's
 perspective. A mapping of n-node states is passed to the planner at the
 beginning of the planning process. This mapping indicates which n-nodes
 are initially materialized. As transitions get registered,
 the mapping is updated to reflect the effect that the plan so far
 would have on the materialized relation set in storage. Since the
-planner operates via backtracking (using the \hask{CntT} monad described),
+planner operates via backtracking (using the \hask{HCntT} monad described),
 each branch maintains its own mapping of n-node states and therefore
 considers a different set of materialized n-nodes.
 
-We maintain the partial plan (sequence of transitions) as part of the
-state of each of the planner's branches. \emph{Registering a
-  transition} means that a transition is added to the partial plan.
+
 
 The main loop of each branch is a recursive process of asseerting that
 n-nodes are materialized. If the n-node is already materialized the
@@ -750,7 +761,7 @@ following scenaria are possible:
 \item The n-node's status found to be \hask{Concrete} and \hask{NoMat}
   and the branch immediately fails as it is not allowed to be set to
   materialized.
-\item Tf it is \hask{Concrete} and \hask{Mat} the assertion simply
+\item If it is \hask{Concrete} and \hask{Mat} the assertion simply
   succeeds
 \item If it is \hask{Initial} and \hask{Mat} it is turned into
   \hask{Concrete} and \hask{Mat} and the assertion succeeds.
@@ -779,7 +790,7 @@ data NodeState =
 Once an n-node's is materialized and we start materializing its
 siblings, it is important that the garbage collector (which we will be
 discussing in section \ref{sec:gc}) does not delete the said n-node. To
-avoid this problem, n-nodes materialized are set to \hask{Concrete Mat}
+avoid this, n-nodes materialized are set to \hask{Concrete Mat}
 until all their siblings, that are inputs to the same \hask{MetaOp},
 are materialized. Once the \hask{MetaOp} is triggered and its output
 n-nodes are set to the \hask{Concrete Mat} state the input n-nodes are set
@@ -801,7 +812,7 @@ consideration will be triggerable.
 \label{sec:gc}
 
 One of the fundamental design decisions of FluiDB is that she is
-commited to materializing all intermediate n-nodes and keeping them
+commited to materializing all intermediate n-nodes, a la MonetDB \cite{monetdb}, and keeping them
 around for as long as possible. On the one hand, the plan selected is
 crafted so that the intermediate query results are maximally useful for the
 overall workload, on the other, when the available storage runs out,
@@ -820,7 +831,10 @@ plan. The selection process has two hard constraints:
 \begin{itemize}
 \item The n-nodes being deleted must be \emph{deletable}, i.e. the
   n-node's state is \hask{Initial} and if the n-node is deleted that it
-  can be reconstructed from the remaining materialized n-nodes.
+  can be reconstructed from the remaining materialized n-nodes. 
+  \footnote{There is a caveat to our conception of deletability of nodes, namely that 
+  the concept does not take into account budgetary constraints, only that there is no 
+  loss of information resulting from the relation's deletion.}
 \item The n-nodes being deleted must not be required for the
   continuation of the current plan. We call these n-nodes
   \emph{protected}. For example, say we are planning for the query
@@ -830,19 +844,7 @@ plan. The selection process has two hard constraints:
 \end{itemize}
 
 Selecting a subset of n-nodes for deletion is not an easy problem, so we follow a
-simple heuristic and leave a more sophisticated solution for future work.
-
-% Initial impl: <the below>
-%
-% Why this fails: We have antijoin, join, antijoin: delete the
-% antijoin only => we are locked.
-%
-% How it actually works:
-%   Group by siblings
-%   Order ascending
-%   expand subgroups
-%   flatten the list
-%   Delete in order checking that correctess does not break.
+simple heuristic (see listing \ref{lst:gc_algo}). 
 Large n-nodes are costly to create and therefore the larger the n-node,
 the less inclined the planner is to create it, and the more useful it
 is likely to be. With that in mind, the heuristic we follow is for the
@@ -854,14 +856,13 @@ deletable n-nodes and sort them by size. It tries to delete them one by
 one starting from the smaller ones and working its way up to the
 larger ones. Every time a n-node is deleted, it is possible that other
 n-nodes that were previously established to be deletable lose that
-property. For example, if all n-nodes \(A\), \(\sigma_p A\), and
+property. For example, if n-nodes \(A\), \(\sigma_p A\), and
 \(\sigma_{\neg p} A\) are \hask{Initial} and materialized and not
 connected to other n-nodes but to each other, each one of
 them can be materialized from the others and therefore all of them are
-marked as deletable. If the GC deletes \(\sigma_p A\) firstm the other
+marked as deletable. If the GC deletes \(A\) first, the other
 two are no longer deletable as neither would be materializable were they
 to be deleted.
-% end
 
 N-nodes that are established as non-deletable in this way are switched
 from \hask{Initial} to \hask{Concrete} to avoid re-calculating their
@@ -870,9 +871,9 @@ materializability.
 If after this process not enough space is created, the GC resorts to
 starting a new \emph{planner epoch}. The function of a planner epoch
 change is for the planner to revisit the assumptions that it has made in
-the form of setting n-nodes to \hask{Concrete Mat}. That is to say, hen a new
-epoch begins the unprotected n-nodes materialized in the current run
-become available for deletion. When a new planner epoch begins all the
+the form of setting n-nodes to \hask{Concrete Mat}. That is to say, when a new
+epoch begins, the unprotected n-nodes materialized in the current run
+become available for deletion and all the
 n-nodes states and transitions that were recorded since the last planner
 epoch started are stashed into the epoch stack. The epoch stack
 resides in the branch-local state (\hask{GCState}) and contains a map
@@ -881,7 +882,7 @@ transitions. When a new epoch is pushed into the stack, a new mapping
 of states is created according to the following rules:
 
 \begin{itemize}
-\item The materialization status does not change between epochs: All
+\item The materialization status (\hask{Mat} or \hask{NoMat}) does not change between epochs: All
   materialized n-nodes from the previous epoch are materialized in the
   new one materialized and all non-materialized n-nodes are still not
   materialized.
@@ -896,7 +897,7 @@ physical operation generates is established at the time of physical
 planning based on the materialized n-nodes according to the epoch
 corresponding to the transition.
 
-An epoch contains all important information about the state of the
+An epoch contains important information about the state of the
 planner. For this reason, when an epoch is inserted in the stack it is
 checked for equality against the other epochs in the stack. If two
 equivalent epochs are inserted in the stack the branch fails
@@ -920,9 +921,6 @@ n-nodes it does so without registering a deletion transition. This way
 the physical planner will generate a plan where \(\sigma_{\neg p} A\)
 is never created in the first place. All n-nodes lose their
 free-to-delete status upon the creation of a new epoch.
-
-The comprehensive algorithm for the GC is presented in listing
-\ref{lst:gc_algo}
 
 \begin{code}
 \begin{haskellcode}
@@ -974,16 +972,6 @@ markAsConcret n = do
     algorithm in pseudo-haskell.}
 \end{code}
 
-The garbage collector may have a final trick up their sleeve when all
-else fails: neighbor materialization. When there exists a dependency
-set of a non-deletable n-node that takes up less size that the n-node
-itself, the transition, the GC can attempt to trigger the
-corresponding \hask{MetaOp} in order to generate the dependency set and
-render the n-node deletable. For example the \(\theta\)-join n-node \(A
-\Join_\theta B\) is likely to take up more space than \(A\) and \(B\)
-combined. This makes the search space explode and is a generally
-low-yield strategy, therefore it is by default disabled.
-
 It is hopefully clear at this point that the process of garbage
 collection involves a large search space. We sacrifice some of our
 plan repertoire by running the entire process wrapped in a \hask{once}
@@ -1006,7 +994,7 @@ that value is zero, the n-node is not considered protected.
 We mentioned that the \hask{MetaOps} are selected
 non-deterministically. In this section, we will go in depth on the
 FluiDB planner's strategy on the order in which it considers its
-options using the \hask{CntT} framework, making heavy use of the
+options using the \hask{HCntT} framework, making heavy use of the
 \hask{halt} operator to decide branch priorities. A branch's priority
 is dependent on the particular frontier at the time of a halt and is
 determined by four factors:
@@ -1033,11 +1021,11 @@ We define a very rough way
 of estimating cost materializing n-nodes. We incrementally estimate the cost of each n-node
 of the frontier using the following formula:
 
-\begin{align}
+\begin{align*}
   c_{nomat}(n) &=
     \min\limits_{op \in \text{metaops with \(n\) output}} \left\{ cost(op) + \sum\limits_{i \in inputs(op)} c(i)  \right\} \\
   c_{mat}(n) &= 0
-\end{align}
+\end{align*}
 
 Where the cost \(c(n)\) of n-node \(n\) is \(c_{mat}(n)\) if the n-node
 is materialized and \(c_{nomat}(n)\) otherwise. In plain english the
@@ -1058,10 +1046,11 @@ by summing up a slightly different notion of cost for those queries.
 
 A naive approach would be to just use the the same algorithm as we did
 for the frontier n-nodes. However, this approach is prone to getting
-stuck behind materialized n-nodes: past queries, espsecially recent ones
+stuck behind materialized n-nodes: past queries, especially recent ones,
 are likely to still be materialized and therefore their cost is likely
 to be 0. Even if the GC has already got around to deleting them, their near
-dependencies are likely to be materialized and block the cost estimator go far. This makes
+dependencies are likely to be materialized and block the cost estimator 
+from traversing the graph up to the nodes affected by the current plan. This makes
 the estimation quite bad for two reasons:
 
 \begin{itemize}
@@ -1073,8 +1062,8 @@ the estimation quite bad for two reasons:
   materialized.
 \end{itemize}
 
-A more realistic way of calculating the expected cost that an n-node will
-have at a future point in time, which we very informally and
+A slightly better way of calculating the expected cost that an n-node will
+have at a future point in time, which we
 heuristically attempt to approximate, would be, instead of
 considering the cost of materialized n-nodes to be zero, to calculate
 the likelihood that a materialized n-node will still be materialized
@@ -1086,7 +1075,7 @@ FluiDB's budget is exhausted for the first time, for every page write
 a page needs to be garbage collected. We considered a couple of
 options for stochastically modelling the behavior of the GC like
 assuming that it chooses random pages or random tables to delete, but
-we could find none that was a close approximation and
+we could find none that was both a mathematically justifiable approximation and
 computationally viable.
 
 For this reason, we decided to follow a pragmatic approach to the
@@ -1101,7 +1090,7 @@ now is:
   h_{mat}(n) &= \lambda \cdot h_{nomat}(n)
 \end{align*}
 
-Where \(\lambda \in (0,1)\) is the estimated probability that the
+Where \(\lambda \in [0,1]\) is the estimated probability that the
 n-node is no longer materialized when needed. As before, materialized
 n-nodes have cost \(c_{mat}\) and non-materialized n-nodes have cos
 \(c_{nomat}\)
@@ -1111,10 +1100,4 @@ n-nodes have cost \(c_{mat}\) and non-materialized n-nodes have cos
 In this chapter we saw two distinct concepts: a weighted backtracking
 framework and a system implemented on top of that framework, namely
 the FluiDB's physical planner. These two combined enable FluiDB to
-search for quality plans within the QDAG in a flexible way. Some
-aspects of the planner, like the GC algorithm, may seem fairly
-naive. Since the planner is fundamentally a heuristic-based system,
-the design space is limited only by the imagination of the engineer
-designing it. The aim of this part of the work, and by extension of
-this chapter, is to explore ideas relating to the physical planner
-balancing breadth and depth.
+search for quality plans within the QDAG in a flexible way.
