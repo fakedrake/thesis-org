@@ -1,6 +1,10 @@
-\dictum[Thorin]{Is there no end to this accursed forest? Somebody must climb
-a tree and have a look round. The only way is to choose the tallest
-tree that overhangs the path.}
+\dictum[F. Kafka -- The Cares of a Family Man]{At first glance
+[Odradek] looks like a flat star-shaped spool for thread, and indeed
+it does seem to have thread wound upon it; to be sure, they are only
+old, broken-off bits of thread, knotted and tangled together, of the
+most varied sorts and colors. [...] He does no harm to anyone that one
+can see; but the idea that he is likely to survive me I find almost
+painful»}
 
 \begin{summary}
 \item FluiDB expresses queries in relational algebra and defines
@@ -647,8 +651,8 @@ database schema.
   in aggregations the unique sub-tuple is the same as the columns on
   which we aggregate, etc. The main challenge is projections and, in a
   similar manner aggregations, where it is possible that the operation
-  does not project on the entire unique sub-tuple of the input. 
-  
+  does not project on the entire unique sub-tuple of the input.
+
   To
   mitigate this, we perform a pre-processing step to rewrite the
 projections to expose the entire unique sub-tuple. It is worth
@@ -975,7 +979,7 @@ Whenever a \hask{QNFQuery} is found outside of the QNF sub-module
 \hask{col_f} will be instantiated as \hask{Either}, which is to say
 that a query may be an aggregation (\hask{Right}) or a projection
 (\hask{Left}). A query with no explicit projection operand at its root is
-translated to QNF by enumerating the columns into this field. 
+translated to QNF by enumerating the columns into this field.
 
 In each case, the columns themselves are stored in a container of parametric type \hask{f}, which is
 the main distinguishing factor between QNF columns and QNF queries: a query

@@ -475,7 +475,7 @@ composed to form composite arrow types when they are represented as
 arrow transformers but the concept is generalizable to many different
 kinds of arrows \cite{keidelSoundReusableComponents2019a}.
 
-The motivation behind "transformizing" the mealy arrow is that arrow
+The motivation behind ``transformizing'' the mealy arrow is that arrow
 evolution as in the plain mealy arrow we presented must be pure (due
 to it being facilitated by \hask{->}). As we will see in detail when
 describing the internals of Antisthenis, as subrocesses evolve they
@@ -541,7 +541,7 @@ foo = wrapMealy arr $ \a it -> do
     functor to generate mealy arrows.}
 \end{code}
 
-This involves \hask{toKleisly} in reference to the "kleislifiable"
+This involves \hask{toKleisly} in reference to the ``Kleislifiable''
 arrows we saw in the previous section and lifting to \hask{MB a b m}
 arrow which is precisely defined in \ref{lst:mb_def}. The basis here
 is the functor \hask{MealyF a b} which structurally looks like a
@@ -788,7 +788,7 @@ and start the computation from scratch (see section
 As mentioned in the previous section, the interplay between epochs and
 coepochs determine the validity of the value of each Antisthenis
 process. When the returned value is no longer valid the process needs
-to be reset. In particular, the epoch mainly indicates the "version"
+to be reset. In particular, the epoch mainly indicates the ``version''
 of the computation parameters. This might represent the full external
 state, but the purpose of the epoch is to be used as an increasing
 value that can be used by the processes to infer whether their
@@ -921,7 +921,7 @@ Now that we have seen how the cap is handled on the input side we
 should discuss how the parent process passes a cap to its child
 processes. The cap is created in an operator-specific way (i.e., via the
 overloading of a function based on the tag \hask{w}). In particular an
-operator defines a function that "localizes" the entire configuration.
+operator defines a function that ``localizes'' the entire configuration.
 
 \begin{haskellcode}
 data MayReset a = DontReset a | ShouldReset
@@ -1158,7 +1158,7 @@ type Zipper w p = Zipper' w Identity p (ZPartialRes w)
 Finally, each operator defines the type of the partial result (\hask{ZPartialRes})
 maintained in the zipper, as well as functions for putting and replacing values in
 it. When the subprocess of the cursor is evaluated the result needs to
-be either "appended" into the partial result if the new cursor is
+be either ``appended'' into the partial result if the new cursor is
 drawn from the initials set, or to replace the corresponding bound
 value if it is replaced with a value from the iterations set.
 
@@ -1664,12 +1664,13 @@ For a \(X = \mathit(True)\) we need 7 steps:
 \end{itemize}
 
 A Boolean expression in Antisthenis, then, takes the bound value of
-the minimum cost for true values and false values. If this expression were
-evaluated with a cap of \(\{True: 6, False: \infty \}\) it would
-return a bound of value \(\{True: 7, False: 4 \}\). The meaning of this
-bound value in plain English is "re-try to evaluate this if your other options are more
-expensive than 7 steps for \hask{True} and 4 for \hask{False}". It
-could be seen as a metric for the size of the tree.
+the minimum cost for true values and false values. If this expression
+were evaluated with a cap of \(\{True: 6, False: \infty \}\) it would
+return a bound of value \(\{True: 7, False: 4 \}\). The meaning of
+this bound value in plain English is ``re-try to evaluate this if your
+other options are more expensive than 7 steps for \hask{True} and 4
+for \hask{False}''. It could be seen as a metric for the size of the
+tree.
 
 To demonstrate the derivation of caps we present the following
 expression:
@@ -2061,13 +2062,13 @@ Therefore \(E[E[\bot]] = E[\bot]\)
 \subsection{Calculating historical query costs}
 \label{sec:historical_cost}
 
-As we saw in section \ref{sec:planner} on the query planner, the planner depends
-on the cost of past nodes to make decisions about the overall
-usefulness of a plan. A naive approach to this would be to just use
-the normal min/sum operation set to calculate historical costs. As
-explained in more detail in that chapter, this approach is
-problematic. We need a way of convincing Antisthenis to "look behind"
-those materialized nodes a) without completely ignoring the
+As we saw in section \ref{sec:planner} on the query planner, the
+planner depends on the cost of past nodes to make decisions about the
+overall usefulness of a plan. A naive approach to this would be to
+just use the normal min/sum operation set to calculate historical
+costs. As explained in more detail in that chapter, this approach is
+problematic. We need a way of convincing Antisthenis to ``look
+behind'' those materialized nodes a) without completely ignoring the
 materialized nodes and b) by handling referential cycles more
 gracefully than declaring nodes non-computable. For this reason we
 develop the \emph{stochastic costs model}.
@@ -2215,7 +2216,7 @@ optimize.
 
 Both of these could be mitigated in a future version of Antisthenis
 that would be detached from FluiDB and that would replace the
-Antisthenis process with a more "traditional" data structure.
+Antisthenis process with a more ``traditional'' data structure.
 
 Further work could also be done to parallelize Antisthenis. Some
 operations like \hask{min} rely on the operands being evaluated

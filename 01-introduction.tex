@@ -1,6 +1,6 @@
-\dictum[G. W.F. Hegel]{In [dialectical] movement, consciousness
-experiences the emergence of individuality in the unchangeable, and of
-the unchangeable in individuality.}
+\dictum[G. W. F. Hegel -- Phenomenology of Spirit]{In [dialectical]
+movement, consciousness experiences the emergence of individuality in
+the unchangeable, and of the unchangeable in individuality.}
 
 \begin{summary}
 \item FluiDB is an in-memory RDBMs optimizes data layout for space
@@ -240,9 +240,9 @@ multi-query optimization (MQO). In their work they embed aggregations \sql{group
 \(P(\{x_1, ..., x_k\})\). Thereby they encode the fact that \sql{group
   by A, B, C} is subsumed, or can be computed from of:
 \begin{itemize}
-\item \sql{group by A, B}, 
+\item \sql{group by A, B},
  \item \sql{group by A, C}
- \item \sql{group by B, C}. 
+ \item \sql{group by B, C}.
  \item[...]
 \end{itemize}
 
@@ -284,16 +284,24 @@ encountered are \(\sigma_{p}(\li)\), \(\sigma_{q}(\li)\) and
 \(\sigma_{q} \sigma_{r} (\li)\). For the purposes of this example we
 assume that according to the workload, the planner has determined that
 the priority in terms of usefulness of each query involved is in
-descending order of usefulness:
+descending order of ``usefulness'':
 
-\begin{itemize}
-\item \(\sigma_q \li\)
-\item \(\sigma_{p \land r} \li\)
-\item \(\sigma_p \li\)
-\item \(\sigma_{\neg p} \li\)
-\item[ \( \ldots \)]
-\item \(\li\)
-\end{itemize}
+\begin{table}[H]
+  \centering
+  \begin{tabular}{ll}
+    View & Size \\
+    \hline
+\(\sigma_q \li\) & 5 \\
+\(\sigma_p \li\) & 6 \\
+\(\sigma_{\neg p} \li\) & 4 \\
+\(\sigma_{p \land r} \li\) & 1 \\
+\(\sigma_q \li\) & 6 \\
+\(\sigma_{\neg q} \li\) & 5 \\
+\(\li\) & 10 \\
+  \end{tabular}
+  \caption{\label{tab:views_sizes}The of figure \ref{fig:intro_selectexample} annotated with their sizes and  ordered in descending order of ``usefullness'' as determined by the planner.}
+
+\end{table}
 
 
 \begin{figure}[H]
@@ -309,15 +317,15 @@ descending order of usefulness:
     \newcommand{\n}[1]{node {\(#1\)}}
     \newcommand{\bn}[1]{node[mat] {\(#1\)}}
 
-    \node {\(\li\) : 1} % \li
-    child { \bn{\sigma_{q}(\li) : }} % σ_q
-    child { \bn{\sigma_{\neg q}(\li)}} % σ_nq
-    child { \n{\sigma_{\neg p}(\li) : 0.4}}  % σ_np
+    \node {\(\li\)} % \li
+    child { \bn{\sigma_{q} \li }} % σ_q
+    child { \bn{\sigma_{\neg q} \li}} % σ_nq
+    child { \n{\sigma_{\neg p} \li}}  % σ_np
     child {
-      \n{\sigma_{p}(\li) : 0.6} % σ_p
-      child {\n{\sigma_{p \land r}(\li)} : 0.5 } % σ_pq
-      child {\n{\sigma_{p \land \neg r}(\li) : 0.1 }} % σ_rpq
-    } ;
+      \n{\sigma_{p} \li} % σ_p
+      child {\n{\sigma_{p \land r} \li} } % σ_pq
+      child {\n{\sigma_{p \land \neg r} \li}} % σ_rpq
+    } ;\
 \end{tikzdiagram}
 \caption{\label{fig:intro_selectexample}The currently materialized relations are
   marked with grey. Assuming the absence of null values and assuming
@@ -325,69 +333,55 @@ descending order of usefulness:
   FluiDB can find a plan to generate any relation involving \(\li\).. }
 \end{figure}
 
-The query that we are planning is
-\(\sigma_{quantity < 24} \sigma_{discount < .06} (\li)\), which is
-denoted in the figure as \(\sigma_{p \land r}(\li)\). Our total size
-budget is 2.5.
+The query that we are planning is \(\sigma_{quantity < 24}
+\sigma_{discount < .06} \li\), which is denoted in the figure as
+\(\sigma_{p \land r}\li\). Our total size budget is 25. The plan
+described is codified in \ref{fig:reverse_operations}.
 
-Following the edges in the graph, to plan \(\sigma_{p \land r}(\li)\)
-we need \(\sigma_{p}(\li)\) and for that we need \(\li\). So first we plan the union
-
-\[
-  \sigma_{\neg q}(\li) \cup \sigma_{q}(\li) \rightarrow \li
-\]
-
-Then we need \(\sigma_{p}(\li)\) but we are now using 2 units of space
-and adding .6 more would exceed our space budget of 2.5. \(\li\) is
-the least beneficial of our materialized views but it is required for
-our next step, i.e., creating \(\sigma_{q}(\li)\) . \(\sigma_{\neg
-p}(\li)\) is deleted since it's derivable from \(\li\). Then
-\(\sigma_{q}(\li)\) is created and now we are using 2.1 units of
-space.
+Following the edges in the graph, to plan \(\sigma_{p \land r}\li\)
+we need \(\sigma_{p}\li\) and for that we need \(\li\). So first we plan the union
 
 \[
-  \li \rightarrow \sigma_{q}(\li)
+  \sigma_{\neg q}\li \cup \sigma_{q}\li \rightarrow \li
 \]
 
-Finally, we need to create the final relation \(\sigma_{q \land
-  r}(\li)\) . However its space requirement is .5 and we we would
-be exceeding our budget. We can't delete \(\li\) even though it
-is our least beneficial table because we would have no way of
-recreating it.
-
-Here we have two options. One is to delete \(\sigma_{\neg
-  p}(\li)\), our most benefitial table. The other, which is the one
-that the system should opt for, is to backtrack. When we created
-\(\sigma_{q}(\li)\), instead we create both
-\(\sigma_{q}(\li)\) and \(\sigma_{\neg q}(\li)\).
+Then we need \(\sigma_{p}\li\) but we are now using 20 units of space
+and adding 6 more would exceed our space budget of 25 units. \(\li\)
+is the least beneficial of our materialized views but it is required
+for our next step, i.e., creating \(\sigma_{p}\li\), \(\sigma_{\neg
+q} \li\) is deleted instead since it is derivable from \(\li\). We can
+now create not only \(\sigma_{p}(\li)\), but also \(\sigma_{\neg
+p}(\li)\) so we are now using 25 units of space.
 
 \[
-  \li \rightarrow \{\sigma_{q}(\li), \sigma_{\neg q}(\li)\}
+  \li \rightarrow \{\sigma_{p}\li, \sigma_{\neg p}\li\}
 \]
 
-Once both those tables are materialized we can safely delete
-\(\li\). Now our space usage is 1.1 and we can safely
-
-\[
-  \sigma_{q}(\li) \rightarrow \sigma_{q \land r} (\li)
-\]
-
-Which is the requested query and, in summary, the final can be
-represented as:
+Finally, we need to create the final relation \(\sigma_{p \land
+  r}\li\) . However the available storage is all used up. We can now
+  delete \(\li\) because its data is duplicated in the combination if
+  \(\sigma_{p}\li\) and \(\sigma_{\neg p}\li\). Once that deletion is
+  carried out we can create \(\sigma_{p \land r} \li \) which was the
+  requested query.
 
 
 \begin{figure}[H]
 \begin{minted}[escapeinside=||,mathescape=true]{trace-lexer.py:TraceLexer -x}
     Inventory {
-      |\(Q_0\)| := |\(\sigma_{\neg p}(\li)\)|
-      |\(Q_1\)| := |\(\sigma_{p}(\li)\)|
-      ...
+      |\(Q_0\)| := |\(\sigma_{\neg q}\li\)|
+      |\(Q_1\)| := |\(\sigma_{q}\li\)|
     }
+
+    # Budget: 25, used: 10
     Query |\(\sigma_{q \land r} \mathit{\li}\)| {
       |\(\li\)| := Materialize[|\(Q_0 \cup  Q_1\)|]
+      # used: 20; we need 26 to proceed...
       GC { Delete[|\(Q_0\)|] }
-      |\(Q_2\)|,|\(Q_3\)| := Materialize[|\(\{\sigma_{q}(\li), \sigma_{\neg q}(\li)\}\)|]
+      # used: 15 we can now materialize both
+      |\(Q_2\)|,|\(Q_3\)| := Materialize[|\(\{\sigma_{p}\li, \sigma_{\neg p}\li\}\)|]
+      # used: 25; we can delete lineitem now
       GC { Delete[|\(\li\)|] }
+      # used: 15; we can now materialize the requested
       |\(Q_4\)| := Materialize[|\(\sigma_{r} Q_2\)|]
     }
 \end{minted}

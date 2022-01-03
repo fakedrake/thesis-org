@@ -1,6 +1,10 @@
-\dictum[Edsger W. Dijkstra]{The question of whether a computer can
-  think is no more interesting than the question of whether a
-  submarine can swim.}
+\dictum[F. Dostevski -- Crime and Punishment]{We may note in passing,
+one peculiarity in regard to all the final resolutions taken by
+[Raskolnikov] in the matter; they had one strange characteristic: the
+more final they were, the more hideous and the more absurd they at
+once became in his eyes. In spite of all his agonising inward
+struggle, he never for a single instant all that time could believe in
+the carrying out of his plans.}
 
 \begin{summary}
 \item We introduce a monad-based functional method of weighted
@@ -87,7 +91,7 @@ reflect Just (a,as) = pure a <|> as
 In \cite{kiselyovBacktrackingInterleavingTerminating}, on top of this
 framework the authors build an \hask{interleave} and a monadic bind
 (\hask{>>-}) operator that works with it to make computation be
-slightly more "fair". In this context, fair means that each of the
+slightly more ``fair''. In this context, fair means that each of the
 branches gets equal computation resources. Interleaving is in a
 certain sense fair between two computations, but when more than two
 are involved, half the time goes to the first computation, out of the
@@ -475,7 +479,7 @@ marker. There are 3 possible scenaria that may play out at this point:
 What is the lifecycle of the fallback entries? For a visual aid to the
 following see figure \ref{fig:marker_branches}: When an expression
 \hask{A <//> B} appears we create a new fallback entry in the lookup
-table containing \hask{B} and recursively "infect" all spawned
+table containing \hask{B} and recursively ``infect'' all spawned
 sub-branches of \hask{A} to perform the following actions immediately
 after they generate new branches and results:
 
@@ -543,7 +547,7 @@ after they generate new branches and results:
     \draw [-stealth] (m3) to [bend left =10] (rec_id);
     \draw  [-stealth] (rec_br)  to [bend left = 10] (m3);
   \end{tikzdiagram}
-\caption{\label{fig:marker_branches}Marker "branches" are injected in
+\caption{\label{fig:marker_branches}Marker ``branches'' are injected in
   the heap of prioritized branches to possibly trigger the fallback
   branch. Each marker gives the scheduler the opportunity to run a
   particular fallback branch. The entry of the fallback branch entry
@@ -583,7 +587,7 @@ subbranch of the nested computation. When scheduled by the outer
 scheduler, the inner scheduler internally schedules the next branch of
 the nested process. When the process yields results or completely
 fails, the corresponding hook is run. \hask{once} implements these
-hooks as "return the result and stop" and as "propagate the failure"
+hooks as ``return the result and stop'' and as "propagate the failure"
 respectively. Since the implementation of \hask{once} is fairly small
 it is provided along with the types in listing \ref{lst:once_def}.
 
@@ -649,8 +653,8 @@ type PlanT t n m =
     backtracking is just the value of unit type (\hask{()}).}
 \end{code}
 
-It is important to clarify the way we use the term "materialized n-node"
-(\hask{Mat} as opposed to "not materialized" -- \hask{NoMat}) from the planner's
+It is important to clarify the way we use the term ``materialized n-node''
+(\hask{Mat} as opposed to ``not materialized'' -- \hask{NoMat}) from the planner's
 perspective. A mapping of n-node states is passed to the planner at the
 beginning of the planning process. This mapping indicates which n-nodes
 are initially materialized. As transitions get registered,
