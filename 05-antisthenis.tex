@@ -193,7 +193,7 @@ Here, when evaluating \(A\), a traditional evaluation system would
 look at the first argument first, namely \(B\). \(B\) is very
 expensive to evaluate and very soon a human would figure out that it
 will never evaluate to zero. \(C\), however, does evaluate to zero,
-and once that is evaluated, the evaluation of \(A\) is complete. In a
+and once that is evaluated, the evaluation of \(A\) is complete\footnote{Barring domains where infinity needs to be considered in any way}. In a
 complex set of automatically generated such expressions it is
 important that the evaluator does not keep trying to evaluate a
 complex expression when evaluating another simpler one could yield an
@@ -517,9 +517,16 @@ work with even with the Haskell \hask{proc} syntactic sugar
 \cite{bibtex}. Transferring state between mealy iterations via their
 closures even more so. Capitalizing on the parallels between an arrow
 and a coroutine, and taking advantage of the rich Haskell ecosystem
-around monads we define a monad \hask{MB a b m} to help us build mealy
+around monads we define a monad \hask{MB a b m} (standing for \emph{Mealy Builder})
+to help us build mealy
 arrows more easily. The interface to that monad is presented in
-listing \ref{lst:mb_interface}.
+listing \ref{lst:mb_interface}. The \hask{MB a b m x} typed value, as we will
+see, can run a computation in \hask{m} and return either a value of type
+\hask{x} or a new \hask{MB a b m x}. Thereby, since \hask{Void} is an
+uninhabited type, \hask{MB a b m Void} runs a computation in \hask{m} 
+that \emph{must always} return a new \hask{MB a b m Void}. Just like the
+mealy process, only \hask{MB a b m Void} does not expect an argument at
+each iteration..
 
 \begin{code}
 \begin{haskellcode}
@@ -542,11 +549,18 @@ of the \hask{do}-block.
 \begin{code}
 \begin{haskellcode}
 foo :: ArrowFunctor c => MealyArrow c a b
-foo = wrapMealy arr $ \a it -> do
-  doSomeStuff
-  (it',r) <- lift $ toKleisli (runMealyArrow it) a
-  a' <- yieldMB r
-  return it'
+foo = mkMealy go where
+  go :: a -> MB a b m Void
+  go a = do
+    b <- mkResult a
+    -- Now we got a result we return it to the user and expect the 
+    -- argument for the next iteration of the mealy arrow
+    a' <- yieldMB b
+    -- Now both the next argument (a') and the previous result (b) are
+    -- in scope. We can use them both. Whatever we do we must
+    -- can't simply end the computation. The mealy arrow must
+    -- go on.
+    go a'
 \end{haskellcode}
   \caption{\label{lst:mb_example}An example of the usage of the MB
     functor to generate mealy arrows.}
@@ -557,7 +571,7 @@ arrows we saw in the previous section and lifting to \hask{MB a b m}
 arrow which is precisely defined in \ref{lst:mb_def}. The basis here
 is the functor \hask{MealyF a b} which structurally looks like a
 non-recursive version of a mealy arrow we saw earlier. That is if
-\hask{x} is replaced with \hask{MealyF a b \_} we get a mealy arrow
+\hask{x} is replaced with \hask{MealyF a b _} we get a mealy arrow
 with an extra value. Unfortunately, there is no direct way to make a
 law abiding monad out of the \hask{MealyF} type but there is a trivial
 functor for it, which allows us to use the free monad
@@ -630,8 +644,7 @@ element in question to the neighboring elements.
 
 \section{Antisthenis core}
 
-In this section, we discuss the core components of Antisthenis. The
-parts that comprise Antisthenis are roughly split in two
+The parts that comprise Antisthenis are roughly split in two
 categories.
 
 \begin{itemize}
@@ -644,8 +657,8 @@ categories.
   implement specific operators.
 \end{itemize}
 
-While in this section we focus on the core components we will
-frequently allude to external components, which we will see in details
+While in this section we focus on the core components and we will
+frequently allude to external components, which we will see in detail
 in sections \ref{sec:antisthenis_ops} on operators and
 \ref{sec:antisthenis_machines} on named processes.
 
