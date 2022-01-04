@@ -259,6 +259,21 @@
     \end{tikzpicture}
   \end{center}
 }
+
+\NewEnviron{tikzcanvas}{%
+  \def\tikz@width{}%
+  \begin{lrbox}{\measure@tikzpicture}%
+    \begin{tikzpicture}
+      \BODY
+    \end{tikzpicture}
+  \end{lrbox}%
+  \pgfmathparse{\textwidth/\wd\measure@tikzpicture}%
+  \begin{center}
+    \begin{tikzpicture}[transform canvas={scale=\pgfmathresult},ampersand replacement=\&]
+      \BODY
+    \end{tikzpicture}
+  \end{center}
+}
 \makeatother
 
 

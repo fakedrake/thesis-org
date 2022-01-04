@@ -2,7 +2,7 @@
   humanity and horsehood I cannot see.}
 
 \dictum[Plato]{You have the eye which sees a horse and a man; but the
-  eye which can see horsehood and manhood you have not.}
+  eye which can see horsehood and humanity you have not.}
 
 \begin{summary}
 \item Antisthenis is a framework for building systems for
@@ -57,15 +57,15 @@ of Antisthenis processes. Finally, we conclude with some caveats and
 some future future work that can be done to make Antisthenis easier to
 apply to solutions other than FluiDB.
 
-The name Antisthenis is a reference to the proto-empiricist 
-and proto-nominalist philosophy expressed by Socrates' 
-pupil Antistenes. Antisthenes promoted particular objects as 
+The name Antisthenis is a reference to the proto-empiricist
+and proto-nominalist philosophy expressed by Socrates'
+pupil Antistenes. Antisthenes promoted particular objects as
 preceding universal concepts, encapsulated in his famous
-declaration that one can only interact with a horse but not 
+declaration that one can only interact with a horse but not
 with the abstract concept of ``horseness''. Antisthenis-the-framework can
 compute correct values taking advantage of properties
 that are highly specific to the particular computation, potentially
-even making use of unfinished intermediate computations. 
+even making use of unfinished intermediate computations.
 All that matters to Antisthenis is the computation at hand.
 
 \section{Introduction}
@@ -523,7 +523,7 @@ arrows more easily. The interface to that monad is presented in
 listing \ref{lst:mb_interface}. The \hask{MB a b m x} typed value, as we will
 see, can run a computation in \hask{m} and return either a value of type
 \hask{x} or a new \hask{MB a b m x}. Thereby, since \hask{Void} is an
-uninhabited type, \hask{MB a b m Void} runs a computation in \hask{m} 
+uninhabited type, \hask{MB a b m Void} runs a computation in \hask{m}
 that \emph{must always} return a new \hask{MB a b m Void}. Just like the
 mealy process, only \hask{MB a b m Void} does not expect an argument at
 each iteration..
@@ -553,7 +553,7 @@ foo = mkMealy go where
   go :: a -> MB a b m Void
   go a = do
     b <- mkResult a
-    -- Now we got a result we return it to the user and expect the 
+    -- Now we got a result we return it to the user and expect the
     -- argument for the next iteration of the mealy arrow
     a' <- yieldMB b
     -- Now both the next argument (a') and the previous result (b) are
@@ -699,20 +699,19 @@ The \hask{w} parameter is simply a token related to the operation that
 the cell is evaluating that we use helps us parameterize the types
 involved in a process by leveraging the type family feature of
 Haskell's type system \cite{AssociatedTypeSynonyms}. We call it a
-\hask{ZipperParams} token because, as we will be seeing throughout the
-chapter, it mainly parameterize the evolution of the internal state of
-the Antisthenis process, the \hask{Zipper}. We will be looking in
-detail into the methods that \hask{ZipperParams} tag needs to
-implement in the following sections.
+\hask{ZipperParams} tag because, as we will be seeing throughout the
+chapter, it mainly parameterizes the evolution of the internal state
+of the Antisthenis process, the \hask{Zipper}.
 
 We will describe every type involved in the \hask{ArrProc} type
 separately, but to do that we first provide a general intuition of
-what these types mean. The basis is a mealy arrow that emits monoidal
-value via \hask{WriterArrow}, along with the values, we dub
-\hask{ZCoEpoch}.  It is a datastructure that summarizes the provenance
-of the value returned (section \ref{sec:caps_and_bounds} on
-Antisthenis caps and bounds). It is used to determine when the value
-is no longer valid, for example, due to changed parameters.
+what these types mean. The basis is a mealy arrow that emits a
+monoidal value \hask{ZCoEpoch w} via \hask{WriterArrow} that expresses
+metadata, along with the result of the computation (\hask{BndR w}).
+It is a datastructure that summarizes the provenance of the value
+returned described in detail in section \ref{sec:caps_and_bounds} on
+Antisthenis caps and bounds. It is used to determine when the value is
+no longer valid, for example, due to changed parameters.
 
 The \hask{MealyArrow} and \hask{WriterArrow} combined transform an
 arbitrary Kleisli arrow which is used to embed the computation of
@@ -785,19 +784,22 @@ data Conf w =
     used to derive whether a value is valid.}
 \end{code}
 
-The configuration for running a computation includes an epoch
-(discussed in section \ref{sec:epochs_coepochs}) and a cap (discussed
-in \ref{sec:caps_and_bounds}). It is passed as input to each
-computation and propagated to the children computations. If the process
-is iterating (as opposed to co-iterating, i.e., it has not returned a
-concrete result or an error), the cap is compared against the previously
-yielded bound, if the cap is less than the bound returned then the
-process must keep processing until it finds a bound that exceeds that
-cap. This way we can control how much work a process is allowed to do
-before switching to one that might help Antisthenis to cut the overall
-computation short. This way, Antisthenis avoids falling into
-computational rabbit holes, where it evaluates a longer computation when
-switching to a shorter one would help arrive sooner to a final result.
+The configuration for running a computation includes an \emph{epoch}
+that is used to deprecate computed values that are no longer valid
+(discussed in section \ref{sec:epochs_coepochs}) and a \emph{cap} that
+is used to decide when a partial result should be returned (discussed
+in \ref{sec:caps_and_bounds}). The configuration is passed as input to
+each computation and propagated to the children computations. If the
+process is iterating (as opposed to co-iterating, i.e., it has not
+returned a concrete result or an error), the cap is compared against
+the previously yielded bound, if the cap is less than the bound
+returned then the process must keep processing until it finds a bound
+that exceeds that cap. This way we can control how much work a process
+is allowed to do before switching to one that might help Antisthenis
+to cut the overall computation short. This way, Antisthenis avoids
+falling into computational rabbit holes, where it evaluates a longer
+computation when switching to a shorter one would help arrive sooner
+to a final result.
 
 The \emph{epoch} represents state external to Antisthenis like
 parameter versions. When the epoch indicates that a parameter on which
@@ -810,9 +812,9 @@ and start the computation from scratch (see section
 \label{sec:epochs_coepochs}
 
 As mentioned in the previous section, the interplay between epochs and
-coepochs determine the validity of the value of each Antisthenis
+coepochs determines the validity of the value of each Antisthenis
 process. When the returned value is no longer valid the process needs
-to be reset. In particular, the epoch mainly indicates the ``version''
+to be reset; in particular, the epoch mainly indicates the ``version''
 of the computation parameters. This might represent the full external
 state, but the purpose of the epoch is to be used as an increasing
 value that can be used by the processes to infer whether their
@@ -840,8 +842,8 @@ short, the coepoch of a subprocess is included in all parent processes
 that are not constant with respect to the value of that subprocess.
 
 In principle, the function that the \hask{ZipperParams} tag needs to
-implement with respect to the epoch/coepoch interplay is a function
-that has a type equivalent to listing \ref{lst:comb_epoch_coepoch0}.
+implement to facilitate the epoch/coepoch interplay is a function that
+has a type equivalent to listing \ref{lst:comb_epoch_coepoch0}.
 
 \begin{code}
 \begin{haskellcode}
@@ -869,12 +871,9 @@ contributed to the generation of the coepoch being checked. Thereby
 the combination function can optionally return a new epoch, rendering
 the type of the function to be something similar to listing
 \ref{lst:comb_epoch_coepoch}. It is worth noting that if by this
-process we determine that a reset is required, a new coepoch is
-required and therefore there is no way to constrain the coepoch for
-the reset. In the example above, if \texttt{coepoch0 <> coepoch1} do
-not match the epoch, it is possible that re-evaluation of \(P_1\) will
-not yield \hask{BndRes 0} and thereby we would need to evaluate
-\(P_2\) including its coepoch to the aggregate.
+process we determine that a reset is required, a new coepoch is also
+required and therefore there is no way to constrain the epoch to run
+the reset process.
 
 \begin{code}
 \begin{haskellcode}
@@ -889,17 +888,17 @@ combEpochCoepoch :: ZEpoch w -> ZCoEpoch w -> Maybe (ZEpoch w)
 
 In section \ref{sec:epochs_coepochs} regarding epochs and copeochs we
 described how Antisthenis deals with the validity of values returned
-by a process. In this section we will focus on how the children
-processes avoid falling into computational rabbit holes using the
-interplay of \emph{caps} and \emph{bounds}.  In the example discussed
-in the introduction (\ref{sec:antisthenis_intro}), we saw that there
-are case where, as soon as a subprocess can prove that its value is
-going to exceed a certain threshold (\emph{cap}), any further work on
-its part is likely futile. It then returns a \emph{bound} which is
-propagated up the chain of parent processes and handled at the point
-where the cap was imposed. The reader is encouraged to maintain a
-mental model where the cap is an threshold and the bound is a lower
-bound.
+by a process.  In this section we will focus on how the children
+processes avoid falling into avoidable computational rabbit holes
+using the interplay of \emph{caps} and \emph{bounds}.  In the example
+discussed in the introduction of this chapter
+(\ref{sec:antisthenis_intro}), we saw that there are cases where, as
+soon as a subprocess can prove that its value is going to exceed a
+certain threshold (\emph{cap}) any further work on its part is likely
+futile. It then returns a \emph{bound} which is propagated up the
+chain of parent processes and handled at the point where the cap was
+imposed.  The reader is encouraged to maintain a mental model where
+the cap is an threshold and the bound is a lower bound.
 
 We expect that the bound of a function satisfies the
 \emph{mototonicity criterion}:
@@ -913,13 +912,11 @@ by the expression \(E\) by only taking into account the top level
 terms. \(f\) is the function of the operator and \(f_B\) is a function
 that combines the bounds of the arguments to come up with a bound for
 \(f\). \(C \dot{<} b\) means that the bound \(b\) exceeds the cap
-\(C\).
+\(C\). In simpler terms, this means that if a bound exceeds the cap,
+evaluating the arguments and coming up with tighter bounds will still
+exceed the cap.
 
-In simpler terms, this means that if a bound exceeds the cap,
-evaluating the arguments and coming up with tighter bounds will
-still exceed the cap.
-
-There may be more requirements of the properties of a cap w.r.t. to a
+There may be more requirements of the properties of a cap w.r.t. a
 particular operator. For example, the minimum operator requires that
 bounds be translatable to caps and that if a bound \(b\) is translated
 to a cap \(c\) and \(b' \dot{<} c\) then \(b' < b\). This requirement
@@ -927,9 +924,9 @@ is only related to the way the particular operator is implemented and
 is not necessarily a requirement for any other operator.
 
 
-The \hask{ZipperParams} tag needs to provide a way for comparing caps
-to bounds. Unlike the case of coepoch and epoch combination function
-this one is much more straightforward:
+The \hask{ZipperParams} tag \hask{w} needs to provide a way for
+comparing caps to bounds. Unlike the case of coepoch and epoch
+combination function this one is much more straightforward:
 
 \begin{haskellcode}
 exceedsCap :: ZCap w -> ZBnd w -> Bool
@@ -959,9 +956,12 @@ process needs to be reset by calling the \hask{combEpochCoepoch}
 function that we discussed in subsection \ref{sec:epochs_coepochs} on
 epochs and coepochs.
 
-To make all this more tangible, a process that adds epoch implements
-the \hask{zLocalizeConf} roughly like shown in listing
-\ref{lst:localizeconf}.
+To make all this more tangible, a process that computes the sum of its
+subprocesses might implement \hask{zLocalizeConf} roughly like shown
+in listing \ref{lst:localizeconf}. Since the process knows it will be
+evaluating the cursor, it subtracts the partial sum so far from the
+cap to come up with the cap to pass to the subprocess.
+
 
 \begin{code}
 \begin{haskellcode}
@@ -993,13 +993,9 @@ zLocalizeConf coepoch conf z =
     function that transforms the configuration received by a parent
     process into one suitable for the child process. Checks if the
     parent process needs to be reset and uses the partial result to
-    constrain the cap.}
+    constrain the cap. This particular implementation is taken from
+    our implementation of the sum operator.}
 \end{code}
-
-Since the process knows it will be evaluating the cursor, it subtracts
-the partial sum so far from the cap to come up with the cap to pass to
-the subprocess.
-
 
 \subsection{Antisthenis zipper}
 \label{sec:zipper}
@@ -1023,42 +1019,43 @@ With this in mind, we define the zipper data structure keeps track of
 the state of the node (see figure \ref{fig:zipper}).
 
 \begin{itemize}
-\item A set of \hask{initial} processes that have not been evaluated
+\item A set of \emph{initial} processes that have not been evaluated
   yet or that have yielded deprecated values (see section
   \ref{sec:epochs_coepochs} on epochs and coepochs).
-\item A set of \hask{iteration} processes, processes whose latest
+\item A set of \emph{iteration} processes, processes whose latest
   evaluation has yielded a result bound is represented by a data
-  structure that associates the iteration processes with
-  \hask{initial} processes bounds returned. Since these processes
-  that have yielded a value bound and need to be rerun with a
-  different cap (see section \ref{sec:caps_and_bounds}). It should be
-  stressed that this still acts like a heap of subprocesses where the
-  internal properties of the data structure decide the top element
-  that is to be popped. Since we have some information about the final
-  result of these processes, namely the bound, the parent process can
-  be smart about the order in which they are evaluated. As the
-  particular strategy depends on the operation implemented by the
-  parent process, the particular data structure used is also dependent
-  on said operation. For example, a process implementing a sum between
-  the subprocesses stores them in a list as there is no beneficial
-  order in which to evaluate the subprocesses, while minimum operation
+  structure that associates the iteration processes with initial
+  processes bounds returned. Since these processes that have yielded a
+  value bound and need to be rerun with a different cap (see section
+  \ref{sec:caps_and_bounds}). It should be stressed that this still
+  acts like a heap of subprocesses where the internal properties of
+  the data structure decide the top element that is to be
+  popped. Since we have some information about the final result of
+  these processes, namely the bound, the parent process can be smart
+  about the order in which they are evaluated. As the particular
+  strategy depends on the operation implemented by the parent process,
+  the particular data structure used is also dependent on said
+  operation. For example, a process implementing a sum between the
+  subprocesses stores them in a list as there is no beneficial order
+  in which to evaluate the subprocesses, while minimum operation
   benefits from evaluating the processes that have lower bounds first
   (for more details on the minimum operation see section
   \ref{sec:basic_cost_ops}).
 
 \item \emph{Coiteration processes} are processes that have been
-  evaluated and yielded a concrete e (error or result), i.e., a value
-  that is predicated on the epoch (see section
-  \ref{sec:epochs_coepochs}) but can not be refined by re-evaluating
-  the process with a more permissive cap. Upon reset the coiteration
-  stack is ordered in an operator-specific way and moved to the init
-  stack.
+  evaluated and yielded a concrete value (error or result), i.e., a
+  value that is predicated on the epoch but can not be refined by
+  re-evaluating the process with a more permissive cap. Upon reset the
+  coiteration stack is ordered in an operator-specific way and moved
+  to the init stack.
 \item A \emph{cursor} that is the next process to be triggered along
-  with a way to reset it and the previous value
-\item A \emph{partial} value to which values can be inserted or
-  removed (for example the sum accumulated up to that point). The
-  partial value does \emph{not} include the value stored in the
-  cursor.
+  with a way to reset it and the previous value.
+\item A \emph{partial value} to which values can be inserted or
+  removed (for example the sum accumulated up to that point) which
+  represents the progress of the process so far. As values, concrete
+  or partialm are extracted from the subprocesses the partial value is
+  updated. The partial value does \emph{not} include the value stored
+  in the cursor.
 \end{itemize}
 
 \begin{figure}[H]
@@ -1082,7 +1079,7 @@ the state of the node (see figure \ref{fig:zipper}).
     };
   }
   \mkmat{its}{above=of sep}{Iterations}{\((b,p_{reset},p_{it})\)}
-  \mkmat{init}{left=of its}{Inits}{\(p_{init}\)}
+  \mkmat{init}{left=of its}{Initials}{\(p_{init}\)}
   \mkmat{coit}{right=of its}{Coiterations}{\((p_{coit},r)\)}
 
   \node[below=of sep,background,label=below:Cursor] (curs) {\((Maybe[b],p_{reset},p_{rg})\)};
@@ -1105,32 +1102,34 @@ the state of the node (see figure \ref{fig:zipper}).
 \end{figure}
 
 During computation, the subprocesses owned by the parent process are
-evaluated, and their iterations are then moved from the \hask{initials}
-set to the \hask{coiterations} set, possibly with an intermediate stop
-in the \hask{iterations} set according to the values and
-strategies of the operator implementation which is further elaborated in section
-\ref{sec:antisthenis_ops} on Antisthenis operations. The structure of
-\hask{iterator set} is highly operator dependent and primarily geared
-towards efficiently evaluating the parent process, but fundamentally
-it must not compromise on the correctness of the operator. For
-example, a process is combining elements of an Abelian group
-(commutative, associative, invertible) and the bound has the same type
-as the result -- as it is the case with addition -- the structure of
-the zipper is fairly straightforward:
+evaluated, and their iterations are then moved from the \emph{initial}
+process set to the \emph{coiteration} process nset, possibly with an
+intermediate stop in the \emph{iterations} set according to the values
+and strategies of the operator implementation which is further
+elaborated in section \ref{sec:antisthenis_ops} on Antisthenis
+operations. The structure of \emph{iterator set} is highly operator
+dependent and primarily geared towards efficiently evaluating the
+parent process, but fundamentally it must not compromise on the
+correctness of the operator. For example, a process is combining
+elements of an Abelian group (commutative, associative, invertible)
+and the bound has the same type as the result -- as it is the case
+with addition -- the structure of the zipper is fairly
+straightforward:
 
 \begin{itemize}
 \item The partial result maintains the aggregation of all values and
-  bounds encountered
+  bounds encountered.
 \item When evaluating the cursor we add the result or returned bound to the group and
   remove the bound of the next cursor if we are popping from the
   iteration set.
-\item The bound of the final value at any moment is the partial result..
+\item The bound of the final value at any moment is the partial
+  result.
 \end{itemize}
 
 At the other end of the spectrum, a process evaluating a magma (a set
 with a closed binary operation), where the binary operator has no
 properties besides closure, must never push anything to the iterations
-set. The set is equivalent to unit (\(\emptyset\)), and the cursor is
+set. The set is equivalent to unit (\hask{()}), and the cursor is
 forced to yield a concrete result or an error by being run with a
 \hask{ForceResult} cap.
 
@@ -1221,19 +1220,20 @@ type ZProc e m =
 \end{haskellcode}
   \caption{\label{lst:zproc_def}An internal representation of the
     process evolving the internal representation of a process: the
-    zipper.}
+    zipper. Note the use of \hask{FreeT Cmds} in the Kleisli arrow.}
 \end{code}
 
 
-\hask{Cmds} is a union type encapsulating different directions to which the
-zipper can be evolved. Its definition is provided in listing
-\ref{lst:cmds_def}. The point of \hask{Cmds} is to separate the logic of
-\emph{how} each possible zipper transition is carried out which is largely
-operator agnostic, from the logic of
-\emph{which} transition should be carried out which is higly operator dependent.
-\hask{ZProc} is therefore a process that simulataneously encapsulates all possible evolution paths
-for the zipper.
-The command constructors reflect the different evolution steps that can be taken at each time:
+\hask{Cmds}, used in type parameter of the Kleisli arrow in
+\hask{ZProc}, is a union type encapsulating different directions to
+which the zipper can be evolved. Its definition is provided in listing
+\ref{lst:cmds_def}. The point of \hask{Cmds} is to separate the logic
+of \emph{how} each possible zipper transition is carried out which is
+largely operator agnostic, from the logic of \emph{which} transition
+should be carried out which is higly operator dependent.  \hask{ZProc}
+is therefore a process that simulataneously encapsulates all possible
+evolution paths for the zipper.  The command constructors reflect the
+different evolution steps that can be taken at each time:
 
 \begin{itemize}
 \item It can always be reset the process
@@ -1244,8 +1244,6 @@ The command constructors reflect the different evolution steps that can be taken
   anymore.
 \end{itemize}
 
-\hask{ZProc} internally takes care of the logic related to pushing the
-evaluated process of the cursor into the appropriate set.
 
 \begin{code}
 \begin{haskellcode}
@@ -1266,8 +1264,10 @@ data ItInit r f a
     provides different branches of evolutution for zipper.}
 \end{code}
 
-The \hask{Cmds} functor facilitates a tree of actions in conjunction with a
-free monad.  A free monad of functor \hask{f} is actually many
+\hask{ZProc} internally takes care of the logic related to pushing the
+evaluated process of the cursor into the appropriate set. The
+\hask{Cmds} functor facilitates a tree of actions in conjunction with
+a free monad.  A free monad of functor \hask{f} is actually many
 \hask{f} nested like \hask{f (f (f ... f (f a)))}. This that
 \hask{FreeT Cmds m} is an arbitrary depth tree of \hask{Cmds}. This
 tree is navigated in an operator-specific way guided by the generic
@@ -1296,9 +1296,9 @@ the particular operator and comes up with a pair of values:
 \item A reset command to be used if reset is required in the future
   (this will be discussed in the section about
   \ref{sec:process_resetting} resetting)
-\item When encountering a \hask{CmdFinished} value return the result of the
-finished operation, otherwise traverse the tree to the preferable
-leaf and return the leaf.
+\item When encountering a \hask{CmdFinished} value return the result
+  of the finished operation, otherwise traverse the tree to the
+  preferable leaf and return the leaf.
 \end{itemize}
 
 An abridged example is presented in figure \ref{fig:cmds_tree}.
@@ -1321,7 +1321,8 @@ An abridged example is presented in figure \ref{fig:cmds_tree}.
   \newcommand{\ze}[2]{
     edge from parent node[above] {#1} node[below] {res:#2}
   }
-  \begin{tikzdiagram}
+  \scalebox{0.65}{
+  \begin{tikzpicture}[ampersand replacement=\&]
     \tikzset{
       grow=right,
       edge from parent/.style={sloped,above,draw},
@@ -1333,7 +1334,7 @@ An abridged example is presented in figure \ref{fig:cmds_tree}.
       \zn{p_2,p_3}{}{p_0}{p_1} child {
         \zn{p_3}{p_1}{p_0}{p_2} child {
           \zn{}{p_2,p_1}{p_0}{p_3}
-          child { node { Cap exceeded, yield bound }}
+          child { node [align=left]{ Cap exceeded, \\ yield bound }}
           \ze{pop init:\(p_3\)}{bound}
         } child {
           \zn{p_3}{p_1}{p_0}{p_2}
@@ -1348,7 +1349,8 @@ An abridged example is presented in figure \ref{fig:cmds_tree}.
       }
       \ze{pop init:\(p_1\)}{result}
     };
-  \end{tikzdiagram}
+  \end{tikzpicture}
+  }
 
   \caption{\label{fig:cmds_tree}A tree of different evolution paths a
     zipper may undergo during between the calling of a process and the
@@ -1370,24 +1372,24 @@ An abridged example is presented in figure \ref{fig:cmds_tree}.
 \subsection{Resetting processes}
 \label{sec:process_resetting}
 
-In subsection \ref{sec:cmds_functor} discussing the \hask{Cmds} functor we
-mentioned that the operator needs to always be able to reset the process. Why create a reset
-process when reusing the initial process would reset the computation
-just as well? In every case, a reset moves all the init parts of the
-elements of iteration set as well as the coiterations into the init
-set of the zipper. But in what order? From previous runs it is often
-apparent that some execution strategies are more likely to lead to a
-quick result than others. For example, under the assumption that
-processes change their values less often than they maintain them,
-while computing a logical AND operation (\(\land\)) we likely want to
-start the computation from the processes that previously yielded
-\hask{False} to take advantage of early termination due to absorbing elements.
+In subsection \ref{sec:cmds_functor} discussing the \hask{Cmds}
+functor we mentioned that the operator needs to always be able to
+reset the process. Why create a reset process when reusing the initial
+process would reset the computation just as well? In every case, a
+reset moves all the init parts of the elements of iteration set as
+well as the coiterations into the init set of the zipper. But in what
+order? From previous runs it is often apparent that some execution
+strategies are more likely to lead to a quick result than others. For
+example, under the assumption that processes change their values less
+often than they maintain them, while computing a logical AND operation
+(\(\land\)) we likely want to start the computation from the processes
+that previously yielded \hask{False} to take advantage of early
+termination due to absorbing elements.
 
-To accommodate this, the \hask{Cmds} functor (introduced in section
-\ref{sec:cmds_functor}) can yield a reset point. While running a
-process we maintain in the lexical scope of the mealy arrows
-computation the latest reset process to switch to when the
-epoch/coepoch comparison requires as much. When generating a
+To accommodate this, the \hask{Cmds} functor can yield a reset
+point. While running a process we maintain in the lexical scope of the
+mealy arrows computation the latest reset process to switch to when
+the epoch/coepoch comparison requires as much. When generating a
 \hask{Cmds} functor, the operator has the option to provide a reset
 process that resets a running zipper that is at an arbitrary state.
 
@@ -1398,9 +1400,9 @@ While describing the core concepts of Antisthenis we often dealt with
 functionality that is operator specific. We reify operators via
 uninhabited types that instantiate the \hask{w} parameter of many
 types we mentioned so far (\hask{BndR w}, \hask{Zipper w _},
-\hask{ArrProc w m}, etc). We refer to these types as \emph{tags}. We have
-implemented a few tags in Antisthenis to cover the needs of FluiDB
-(see listing \ref{lst:tag_types}).
+\hask{ArrProc w m}, etc). We refer to these types as \emph{tags}. We
+have implemented a few tags in Antisthenis to cover the needs of
+FluiDB (see listing \ref{lst:tag_types}).
 
 
 \begin{code}
@@ -1428,7 +1430,7 @@ class BndRParams w => ZipperParams w where
   type ZPartialRes w :: *
 \end{haskellcode}
   \caption{\label{lst:zipper_params}Operator specific types that need
-    to be impolemented by every operator.}
+    to be implemented by every operator.}
 \end{code}
 
 \begin{code}
@@ -1458,11 +1460,12 @@ minimums and sums, but they use different types for return values as
 well as caps/bounds and epochs/coepochs.
 
 Since all types and implementations can be derived from the
-\hask{ZipperParams} type \hask{w}, the Antisthenis process creation
-is a completely generic process
-\hask{mkProc} (see listing \ref{lst:mkproc}) which combines a list of subprocesses into a parent process
-that evaluates the operator described by the tag \hask{w} without
-requiring any further information other than the implementation of \hask{ZipperParams}.
+\hask{ZipperParams} type \hask{w}, the Antisthenis process creation is
+a completely generic process \hask{mkProc} (see listing
+\ref{lst:mkproc}) which combines a list of subprocesses into a parent
+process that evaluates the operator described by the tag \hask{w}
+without requiring any further information other than the
+implementation of \hask{ZipperParams}.
 
 \begin{code}
 \begin{haskellcode}
@@ -1506,7 +1509,6 @@ convArrProc :: Monad m => Conv w w' -> ArrProc w m -> ArrProc w' m
     subprocesses of type \hask{w'}.}
 \end{code}
 
-
 \subsection{Basic cost estimation operators}
 \label{sec:basic_cost_ops}
 
@@ -1524,8 +1526,9 @@ special semantics:
 
 We do not implement a general sum operator but rather a sum operator
 that assumes the properties of query costs as the values it deals
-with. The sum operator is probably the simplest operator implemented. The
-sum zipper evaluates each initial subprocess under a cap \(c_{subproc}\) that is
+with. The sum operator is probably the simplest operator
+implemented. The sum zipper evaluates each initial subprocess under a
+cap \(c_{subproc}\) that is
 
 \[
 c_{subproc} := c_{parent} - r_{partial}
@@ -1536,7 +1539,7 @@ the current subprocess and \(c_{parent}\) is the cap that the parent
 process is operating under. If the parent cap is \hask{ForceResult} all
 arguments are also evaluated under \hask{ForceResult}. Of course if
 \(c_{parent} > r_{partial} + b_{cursor}\) then \(r_{partial} +
-b_{curopr}\) is returned as the result bound.
+b_{cursor}\) is returned as the result bound.
 
 \subsubsection{Minimum}
 
@@ -1983,7 +1986,7 @@ comp[#2] \!: \\
       \comp{13}{C}{
         \comp{10}{A}{
           comp[B] \ev 10 \\
-          \ comp[C] \ev \bot}}}
+          \ comp[C] \ev \bot_A}}}
   \]
   \caption{\label{fig:compdsmart}Computation for \(D\) with \(\{A\}\)
     as the copredicate. This causes the value of \(C\) as \(\bot_A\)
@@ -2012,7 +2015,7 @@ E[A]\), \(E[A]\) is an expression that depends on the assigned to the
 name \(A\). When evaluating this expression we set \(A\) to
 \(\bot_A\). It is not necessary, however, that \(E[\bot]\) and
 therefore \(A\) will \emph{iteslf} evaluate to \(\bot\). How can we trust
-that the value is actually correct even though it is based on a false
+nthat the value is actually correct even though it is based on a false
 assumption? In general, for censorship to be valid we require that:
 
 \[

@@ -1516,86 +1516,85 @@ the cluster itself.
 
 % TODO: this exceeds the page
 \begin{figure}[H]
-  \begin{subfigure}{0.4\linewidth}
-  \begin{tikzdiagram}
-    \tikzset{node distance=2cm}
-    \tikzset{nnode/.style={ellipse,draw}}
-    \tikzset{tnode/.style={rectangle,draw}}
+  \centering
+  \begin{subfigure}{0.4\textwidth}
+    \begin{tikzdiagram}
+      \tikzset{node distance=2cm}
+      \tikzset{nnode/.style={ellipse,draw}}
+      \tikzset{tnode/.style={rectangle,draw}}
 
-    \node[tnode] (t) {\(\sigma_p\)};
-    \node[nnode] (o2) [above left of=t] {\(o_{sec}\)};
-    \node[nnode] (o1) [above right of=t] {\(o_{prim}\)};
-    \node[nnode] (i) [below of=t] {\(i\)};
+      \node[tnode] (t) {\(\sigma_p\)};
+      \node[nnode] (o2) [above left of=t] {\(o_{sec}\)};
+      \node[nnode] (o1) [above right of=t] {\(o_{prim}\)};
+      \node[nnode] (i) [below of=t] {\(i\)};
 
-    \path (t) edge (i);
-    \path (t) edge (o1);
-    \path (t) edge (o2);
-  \end{tikzdiagram}
-  \caption{\label{fig:unclust}The structure of a \hask{UnClust}.}
+      \path (t) edge (i);
+      \path (t) edge (o1);
+      \path (t) edge (o2);
+    \end{tikzdiagram}
+    \caption{\label{fig:unclust}The structure of a \hask{UnClust}.}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.4\textwidth}
+    \begin{tikzdiagram}
+      \tikzset{node distance=2cm}
+      \tikzset{nnode/.style={ellipse,draw}}
+      \tikzset{tnode/.style={rectangle,draw}}
+
+      \node[tnode] (t) {\(t\)};
+      \node[nnode] (i2) [below left of=t] {\(i_l\)};
+      \node[nnode] (i1) [below right of=t] {\(i_r\)};
+      \node[nnode] (o) [above of=t] {\(o\)};
+
+      \path (t) edge (o);
+      \path (t) edge (i1);
+      \path (t) edge (i2);
+    \end{tikzdiagram}
+    \caption{\label{fig:binclust}The structure of a \hask{BinClust}.}
   \end{subfigure}
 
+  \begin{subfigure}{0.9\textwidth}
+    \begin{tikzdiagram}
+      \tikzset{node distance=2cm}
+      \tikzset{nnode/.style={ellipse,draw}}
+      \tikzset{tnode/.style={rectangle,draw}}
+      \node[tnode] (to) {\(t_o\)};
+      \node[nnode] (o) [above of=t] {\(o\)};
+      \node[nnode] (int_l) [below left=3cm of to,densely dotted] {\(int_l\)};
+      \node[nnode] (int_r) [below right=3cm of to,densely dotted] {\(int_r\)};
+      \node[tnode] (tl) [below left of=int_l] {\(t_l\)};
+      \node[tnode] (tr) [below right of=int_r] {\(t_r\)};
+      \node[nnode] (i_l) [below right=3cm of tl] {\(i_l\)};
+      \node[nnode] (o_l) [above left of=tl] {\(o_l\)};
+      \node[nnode] (i_r) [below left=3cm of tr] {\(i_r\)};
+      \node[nnode] (o_r) [above right of=tr] {\(o_r\)};
 
-\begin{subfigure}{0.4\linewidth}
-  \begin{tikzdiagram}
-    \tikzset{node distance=2cm}
-    \tikzset{nnode/.style={ellipse,draw}}
-    \tikzset{tnode/.style={rectangle,draw}}
+      \path (to) edge (o);
+      \path (to) edge (int_l);
+      \path (to) edge (int_r);
 
-    \node[tnode] (t) {\(t\)};
-    \node[nnode] (i2) [below left of=t] {\(i_l\)};
-    \node[nnode] (i1) [below right of=t] {\(i_r\)};
-    \node[nnode] (o) [above of=t] {\(o\)};
+      \path (tl) edge (int_l);
+      \path (tl) edge (o_l);
+      \path (tl) edge (i_l);
+      \path (tl) edge [densely dotted] (i_r);
 
-    \path (t) edge (o);
-    \path (t) edge (i1);
-    \path (t) edge (i2);
-  \end{tikzdiagram}
-  \caption{\label{fig:binclust}The structure of a \hask{BinClust}.}
-\end{subfigure}
+      \path (tr) edge (int_r);
+      \path (tr) edge (o_r);
+      \path (tr) edge (i_r);
+      \path (tr) edge [densely dotted] (i_l);
 
-\begin{subfigure}{0.9\linewidth}
-  \begin{tikzdiagram}
-    \tikzset{node distance=2cm}
-    \tikzset{nnode/.style={ellipse,draw}}
-    \tikzset{tnode/.style={rectangle,draw}}
-    \node[tnode] (to) {\(t_o\)};
-    \node[nnode] (o) [above of=t] {\(o\)};
-    \node[nnode] (int_l) [below left=3cm of to,densely dotted] {\(int_l\)};
-    \node[nnode] (int_r) [below right=3cm of to,densely dotted] {\(int_r\)};
-    \node[tnode] (tl) [below left of=int_l] {\(t_l\)};
-    \node[tnode] (tr) [below right of=int_r] {\(t_r\)};
-    \node[nnode] (i_l) [below right=3cm of tl] {\(i_l\)};
-    \node[nnode] (o_l) [above left of=tl] {\(o_l\)};
-    \node[nnode] (i_r) [below left=3cm of tr] {\(i_r\)};
-    \node[nnode] (o_r) [above right of=tr] {\(o_r\)};
+      \node[draw,dashed,fit=(o) (i_r) (i_l),label={above:\texttt{BinClust}}] {};
+    \end{tikzdiagram}
 
-    \path (to) edge (o);
-    \path (to) edge (int_l);
-    \path (to) edge (int_r);
-
-    \path (tl) edge (int_l);
-    \path (tl) edge (o_l);
-    \path (tl) edge (i_l);
-    \path (tl) edge [densely dotted] (i_r);
-
-    \path (tr) edge (int_r);
-    \path (tr) edge (o_r);
-    \path (tr) edge (i_r);
-    \path (tr) edge [densely dotted] (i_l);
-
-    \node[draw,dashed,fit=(o) (i_r) (i_l),label={above:\texttt{BinClust}}] {};
-
-  \end{tikzdiagram}
-
-  \caption{\label{fig:joinclust}The structure of a \hask{JoinClust}
+    \caption{\label{fig:joinclust}The structure of a \hask{JoinClust}
     contains a \hask{BinClust} and includes two intermediate and two
     complementary output n-nodes to facilitate data related to
     antijoins.}
-\end{subfigure}
-\caption{\label{fig:joinclust}There are four cluster types. The
-  \hask{NClust} is trivial, just a single n-node. The other 3 are
-  \hask{BinClust}, \hask{JoinClust}, and \hask{UnClust} representing
-  binary, join, and unary operations respectively.}
+  \end{subfigure}
+  \caption{\label{fig:joinclust}There are four cluster types. The
+    \hask{NClust} is trivial, just a single n-node. The other 3 are
+    \hask{BinClust}, \hask{JoinClust}, and \hask{UnClust} representing
+    binary, join, and unary operations respectively.}
 
 \end{figure}
 
@@ -1662,7 +1661,8 @@ through all 12 queries of the SSB TPC-H benchmark (see chapter
   \centering
   \includegraphics[width=\textwidth]{./imgs/ssb_graph.pdf}
   \caption{\label{fig:ssb_graph}A QDAG accumulated out of every query
-    in the SSB TPC-H.}
+    in the SSB TPC-H. This figure is meant to provide an intuition of
+    the scale of a QDAG.}
 \end{figure}
 
 \section{Relation shapes}
