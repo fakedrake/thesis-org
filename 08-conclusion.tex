@@ -9,20 +9,20 @@ now that we are happy?}
 
 In this thesis we coverd the important and interesting aspects of
 FluiDB. Implementing the system itself involved much work that is not
-covered in this thesis in order to not flood the reader with details
-that might remove focus from the important aspects of the system. To
-name a few we implemented a pretty printing library, a query
-decorellation algorithm, a set of tools for debugging and tracing
-backtracking algoirhtms, etc.
+covered in this thesis to avoid flooding the reader with details that
+might remove focus from the important aspects of the system. To name a
+few we implemented a pretty printing library, a query decorellation
+algorithm, a set of tools for debugging and tracing backtracking
+algoirhtms, etc.
 
-Aside from those, in the introduction we discussed some examples where
-data layout can radically adapt to the workload by making use of
-reversible operations and integrating a garbage collector into the
-planner. We further introduced the relational database model and
-provided an overview of the various stages of query processing. We
-focused two subfields of database research that are of particular
-relevance to FluiDB: code generation for in-memory databases, and
-intermediate result recycling.
+In the introduction we discussed some examples where data layout can
+radically adapt to the workload by making use of reversible operations
+and integrating a garbage collector into the planner. In the
+background chapter, we further introduced the relational database
+model and provided an overview of the various stages of query
+processing. We focus on two subfields of database research that are of
+particular relevance to FluiDB: intermediate result recycling, and
+code generation for in-memory databases.
 
 The first non-introductory chapter (chapter
 \ref{chapter:fluidb_logical_planning}) goes in depth about the
@@ -36,7 +36,7 @@ extent using propagators.
 
 Chpater \ref{chapter:physical_planning} on physical planning starts
 off by introducing a novel framework for implementing search
-algorithms, the \hask{HCntT} monad transformer. Computationn expressed
+algorithms, the \hask{HCntT} monad transformer. Computation expressed
 in terms of \hask{HCntT} can dynamically switch between branches of
 the backtracking algorithm essentially implementing a weighted
 search. The main novelty lies in the implementatiuon of \hask{once}
@@ -50,11 +50,11 @@ enumerate query plans. Query plan fragments are interleaved with GC
 runs that produce sequences of table deletions when the planner
 detects that the storage budget would be exceeded.
 
-The decisions made by the planner are besd on computations that depend
-on the inventory of materialized relationions, namely variations of
-intermediate result cost estimation and intermediate result
-materializability. It makes sense to implement computations in terms
-of an intcremental computation framework as there are major
+The decisions made by the planner are based on computations that
+depend on the inventory of materialized relationions, namely
+variations of cost estimation of intermediate result and intermediate
+result materializability. It makes sense to implement computations in
+terms of an intcremental computation framework as there are major
 opportunities for sharing between evaluations. Furthermore, the
 performance of these computations is sensitive to the order of
 evaluation due to absorbing elements and \(\min\) operations. To solve
@@ -82,9 +82,10 @@ that hurt performance.
 \section{Future perspectives}
 
 FluiDB steps into a new path towards what we believe to be a
-\emph{truly} adaptive storage, but it does only a few steps. There are
-many interesting tangents to follow and may places where FluiDB does
-not take full advantage of the state of the art in database research.
+\emph{truly} adaptive storage, and indicates many interesting research
+trajectories. There are many interesting tangents to follow and many
+places where FluiDB does not take full advantage of the state of the
+art in database research.
 
 Starting with the latter, the most important place where FluiDB can do
 better is cardinality estimation. As mentioned in section
