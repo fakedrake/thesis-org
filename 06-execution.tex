@@ -672,7 +672,8 @@ int main() {
 \subsection{Operator implementations}
 
 In the following subsections we will take a tour to the implementation
-of some algorithms.
+of some relational operators in FCL. We do not mention every operator
+supported for brevity as many are trivial.
 
 \subsubsection{Select algorithm}
 
@@ -926,7 +927,7 @@ code. Finally, we discussed some specific algorithms used by the FCL
 library that is called by the generated code to implement the actual
 operators.
 
-We further discussed some caveats that relate to the FluiDB's
+Among this we discussed some caveats that relate to the FluiDB's
 approach to code generation, namely, that highly specific code
 generated can be expensive to compile from scratch and that the shmem
 in-memory filesystem provided by Linux is a cheap solution in terms of
