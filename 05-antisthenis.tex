@@ -193,11 +193,12 @@ Here, when evaluating \(A\), a traditional evaluation system would
 look at the first argument first, namely \(B\). \(B\) is very
 expensive to evaluate and very soon a human would figure out that it
 will never evaluate to zero. \(C\), however, does evaluate to zero,
-and once that is evaluated, the evaluation of \(A\) is complete\footnote{Barring domains where infinity needs to be considered in any way}. In a
-complex set of automatically generated such expressions it is
-important that the evaluator does not keep trying to evaluate a
-complex expression when evaluating another simpler one could yield an
-absorbing value.
+and once that is evaluated, the evaluation of \(A\) is
+complete\footnote{Barring domains where infinity needs to be
+  considered in any way.}. In a complex set of automatically generated
+such expressions it is important that the evaluator does not keep
+trying to evaluate a complex expression when evaluating another
+simpler one could yield an absorbing value.
 
 Early stopping a computation is useful not only to avoid extra
 work. As we mentioned, many incremental computation systems assume
@@ -1619,8 +1620,9 @@ for caps and bounds as for results. Instead, the bound is a two
 dimensional value that represents the minimum number of steps required
 to arrive to each possible value (\hask{True} or \hask{False}).
 
-To efficiently evaluate Boolean algebra expressions we make use of
-lean on the existence of absorbing elements. Consider the evaluation of a Boolean expression
+To efficiently evaluate Boolean algebra expressions we lean on the
+existence of absorbing elements. Consider the evaluation of a Boolean
+expression
 
 \[
 Q := A \land B \land C
@@ -1638,7 +1640,7 @@ terms of amount of work we would need to do is for A to be the
 expression \hask{False}. Or more succinctly
 
 \[
-w(Q|Q=\mathit{False}) \ge \min (w(A | A = \mathit{False}), w(B | B = \mathit{False}), w(C | C = \mathit{False}))
+w(Q|Q=\mathit{False}) \ge \min [w(A | A = \mathit{False}), w(B | B = \mathit{False}), w(C | C = \mathit{False})]
 \]
 
 Where \(w(E|E=k)\) is the amount of work required for calculating \(E\) if
@@ -1661,7 +1663,7 @@ X := (A_1 \lor A_2 \lor A_3) \land (B_1 \lor B_2) \land (C_1 \lor C_2 \lor C_3)
 Where \(A_i\), \(B_i\) and \(C_i\) are expressions. How would we
 navigate this expression to minimize the number of operations?  We
 could completely expand each term and hope that we are lucky, and we
-encounter absorbing elements early on. As explained in the
+encounter absorbing elements early on. As explained in this chapter's
 introduction, especially for terms automatically generated this
 strategy is unlikely to be efficient.
 
@@ -1678,7 +1680,7 @@ which case the expression is evaluated in a minimum of 4 steps
 \item Evaluate \(X = (...) \land False \land (...) = False\)
 \end{itemize}
 
-For a \(X = \mathit(True)\) we need 7 steps:
+For a \(X = \mathit{True}\) we need 7 steps:
 
 \begin{itemize}
 \item Evaluate \(A_i = True\) in a single step for any \(i\)
@@ -1691,13 +1693,13 @@ For a \(X = \mathit(True)\) we need 7 steps:
 \end{itemize}
 
 A Boolean expression in Antisthenis, then, takes the bound value of
-the minimum cost for true values and false values. If this expression
-were evaluated with a cap of \(\{True: 6, False: \infty \}\) it would
-return a bound of value \(\{True: 7, False: 4 \}\). The meaning of
-this bound value in plain English is ``re-try to evaluate this if your
-other options are more expensive than 7 steps for \hask{True} and 4
-for \hask{False}''. It could be seen as a metric for the size of the
-tree.
+the minimum cost for \(True\) values and \(False\) values. If this
+expression were evaluated with a cap of
+\(\{True: 6, False: \infty \}\) it would return a bound of value
+\(\{True: 7, False: 4 \}\). The meaning of this bound value in plain
+English is ``re-try to evaluate this if your other options are more
+expensive than 7 steps for \hask{True} and 4 for \hask{False}''. It
+could be seen as a metric for the size of the tree.
 
 To demonstrate the derivation of caps we present the following
 expression:
@@ -1724,12 +1726,14 @@ try to greedily exploit the smaller parts of the tree.
 \section{Node machines}
 \label{sec:antisthenis_machines}
 
-A referrable machine is a process with a name, that can be a subprocess to
-more than one other processes. In FluiDB a machine name corresponds
-to a QDAG node since the Antisthenis infrastructure is utilized to
-provide incremental computation of properties on nodes
-(materializability, cost, stochastic cost). In this section we
-look into the the layer of Antisthenis that takes into account the
+A referrable machine, or node machine, or simply machine is, in the
+context of Antisthenis, a process attached to a name or node. That can
+be a subprocess to more than one other processes. In FluiDB a machine
+name corresponds to a QDAG node since the Antisthenis infrastructure
+is utilized to provide incremental computation of properties on nodes
+(materializability, cost, stochastic cost). The term node is used in
+refernce to the nodes of a computation DAG or graph. In this section
+we look into the the layer of Antisthenis that takes into account the
 dynamics of referrable machines.
 
 \subsection{Antisthenis machine tape}
@@ -1737,27 +1741,27 @@ dynamics of referrable machines.
 The \emph{machine tape} is a dynamic directory that maps nodes to
 machines. The meaning of a node is dependent on the implementation, in
 the context of FluiDB nodes in this context correspond to the FluiDB
-internal graph nodes.  The machine tape is part of the computation
+internal graph n-nodes.  The machine tape is part of the computation
 context and is updated by new and temporary values of machines (see
 section \ref{sec:cyclical_machines} on cyclical machines).
 
-Not all processes involved in a computation are involved in the
+Not all processes involved in a computation can also be found in the
 machine tape. Each machine in the tape is composed by a hierarchy of
 processes that are inaccessible from outside that machine. In fact a
-machine is discriminated from a process solely by virtue of the fact
-that it can be referenced via the tape.
+machine is different to a process solely by virtue of the fact that it
+can be referenced via the tape.
 
-Since machines are referable by different processes it means
-that, we need to be careful that more than one process do not process their
-own diverging copy of the same machine. To avoid this, processes referring to machines do so
-indirectly via a \emph{machine wrapper process}. A machine wrapper is
-a process that always does the following:
+Since machines are referable by different processes it means that we
+need to be careful that more than one process do not process their own
+diverging copy of the same machine. To avoid this, processes referring
+to machines do so indirectly via a \emph{machine wrapper process}. A
+machine wrapper is a process that always does the following:
 
 \begin{itemize}
-\item Look up a name in the tape
+\item Look up a name in the tape.
 \item Temporarily replace it with a cyclical machine (see section
-  \ref{sec:cyclical_machines})
-\item evaluate the machine that was just removed from the tape.
+  \ref{sec:cyclical_machines}).
+\item Evaluate the machine that was just removed from the tape.
 \end{itemize}
 
 The machine tape state is managed via a state monad in the underlying
@@ -1813,34 +1817,38 @@ residence in the stack, a machine is in a state where it is unable to
 produce a value. A cycle occurs when a machine is referenced while in
 the computational stack.
 
-This works for some case but is problematic in general as th process stack is
-an ephemeral property (i.e. a property specific to the current computation)
-and yet it affects the return values that are
-non-ephemeral, (i.e. they survive the computation).
-The only solution for this is to lift information about
-the cycles to the non-ephemeral plane. Indeed, what is needed is for values that are deemed
+This works for some case but is problematic in general as the process
+stack is an ephemeral property (i.e. a property specific to the
+current computation) and yet it affects the return values that are
+non-ephemeral, (i.e. they survive the computation).  The only solution
+for this is to lift information about the cycles to the non-ephemeral
+plane. Indeed, what is needed is for values that are deemed
 non-computable to \emph{reset} when accessed with a different
-stack. In other words, the value of \(\bot\) for \(C\) is
-\emph{predicated} on the process stack containing \(A\), or \(A\)
-being otherwise non-computable. Coepochs fill the bill precisely. We
-extend the coepoch to include, along with the parameter versions used
-to derive a particular result, also \emph{a set of machines that need
-  to be non-computable in order for the value to be valid.}
+stack. Coepochs fill the bill precisely. We extend the coepoch to
+include, along with the parameter versions used to derive a particular
+result, also \emph{a set of machines that need to be non-computable in
+  order for the value to be valid.}
 
-To accomplish this, when a machine is looked up, before being evaluated
-it is removed from the tape and in its place a \emph{cyclical machine}
-is placed. This machine always returns the same \(\bot\) result that
-indicates that the value is non-computable and sets to the coepoch
-that it is itself not computable. When the original machine comes up
-with a value it replaces the cyclical machine with the iteration or
-coiteration of the process and the coepoch is censored to remove the
-predicate that the current machine must be \(\bot\). This way whenever
-any machine tries to evaluate another non-computable machine it finds
-a cyclical machine which handles the situation automatically. Upon
-evaluating the cyclical machine, the coepoch of the caller is infected
-with the predicate that the cyclical machine must be
-\(\bot\). Pseudo-python algorithm in listing
-\ref{lst:algo_create_predicates}.
+To accomplish this, when a machine is looked up, before being
+evaluated it is removed from the tape and in its place a
+\emph{cyclical machine} is placed. This machine always returns the
+same \(\bot\) result that indicates that the value is non-computable
+and sets to the coepoch that it is itself not computable. A machine
+named \(A\) while being computed is replaced in the tape with a
+cyclical machine that returns \(\bot\) predicated on \(A\) being
+uncomputable, denoted \(\bot_A\). This coepoch poperty is propagated
+to machines that call the cyclical machines, effective making their
+value also depend on \(A\) being uncomputable.
+
+When the original machine comes up with a value, it replaces the
+cyclical machine with the iteration or coiteration of the process and
+the coepoch is \emph{censored} to remove the predicate that the
+current machine must be \(\bot\). This way whenever any machine tries
+to evaluate another non-computable machine it finds a cyclical machine
+which handles the situation automatically: Upon evaluating the
+cyclical machine, the coepoch of the caller is infected with the
+predicate that the cyclical machine must be \(\bot\) (see listing
+\ref{lst:algo_create_predicates}).
 
 \begin{code}
 \begin{pycode}
@@ -1869,12 +1877,18 @@ def run_submachine(node,conf):
 \end{code}
 
 At the end of the computation, Antisthenis goes through all the
-non-computable predicates and asserts that they are indeed
-non-computable. The ones that turn out not to be non-computable are
-collected and set as \emph{copredicates} in the epoch. The node is
-then reevaluated with the new epoch. Due to the incremental nature of
-Antisthenis only the parts of the graph that are dependent on the
-predicates are reevaluated. The process is described in listing
+non-computable predicates are carried by the value emitted and asserts
+that they are indeed non-computable. The ones that turn out to
+actually be computable are collected and set as \emph{copredicates} in
+the epoch. The node is then reevaluated with the new epoch. A value
+depending on a predicate is valid as long as there is no corresponding
+copredicate in the epoch. By setting a name as a copredicate in the
+epoch, Antisthenis invalidates all values that associated with that
+name as a non-computability predicate.
+
+Due to the incremental nature of Antisthenis only the parts of the
+graph that are dependent on the predicates are being reset by this
+process. The process is described in listing
 \ref{lst:algo_handle_prediates}
 
 \begin{code}
@@ -1908,24 +1922,24 @@ def safe_run(n,conf):
     predicates.}
 \end{code}
 
-Another way to look at predicates is as deferred parts of the coepoch and
-to get the full coepoch we also need the coepochs of the
+Another way to look at predicates is as deferred parts of the coepoch
+and to get the full coepoch we also need the coepochs of the
 predicates. The copredicates then are a forcing mechanism where
 Antisthenis assumes that some of the deferred parts are actually
 invalid. Antisthenis is lazy with these coepochs first and foremost
 because it depends on them to handle cycles but also because coepochs
-may be inhibited by absorbing elements, and they may not need to
-be evaluated at all. But if a predicate survives both the process
-stack based censoring that we just described, and being inhibited by
-the operators, Antisthenis has another trick up his sleeve: because it
-has a completely relativistic view of values, where they are only
-valid for particular epochs, the only requirement at every moment is
-that the final result of the computation be correct. Furthermore, the
-value depends on the machines in the predicate being
-\(\bot\). Therefore, it is enough to check that they are indeed
-\(\bot\) certifying the predicates. The predicates that are falsified
-in this way are the ones for which there is no other option but to
-force their value be taken into account via the epoch's copredicates.
+may be inhibited by absorbing elements, and they may not need to be
+evaluated at all. But if a predicate survives both the process stack
+based censoring that we just described, and being inhibited by the
+operators, Antisthenis has another trick up his sleeve: because it has
+a completely relativistic view of values, where they are only valid
+for particular epochs, the only requirement at every moment is that
+the final result of the computation be correct. Furthermore, the value
+depends on the machines in the predicate being \(\bot\). Therefore, it
+is enough to check that they are indeed \(\bot\) certifying the
+predicates. The predicates that are falsified in this way are the ones
+for which there is no other option but to force their value be taken
+into account via the epoch's copredicates.
 
 Consider the example presented figure \ref{fig:recur_package}. In that
 example, first a node is computed returning a valid result. The
@@ -2008,15 +2022,20 @@ comp[#2] \!: \\
   results}
 
 Censorship of the predicates after the evaluation of a machine is
-based on the conjecture that evaluating a correct value of a process
-does not necessarily require that all subprocesses evaluate to the
-correct values. Consider the self-referential machine assignment \(A :=
-E[A]\), \(E[A]\) is an expression that depends on the assigned to the
-name \(A\). When evaluating this expression we set \(A\) to
-\(\bot_A\). It is not necessary, however, that \(E[\bot]\) and
-therefore \(A\) will \emph{iteslf} evaluate to \(\bot\). How can we trust
-nthat the value is actually correct even though it is based on a false
-assumption? In general, for censorship to be valid we require that:
+based on the observation that for some computations evaluating the
+correct value of a process does not \emph{always} require that all
+subprocesses evaluate to the correct values. Consider the
+self-referential machine assignment \(A := E[A]\), \(E[A]\) is an
+expression that depends on the assigned to the name \(A\). When
+evaluating this expression we set \(A\) to \(\bot_A\). It is not
+necessary, however, that \(E[\bot]\) and therefore \(A\) will
+\emph{iteslf} evaluate to \(\bot\). We do however censor \(A\) which
+is effectively us saying ``regardless of whether we actually used the
+cyclical machine assumption that \(A = \bot\), the value we just
+retrieved is not beholdent on that assumption''. How can we trust that
+the value is actually correct even though it is based on a false
+assumption? In general, for censorship to be valid we \emph{require}
+that:
 
 \[
 A := E[A] \Rightarrow E[E[\bot]] = E[\bot]
@@ -2041,9 +2060,9 @@ b + \min(X_1, \ldots, X_k) = \min(X_1 + b, \ldots, X_k + b)
 we can derive that any expression \(E[A]\) that is built by a
 combination of min/sum can be rewritten to
 
-\[ E[A] = \min(a_i A + b_i) \]
+\[ E[A] = \min(a_1 A + b_1, ...) \]
 
-where \(a_i \in \mathbb{N}\) and \(b_i \ge 0\).
+where \(a_i \in \mathbb{N}\) and  \(b_i \ge 0\).
 
 We then can distinguish between two cases:
 
@@ -2052,14 +2071,15 @@ We then can distinguish between two cases:
 \(a_i - 1 \in \mathbb{N}\) and therefore we can rewrite the
 normalized \(E[A]\) into
 
-\[ A := E[A] = A + \min((a_i - 1) A + b_i) \Rightarrow A = \bot \]
+\[ A := E[A] = A + \min((a_1 - 1) A + b_1, ...) \Rightarrow A = \bot \]
 
-So \(E[\bot] = \bot \Rightarrow E[E[\bot]] = E[\bot]\).
+So \(E[\bot] = \bot \Rightarrow E[E[\bot]] = E[\bot]\), the
+proposition we were looking for.
 
 \item The other case is that there exists a subset of elements in the
-series \(a_i\) for which \(a_i = 0\). Without loss of generality
-\(\forall i < k , \. , a_i = 0\). This means that the normalized
-\(E[A]\) can be rewritten as
+  series \(a_i\) for which \(a_i = 0\). Without loss of generality we
+  assume it's the first \(k\), i.e., \(\forall i < k , \. , a_i =
+  0\). This means that the normalized \(E[A]\) can be rewritten as
 
 \[
   A := E[A] = \min(b_0, \ldots, b_{k-1}, a_k A + b_k, \ldots ) = \min(b, \min(a_k A + b_k, \ldots))
@@ -2086,6 +2106,7 @@ and
 Therefore \(E[E[\bot]] = E[\bot]\)
 \end{itemize}
 
+% TODO: proofread again
 \subsection{Calculating historical query costs}
 \label{sec:historical_cost}
 
@@ -2116,39 +2137,54 @@ chooses random pages or random tables, but we could find none that was
 useful and computationally viable.
 
 For this reason, we decided to follow a pragmatic approach to the
-problem and simply assume that for every materialized n-node there is a
-constant probability that it will not still be materialized when we
+problem and simply assume that for every materialized n-node there is
+a constant probability that it will not still be materialized when we
 need it, scaling the cost by that factor to get the stochastic
 cost. Furthermore, under this regime, Antisthenis would encounter many
 more cycles, rendering virtually all machines non-computable. For that
-reason we make all values \emph{semi-computable} by introducing a \([0,1]\)
-scale where 0 would mean that the value is fully computable and 1
-would mean that the value is completely non-computable.
-
-Fortunately, this change does not require a complete overhaul of the
-operator implementations for sum and min, only the definition of more complex types
-for cap, bound and result values. Particularly, we qualify each value
-with two numbers:
+reason we make all values \emph{semi-computable} by introducing a
+\([0,1]\) scale where 0 would mean that the value is fully computable
+and 1 would mean that the value is completely non-computable. We will
+refer to this value as \(\kappa\). In short:
 
 \begin{itemize}
-\item The materialized n-nodes encountered
-\item A quantification of the non-computability of the value
+\item When a materialized n-node is encountered the first step is to
+  compute the stochastic cost as if it were not materialized. The
+  derived cost, be it a concrete result or a bound, and \(\kappa\) are
+  scaled down by a constant factorr \(\lambda\) (in the default
+  configuration \(\lambda = 0.5\)).  \(r = \lambda \times r_{orig}\).
+\item When calculating the stochastic cost of a materialized node, the
+  cap is increased to reflect the scaling that takes place
+  \(c = \frac{c_{orig}}{\lambda}\). This is necessary because when the
+  parent process requests a result under a particular cap \(c\), the
+  subprocess \emph{must never} return a bound lower than the requested
+  cap. Scaling the result by \(\lambda\) could break this rule.
+\item Circular nodes return a constant value that represents 0 with
+  \(\kappa = 1\) rather than \(\bot\).
+\item Once a certain (configurable) number of materialized n-nodes are
+  in the stack (\emph{mat-depth}) the materialized nodes are treated
+  as normal materialized nodes (cost 0).
+\item Each value is valid for a particular mat-depth and the mat-depth
+  is a non-ephemeral value. For that reason it is kept track of at the
+  level of epochs and coepochs so that machine resets are handled
+  automatically.
 \end{itemize}
 
-Some care needs to be taken so that the values remain independent of
-the root of the computation.
+Fortunately, this change does not require a complete overhaul of the
+operator implementations for sum and min, only the definition of more
+complex types for cap, bound and result values. Particularly, we
+qualify each value with \(\kappa\).
 
-The cap (listing \ref{lst:def_histcap}) is only qualified by the number of
-machines corresponding to the materialized n-nodes that are currently in the
-computation stack, i.e., machines that would have otherwise yielded
-zero cost.
+The cap (listing \ref{lst:def_histcap}) is similar to the result type,
+only it is further qualified by the number of machines corresponding
+to the materialized n-nodes that are currently in the computation
+stack, i.e., machines that would have otherwise yielded zero cost.
 
 \begin{code}
 \begin{haskellcode}
 data HistCap a =
   HistCap
-  { hcMatsEncountered :: Int
-   ,hcValCap :: Min a
+  { hcValCap :: Min a
    ,hcNonCompTolerance :: Double
   }
 \end{haskellcode}
@@ -2156,66 +2192,25 @@ data HistCap a =
     capping the cost of historical queries.}
 \end{code}
 
-The bounds and results are augmented by two new dimensions (listing
-\ref{lst:def_histres}):
-
-\begin{itemize}
-\item The \([0,1]\) semi-computability metric
-\item The maximum chain of materialized n-nodes encountered.
-\end{itemize}
-
-And the comparison between bounds and caps is presented in listing
-\ref{lst:hist_compare}.
-
 \begin{code}
 \begin{haskellcode}
-data HistRes a =
-  HistRes
-  { hrComp :: Double  -- [0,1] computability metric.
-   ,hrMaxMatTrail :: Int -- Maximum trail of materialized n-nodes
-                         -- encountered.
-   ,hrRes :: a
+data HistVal a =
+  HistVal
+  { hvComp :: Double  -- [0,1] computability metric, κ.
+   ,hvRes :: a
   }
-\end{haskellcode}
-  \caption{\label{lst:def_histres}Definition of the type used for both
-    bounds and results of historical queries.}
-\end{code}
-
-
-\begin{code}
-\begin{haskellcode}
--- | We prefer "more computable" results than "less computable" so we
--- scale the actual result by the computability. We also define a
--- computability threshold under which we consinder the value always
--- >.
-compare :: HistRes a -> HistRes a -> Comparison
-compare (HistRes c1 t1 r1) (HistRes c2 t2 r2) =
-  if
-    | c1 > thr && c2 > thr -> compare (scale c1 r1) (scale c2 r2)
-    | c1 > thr             -> GT
-    | c2 > thr             -> LT
-    | otherwise            -> compare a b
-  where
-    thr = 0.7
-
--- There are no circumstances under which we are going to choose a
--- value that has come through more materialized n-nodes. The scaling
--- will have damped it enough.
-instance Ord a => Ord (Cert a) where
-  compare (Cert _ a') (Cert _ b') = compare a' b'
 
 extExceedsCap _ HistCap {..} HistRes {..} =
   maybe False (hrRes >) (unMin hcValCap)
-  || hrMaxMatTrail bnd > (maxMatTrail - hcMatsEncountered)
   || hrComp bnd > hcNonCompTolerance
   where
     maxMatTrail = 5 -- actually this is part of a global config.
 \end{haskellcode}
-\caption{\label{lst:hist_compare}Comparison between bounds and
-  between bound and cap are different. Between bounds we need to
-  account for the semi-computability metric. The cap on the other hand
-  defines a three-dimensional bound () that the bound must fall
-  within in order to not exceed it.}
+  \caption{\label{lst:def_histval}Comparison between bounds and
+    between bound and cap are different. Between bounds we need to
+    account for the semi-computability metric. The cap on the other
+    hand defines a three-dimensional bound () that the bound must fall
+    within in order to not exceed it.}
 \end{code}
 
 \section{Conclusion}

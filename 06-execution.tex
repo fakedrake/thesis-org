@@ -30,59 +30,58 @@ generally on a spectrum between two extremes:
 
 FluiDB follows the approach of Krikellas
 et. al. \cite{krikellasGeneratingCodeHolistic2010} falling far to the
-former end of the spectrum. We generate very specific template-heavy
-C++ code for every query and we use an off-the-shelf compiler to
-generate highly optimized machine code.
+former end of the spectrum. We generate very specialized,
+template-heavy C++ code for every query and we use an off-the-shelf
+compiler to generate highly optimized machine code.
 
-In this chapter we will describe in detail all aspects of code generation and
-the form of data the generated code manipulates.
+In this chapter we will describe in detail all aspects of code
+generation, the form of data the generated code manipulates and the
+\emph{FluiDB C++ Library (FCL)} that supports the generated code by
+implementing operators, utility functions and types.
 
 \section{Storage memory management}
 
-We opted for delegating the task of memory management to the OS and use use use tmpfs
-as a storage layer to our database. The tmpfs filesystem depends on
-the the \emph{shmem} module (as of Linux v5.13) for handling file
-operations, a resizable virtual memory filesystem for
-linux. Where a typical persistent filesystem stores files in a block
-device and caches pages in memory for efficiency, shmem keeps files
-exclusively as pages in the page cache. The OS tries to keep all pages
-in memory but when resources start running out, it writes pages in
-swap.
+We opted for delegating the task of memory management to the OS and
+use use use tmpfs as a storage layer to our database. The tmpfs
+filesystem depends on the the \emph{shmem} module (as of Linux v5.13)
+for handling file operations, a resizable virtual memory filesystem
+for linux. Where a typical persistent filesystem stores files in a
+block device and caches pages in memory for efficiency, shmem keeps
+files exclusively as pages in the page cache. The OS tries to keep all
+pages in memory but when resources start running out, it writes pages
+in swap.
 
 Assuming that the pages are not in swap, normal reads for shmemfs
-using \cpp{read()} are equivalent to copying pages from the page cache to
-the user space, while shmem \cpp{writes()}operate directly to
-the pages. We can mitigate the copying overhead of reads using \cpp{mmap}
+using \cpp{read()} are equivalent to copying pages from the page cache
+to the user space, while shmem \cpp{writes()} operate directly to the
+pages. We can mitigate the copying overhead of reads using \cpp{mmap}
 which will remap the page to the address space of the application.
-The problem with this approach, however, is that, while it allows us to minimize
-copying, we still need to run system calls in tight loops, which can
-be very computationally expensive. This can't be completely mitigated
-unless we move the "storage" layer to the userspace, re-implementing
-the memory management that we get for "free", in terms of engineering
-effort, from the shmem module so we leave that for a future version of
+The problem with this approach, however, is that, while it allows us
+to minimize copying, we still need to run system calls in tight loops,
+which can be very computationally expensive. This can't be completely
+mitigated unless we move the ``storage'' layer to the userspace,
+re-implementing the memory management that we get for ``free'', in
+terms of engineering effort, so we leave that for a future version of
 FluiDB.
 
-On the other hand, assuming a normal file system layer allows  FluiDB to easily be adapted to
-operate over any filesystem backed by different storage technologies
-like non-volatile memory.
+On the other hand, assuming a normal file system layer allows FluiDB
+to easily be adapted to operate over any filesystem backed by
+different storage technologies like NVM.
 
 \section{Data layout}
 
 Before we get into the details of the actual physical plan (in the
 form of C++ code) we need to state some assumptions about the layout
-of the code that is assumed by the primary data.
+of the code and the primary data.
 
-FluiDB is a \emph{row store system} which stores tables as files,
-each of which is a collection of pages, each of which is a collection of records (rows).
-Using a filesystem rather than direct heap memory is not an ideal solution
-performance-wise and in the future we plan on using a less OS-reliant
-way of managing storage resources, but it is good enough for now. In
-particular we use one file per table or intermediate result, and each
-file is simply a sequence of records organized into pages. For now
-FluiDB does not support any kind of indexing or compression. FluiDB
-can, of course, be run over any filesystem, but non-memory based file
-systems diminish the benefit of code generation, making performance IO
-bound.
+FluiDB is a \emph{row store system} which stores tables as files, each
+of which is a collection of pages, each of which is a collection of
+records (rows). We use one file per table or intermediate result, and
+each file is simply a sequence of records organized into pages. For
+now, FluiDB does not support any kind of indexing or
+compression. FluiDB can, of course, be run over any filesystem, but
+non-memory based file systems diminish the benefit of code generation,
+making performance IO bound.
 
 With this in mind, there are three parts to understanding the
 principles of FluiDB storage:
@@ -95,14 +94,14 @@ principles of FluiDB storage:
 
 \subsection{Initial data conversion}
 
-Starting with the initial data, for FluiDB to be adapted
-to a particular dataset, it requires the primary data in CSV format and
-some Haskell code describing the shape of the data and the database
-configuration. Our experiments so far have been revolving around the
-SSB TPC-H benchmark, so the format expected is the plain text format
-that dbgen \cite{perivolaropoulosFakedrakeSsbdbgen2021}
-generates. This  comprises of two steps: first a Haskell program
-parses the CSV records into standard-layout binary objects that can be
+Starting with the initial data, for FluiDB to be adapted to a
+particular dataset, it requires the primary data in CSV format and
+some Haskell configuration code describing the shape of the data and
+the database configuration. Our experiments so far have been revolving
+around the SSB TPC-H benchmark, so the format expected is the plain
+text format that dbgen \cite{perivolaropoulosFakedrakeSsbdbgen2021}
+generates. This comprises of two steps: first a Haskell program parses
+the CSV records into standard-layout binary objects that can be
 directly cast to C/C++ standard-layout structs. These binary objects
 are stored one after the other in a flat binary file. The end result
 of what we want to do to be able to execute code similar to the one
@@ -117,8 +116,9 @@ void flat_to_dat(const std::string& flat_file, const std::string& dat_file) {
   std::array<R, batch_size> batch;
   // Open the file in binary mode
   fd = ::open(flat_file.c_str(), O_RDONLY);
-  // The writer is the object used by all the libraries and it will
-  // write each record in pages.
+  // The writer is the object used by all operator implementations
+  // and it will write each record in pages. Using it here asserts
+  // that the data will have the correct format.
   Writer<R> w(dat_file);
   do {
     // Read a batch of data,
@@ -135,13 +135,19 @@ void flat_to_dat(const std::string& flat_file, const std::string& dat_file) {
 }
 \end{cppcode}
   \caption{\label{lst:flat_to_dat}For standard FFI communication C++
-    structs that do not contain fancy constructors. We take advantage of that
-    to store structs directly into files as contiguous binary objects.}
+    structs that do not contain fancy copy constructors, virtual
+    methods, etc (standard layout) can be used directly. We take
+    advantage of that to store structs directly into files as
+    contiguous binary objects.}
 \end{code}
 
 For this to work we refer to the C++ standard
-\cite{14:00-17:00ISOIEC14882}. The types that represent table rows must
-be standard layout. According to the standard:
+\cite{14:00-17:00ISOIEC14882}. The types that represent table rows
+must be standard layout\footnote{In C, standard layout is commonly
+known as POD (Plain Old Data). This term is deprecated as of C++20 in
+favor of standard layout classes which incarnate the data layout
+aspect of POD, and trivial classes which incarnate the behavioral
+aspect of POD.}. According to the standard:
 
 \begin{quote}
 A class S is a standard-layout class if it:
@@ -177,11 +183,12 @@ of X\textsubscript{e} and the elements of M(Xe).
 
 The records we generate certainly conform to these requirements. An
 example is the supplier row in \ref{lst:record_class}. Therefore the
-object is trivially copyable (has a default copy constructor) and occupies contiguous bytes of
-storage. This means that we can safely write each record \cpp{R} as
-\cpp{sizeof(R)} contiguous binary data to a file and expect to find the
-same value of \cpp{R} when we read it. Based on this, we can safely copy
-binary record objects from memory to disc and vice versa.
+object is trivially copyable (has a default copy constructor) and
+occupies contiguous bytes of storage. This means that we can safely
+write each record \cpp{R} as \cpp{sizeof(R)} contiguous binary data to
+a file and expect to find the same value of \cpp{R} when we read
+it. Based on this, we can safely copy binary record objects from
+memory to disc and vice versa.
 
 \begin{code}
 \begin{cppcode}
@@ -254,12 +261,13 @@ schemaPostPaddings schema = do
 \end{code}
 
 Once the flat files are generated, C++ code is generated for parsing
-the file calls into the C++ function \cpp{flat_to_dat} that is parametric
-to the type of the object being and uses the BAMA library to write
-objects, thus making sure that the data is readable by the
-operators. \cpp{flat_to_dat} simply reads the input \texttt{.flat} file as a
-stream of records of size \cpp{sizeof(Record)} casting the bytes with
-\cpp{reinterpret_cast<Record*>} into the record. It then use the BAMA
+the file calls into the C++ function \cpp{flat_to_dat} that is
+parametric to the type of the object being and uses the FCL
+library to write objects, thus making sure that the data is readable
+by the operators. \cpp{flat_to_dat} simply reads the input
+\texttt{.flat} file as a stream of records of size
+\cpp{sizeof(Record)} casting the bytes with
+\cpp{reinterpret_cast<Record*>} into the record. It then use the FCL
 record writing facility \cpp{Writer<R>::write} that takes care of
 organizing the record into pages. Thus, the final \emph{data file} is
 created that is ready for use by the generated code.
@@ -325,17 +333,18 @@ budget and assume that no significant memory is required for
 evaluating each operator. For that reason, we require that all
 operators' algorithms have constant space complexity. This may mean
 major compromises for some algorithms with respect to the time
-complexity like join and aggregation. Fortunately, we can mitigate that
-by taking advantage of the set semantics of FluiDB relational algebra
-and sorting the input tables in-place before running joins or
+complexity like join and aggregation. Fortunately, we can mitigate
+that by taking advantage of the set semantics of FluiDB relational
+algebra and sorting the input tables in-place before running joins or
 aggregations. Our particular implementation of in-place sorting hinges
-on the \cpp{RecordMap} type that provides C++ random access, iterators
-iterators to the records of a file, abstracting the page reads and
-writes. We pass these iterators to \cpp{std::sort} (see listing
+on the \cpp{RecordMap} type that provides C++ random access iterators
+to the records of a file, abstracting the page reads and writes. We
+pass these iterators to \cpp{std::sort} (as demonstrated in listing
 \ref{lst:record_map_sort}) which runs insertion sort for small ranges
 to take advantage of the processors reorder buffer and quicksort for
 longer ones. An easy optimization for the next version of FluiDB would
-be to use a custom in-place sort optimized for the page size.
+be to use a custom in-place sort optimized for the page size and which
+respects the page boundaries.
 
 \begin{code}
 \begin{cppcode}
@@ -346,16 +355,13 @@ std::sort(fs.begin(), fs.end());
     the records of a file by providing an iterator range to \cpp{std::sort}.}
 \end{code}
 
-The operation of \cpp{RecordMap} is very simple. Each iterator is paired
-with the page that contains the record it points to, when an iterator
-is the only iterator pointing inside a page and moves
-out of the page, said page is
-written back to the file and the new page is read. When the only
-iterator pointing to a page is deleted the page is written to the
-file.
-
-Multiple iterators pointing to the same page do not
-maintain different copies of that page and the last one to be
+The operation of \cpp{RecordMap} is very simple. Each iterator is
+paired with the page that contains the record it points to, when an
+iterator is the only on pointing inside a page and moves out of the
+page, said page is written back to the file and the new page is
+read. When the only iterator pointing to a page is deleted the page is
+written to the file. Multiple iterators pointing to the same page do
+not maintain different copies of that page and the last one to be
 destroyed or to leave the page triggers the page to be written back to
 the file.
 
@@ -397,7 +403,7 @@ transitions which are standalone. Furthermore, each cluster
 corresponds to exactly one relational operator, which we also include
 in the higher order transition.
 
-\section{Operator implementations}
+\section{Generated C++}
 
 The C++ AST is expressed as a tree of Haskell algebraic data
 types. They do not capture the entire C++ language, only the following
@@ -413,7 +419,6 @@ concepts concepts:
 \item Literals
 \item Classes
 \item Member declarations
-\item Algorithm selection
 \item Global declarations
 \end{itemize}
 
@@ -421,17 +426,17 @@ The code generated version of each operator is parameterized by the
 record types of its inputs and outputs, and highly specific code is
 generated by the C++ templating system.
 
-All operator implementations live in the BAMA library which branched
-out from \cite{krikellasGeneratingCodeHolistic2010}. The BAMA library
-makes heavy use of templates and \cpp{constexpr} to generate very
-query-specific machine code for each operator.
+All operator implementations live in the FCL library which
+branched out from \cite{krikellasGeneratingCodeHolistic2010}. The FCL
+library makes heavy use of templates and \cpp{constexpr} to generate
+very query-specific machine code for each operator.
 
-\subsection{Generated code structure}
+\subsection{Code structure}
 
 The FluiDB code generator generates a couple of different kinds of C++
 components to construct the final file. In this section we will
 discuss the kinds of C++ structs that FluiDB generates in order to
-parameterize the BAMA operators at compile time, leveraging the C++
+parameterize the FCL operators at compile time, leveraging the C++
 template system.
 
 In the following subsections when we say \emph{compile time} we refer to
@@ -473,34 +478,38 @@ struct Nothing {
   Nothing() {}
   static constexpr bool isNothing = true;
 };
+
+int main () {
+  // At compile time the select algorithm can be constructed
+  // with constexprs to only emit records to "prim_out.dat".
+  Select<...> op(Just<std::string>("prim_out.dat"),
+                 Nothing<std::string>, // secondary out
+                "input.dat");
+  op.run();
+}
 \end{cppcode}
-\caption{\label{lst:maybe_type_cpp}The type level maybe}
+\caption{\label{lst:maybe_type_cpp}The type level maybe and an example.}
 \end{code}
 
 \subsubsection{Record types}
 
-FluiDB is a row store engine and handles table rows by generating
-record types specific to each table, where objects of that type are
-rows of the corresponding table. We went over some aspects of the the
-generated record types when discussing the conversion of primary data
-to FluiDB specific binary data. Record types directly or indirectly
-parameterize all operators. A selection operator \(\sigma_p\) instance
-must be parameterized by the record type of its input which will be
-the same as the output. A projection \(\pi\) is parameterized by the
-records of both the input and the output type. A generated record type
-must must have some structural properties to function properly with
-BAMA and the rest of the generated types:
+As mentioned, FluiDB is a row store engine and handles table rows by
+generating record types specific to each table, where objects of that
+type are rows of the corresponding table. We went over some aspects of
+the the generated record types when discussing the conversion of
+primary data to FluiDB specific binary data. Record types directly or
+indirectly parameterize all operators. A selection operator
+\(\sigma_p\) instance must be parameterized by the record type of its
+input which will be the same as the output. A projection \(\pi\) is
+parameterized by the records of both the input and the output type. A
+generated record type must have some structural properties to function
+properly with FCL and the rest of the generated types:
 
 \begin{itemize}
-\item First and foremost, it must be standard-layout type provide so it can
-be trivially copied from and to binary blob files. This means that
-there should be no virtual members, the destructor must be trivial
-and no static members. We further impose the constraint that they
-must not have a base class to avoid some more intricate constraints
-imposed by the C++ standard on standard-layout classes.
-\item It must provide non-uniquified names for each field of the row it
-represents so other generated types (like predicates and subtuple
-extraction types) have direct access to the underlying data.
+\item First and foremost, it must be standard-layout type so it can be
+trivially copied from and to binary files. This means that there
+should be no virtual members, the destructor must be trivial and no
+static members.
 \item They should be comparable by equality (\cpp{==}), inequality (\cpp{!=}) and
 they should be ordered (\cpp{<}). The actual semantics of the ordering
 are not important as long as there is a deterministic way of
@@ -513,26 +522,27 @@ string.
 \subsubsection{Predicate types}
 
 Predicate functions have the type of n-ary Boolean functions \(A_1
-\times ... \times A_k \to \{T,F\}\) useful to generate code for selections and
-\(\theta\)-joins so in practice they are unary or binary. They are
-passed as template arguments to the operators, so the compiler has the
-chance to inline them to avoid a function call. To avoid too much code
-clutter they are expected to provide the types of the function domain
+\times ... \times A_k \to \{T,F\}\) useful to generate code for
+selections and \(\theta\)-joins so in practice they are unary or
+binary. They are passed as template arguments to the operators, so the
+compiler has the chance to inline them to avoid the indirection. To
+avoid too much code clutter in the generated code they are expected to
+provide the types of the function domain \(A_1, ..., A_k\)
 (demonstrated in listing \ref{lst:pred_type_cpp}) in order to minimize
 the number of template parameters and keep the generated code
 relatively human readable.
 
 \begin{code}
-\begin{cppcode}
-class Predicate3421 {
-  typedef Record123 Domain0;
-  typedef Record32 Domain1;
-  bool operator() (const Domain0& rl, const Domain1& rr) {
-    return rl.__field1 < rr.__field2;
+  \begin{cppcode}
+  class Predicate3421 {
+    typedef Record123 Domain0;
+    typedef Record32 Domain1;
+    bool operator() (const Domain0& rl, const Domain1& rr) {
+      return rl.__field1 < rr.__field2;
+    }
   }
-}
-\end{cppcode}
-\caption{\label{lst:pred_type_cpp}Example of generated predicate function corresponding to the predicate \(\mathit{field}_1 < \mathit{field}_2.\)}
+  \end{cppcode}
+  \caption{\label{lst:pred_type_cpp}Example of generated predicate function corresponding to the predicate \(\mathit{field}_1 < \mathit{field}_2.\)}
 \end{code}
 
 \subsubsection{Record transformation types}
@@ -542,9 +552,9 @@ representing pure functions, only the codomain is a record type,
 instead of a Boolean. They are used by joins to combine the matching
 records, by projections and aggregations to produce new records from
 the inputs, by equi-joins to extract the subtuples to be checked for
-equality, etc. Much like predicate functions, they can be queried for their
-domain and codomain to reduce the number of template arguments in
-operators (see listing \ref{ref:transform_type})
+equality, etc. Much like predicate functions, they can be queried for
+their domain and codomain to reduce the number of template arguments
+in operators (see listing \ref{ref:transform_type})
 
 \begin{code}
 \begin{cppcode}
@@ -594,8 +604,8 @@ public:
     // ...
   }
 
-  void print_output(size_t x) {
-    // ...
+  void print_output(size_t n) {
+    // Prints the first n records from each output table.
   }
 
 private:
@@ -621,7 +631,7 @@ generated code for selection to look like the one presented in listing
 
 \begin{code}
 \begin{cppcode}
-// C++17 can only infer typenames (primaryout secondaryout) in
+// C++20 can only infer typenames (primaryout secondaryout) in
 // function templates.
 template<typename Predicate,
          typename PrimaryOutType,   // Maybe(std::string)
@@ -659,7 +669,12 @@ int main() {
 \end{code}
 
 
-\subsection{Select algorithm}
+\subsection{Operator implementations}
+
+In the following subsections we will take a tour to the implementation
+of some algorithms.
+
+\subsubsection{Select algorithm}
 
 The selection algorithm is likely the simplest of the implemented ones
 because FluiDB does not support indexes and makes no assumptions about
@@ -667,7 +682,7 @@ the ordering of the data. In the forward variety, it is implemented as
 either a partition or a selection depending on which of the outputs it
 is materializing. In its backward variety it is essentially a union
 \(A \equiv \sigma_p A \cup \sigma_{\neg p} A\). As we discussed
-already (listing \ref{lst:sel_function_cpp}) the BAMA library expects
+already (listing \ref{lst:sel_function_cpp}) the FCL library expects
 only a predicate class as a template parameter and three filnames as
 its arguments.
 
@@ -679,7 +694,7 @@ FluiDB does not support \hask{NULL} values to preserve the correctness of
 the reverse select operation.
 
 
-\subsection{Projection algorithm}
+\subsubsection{Projection algorithm}
 \label{sec:projection_algorithm}
 
 The implementation of the projection algorithm is parameterized by two
@@ -689,7 +704,7 @@ facilitate the inverse operation. The inverse of a projection then is
 simply an equijoin between the two produced slices based in that
 shared unique subtuple.
 
-While the BAMA side of the calculation is fairly straightforward, on
+While the FCL side of the calculation is fairly straightforward, on
 the Haskell side (code generation) it is slightly more complex. The
 first piece of the puzzle is the representation of the
 projection. When the query is initially processed so that projections
@@ -751,7 +766,7 @@ while when joining a projection with it's complement we only create a
 single copy of the shared subtuple. We will see more details about
 join in the next section.
 
-\subsection{The join operator}
+\subsubsection{The join operator}
 
 We distinguish between two kinds of join operators: the equijoin and
 the general \(\theta\)-join. The former is specific to cases where
@@ -890,7 +905,7 @@ As with the selection operator, the correctness of this reverse
 operation is predicated on the fact that FluiDB has no notion of
 \sql{NULL} values.
 
-\subsection{Aggregation and sort algorithms}
+\subsubsection{Aggregation and sort algorithms}
 
 The main challenge to implementing aggregations in the context of
 FluiDB is maintaining constant space during its evaluation, as the
@@ -907,7 +922,7 @@ In this chapter we discussed some physical attributes of how FluiDB
 evaluates the final plans it constructs via code generation. We
 discussed the storage layout and the fundamental ideas the code
 generator was built around to generate highly specialized
-code. Finally, we discussed some specific algorithms used by the BAMA
+code. Finally, we discussed some specific algorithms used by the FCL
 library that is called by the generated code to implement the actual
 operators.
 
