@@ -91,21 +91,22 @@ reflect Just (a,as) = pure a <|> as
 In \cite{kiselyovBacktrackingInterleavingTerminating}, on top of this
 framework the authors build an \hask{interleave} and a monadic bind
 (\hask{>>-}) operator that works with it to make computation be
-slightly more "fair". In this context, fair means that the
-branches share computation resources, as opposed to an "unfair" approach where a branch is evaluated to 
-completion or failure before other branches are considered. Interleaving is 
-fair between two computations, but when more than two
-are involved, half the time goes to the first computation, out of the
-half that is left, half (\(1/4\) of the total) goes to the second, out
-of the \(1/4\) left, half (\(1/8\)) goes to the third and so on. While
-this power-series that describes the way the way resources are
-allocated to branches may seem arbitrary, in practice, it may mean the
-difference between terminating and non-terminating computations. For
-example, the code in listing \ref{lst:list_logic_example} can be
-translated to something like the code in listing
-\ref{lst:interl_logic_example} which does terminates due to the fact
-that while it does not give the same chance to all the branches it
-does not completely starve any of them.
+slightly more "fair". In this context, fair means that the branches
+share computation resources, as opposed to an "unfair" approach where
+a branch is evaluated to completion or failure before other branches
+are considered. Interleaving is fair between two computations, but
+when more than two are involved, half the time goes to the first
+computation, out of the half that is left, half (\(1/4\) of the total)
+goes to the second, out of the \(1/4\) left, half (\(1/8\)) goes to
+the third and so on. While this power-series that describes the way
+the way resources are allocated to branches may seem arbitrary, in
+practice, it may mean the difference between terminating and
+non-terminating computations and is thus fair in the temporal
+model-theoretic way. For example, the code in listing
+\ref{lst:list_logic_example} can be translated to something like the
+code in listing \ref{lst:interl_logic_example} which does terminates
+due to the fact that while it does not give the same chance to all the
+branches it does not completely starve any of them.
 
 % TODO: merge the listing as subfigures
 \begin{code}
@@ -199,11 +200,11 @@ disregard the the latter branch.  The reason is that the later a GC
 pass happens the more options it will have and therefore the better
 job is likely to do w.r.t. deleting less useful relations \footnote{This assumption depends heavily on the quality of the garbage collection heuristics. As we will see in \ref{chapter:evaluation} it is not always the case that this will lead to better results.}. To achieve
 this we implement the operator \hask{<//>} (pronounced
-\emph{fallback}) which is similar to prolog's soft-cut. Unlike other 
+\emph{fallback}) which is similar to prolog's soft-cut. Unlike other
 similar approaches our conception of the fallback
 operator refers to the \emph{continuation} of the left-hand operand
-rather than the content of the operand itself, which is to say that the right hand side operand 
-is considered if the current branch fails taking into account 
+rather than the content of the operand itself, which is to say that the right hand side operand
+is considered if the current branch fails taking into account
 the value on the left hand side, \emph{not} if the left operand fails
 to yield a value.
 
@@ -272,12 +273,12 @@ class (forall v . Monoid (h v),Functor h,Monoid (HeapKey h),Ord (HeapKey h))
     the user to decide an efficient priority queue for the branches.}
 \end{code}
 
-\hask{HCntT} values are built using the combinators we mention and which we will 
+\hask{HCntT} values are built using the combinators we mention and which we will
 describe in more detail an it needs to be run or \emph{dissolved} to run the actual
 search. Dissolution (listing \ref{lst:dissolve_func}) is the process
 of turning an \hask{HCntT} value to a \hask{ListT} value. The
 \hask{ListT} object will lazily produce just as many results as are
-required, and will produce just as many side-effects\footnote{A value of type \hask{ListT m a} can produce values of type \hask{a} and the production of each value may involve side-effects defined by the monad \hask{m}.} as required. 
+required, and will produce just as many side-effects\footnote{A value of type \hask{ListT m a} can produce values of type \hask{a} and the production of each value may involve side-effects defined by the monad \hask{m}.} as required.
 This indicates that the process of building computations is
 composable but not incremental. The price of the \hask{<//>}
 combinator is that, unlike in other non-continuation
@@ -381,7 +382,7 @@ Because we want to be able to transform the \hask{HCntT} monad we define the cla
 transformers of \hask{HCntT} (like \hask{ReaderT},\hask{StateT}, etc)
 can trivially support \hask{halt}. The implementation of \hask{halt}
 for \hask{HCntT} itself is demonstrated in listing
-\ref{lst:halt_class}. 
+\ref{lst:halt_class}.
 
 \begin{code}
 \begin{haskellcode}
@@ -456,7 +457,7 @@ which is a lookup table (\hask{CompState}) full of fallback branches (see figure
 corresponds to an entry in the lookup table. This entry is modified
 accordingly by the children of the right hand side. When \hask{<//>} is evaluated,
 we push a marker into the heap with priority lower than the child
-branches so that when it is scheduled, it will itself schedule the 
+branches so that when it is scheduled, it will itself schedule the
 fallback function if all the children branches have finished without yielding a concrete
 result. At any time there is exactly one valid marker per active
 fallback and it is denoted as such by the fallback entry in the lookup
@@ -597,7 +598,7 @@ scheduler, the inner scheduler internally schedules the next branch of
 the nested process. When the process yields results or completely
 fails, the corresponding hook is run. \hask{once} implements these
 hooks as "return the result and stop" and as "propagate the failure"
-respectively. Since the implementation of \hask{once} based on the 
+respectively. Since the implementation of \hask{once} based on the
 nested scheduler(\hask{nested}) is fairly small
 it is provided along with the types in listing \ref{lst:once_def}.
 
@@ -665,7 +666,7 @@ type PlanT t n m =
 We maintain the partial plan (sequence of transitions) as part of the
 state of each of the planner's branches. \emph{Registering a
   transition} means that a transition is added to the partial plan.
-  
+
 It is important to clarify the way we use the term "materialized n-node"
 (\hask{Mat} as opposed to "not materialized" -- \hask{NoMat}) from the planner's
 perspective. A mapping of n-node states is passed to the planner at the
@@ -831,9 +832,9 @@ plan. The selection process has two hard constraints:
 \begin{itemize}
 \item The n-nodes being deleted must be \emph{deletable}, i.e. the
   n-node's state is \hask{Initial} and if the n-node is deleted that it
-  can be reconstructed from the remaining materialized n-nodes. 
-  \footnote{There is a caveat to our conception of deletability of nodes, namely that 
-  the concept does not take into account budgetary constraints, only that there is no 
+  can be reconstructed from the remaining materialized n-nodes.
+  \footnote{There is a caveat to our conception of deletability of nodes, namely that
+  the concept does not take into account budgetary constraints, only that there is no
   loss of information resulting from the relation's deletion.}
 \item The n-nodes being deleted must not be required for the
   continuation of the current plan. We call these n-nodes
@@ -844,7 +845,7 @@ plan. The selection process has two hard constraints:
 \end{itemize}
 
 Selecting a subset of n-nodes for deletion is not an easy problem, so we follow a
-simple heuristic (see listing \ref{lst:gc_algo}). 
+simple heuristic (see listing \ref{lst:gc_algo}).
 Large n-nodes are costly to create and therefore the larger the n-node,
 the less inclined the planner is to create it, and the more useful it
 is likely to be. With that in mind, the heuristic we follow is for the
@@ -1049,7 +1050,7 @@ for the frontier n-nodes. However, this approach is prone to getting
 stuck behind materialized n-nodes: past queries, especially recent ones,
 are likely to still be materialized and therefore their cost is likely
 to be 0. Even if the GC has already got around to deleting them, their near
-dependencies are likely to be materialized and block the cost estimator 
+dependencies are likely to be materialized and block the cost estimator
 from traversing the graph up to the nodes affected by the current plan. This makes
 the estimation quite bad for two reasons:
 
