@@ -86,7 +86,7 @@ made to accommodate the design of FluiDB. Particularly that
 
 This means that there no \sql{NULL} values are allowed since a
 predicate over a \sql{NULL} value always evaluates to \hask{False},
-breaking the double negation theorem. This allows the definition of a
+breaking the excluded middle axiom. This allows the definition of a
 bidirectional variant of the select (\(\sigma\)) operator.
 
 Furthermore, we assume set semantics for all relations, meaning that a
@@ -341,7 +341,7 @@ reverse trigger amounts to the union \(\sigma_{p}(A) \cup \sigma_{\neg
 p}(A)\). It is generally assumed that any row not selected by \(p\) is
 necessarily selected by \(\neg p\). To remind the reader of our RA
 assumptions, this means that we do not support missing or \sql{NULL}
-values as they break Boolean double negation. Furthermore, relations
+values as they break Boolean excluded middle. Furthermore, relations
 are taken to be unordered sets of tuples.
 
 \begin{figure}[H]
