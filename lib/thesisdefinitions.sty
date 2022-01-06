@@ -97,25 +97,24 @@
       \vskip 10mm%
       \centering%
       \includegraphics[width=2in]{imgs/EdUniCrest.pdf}\par%
-      \vskip 10mm%
+      \vskip 5mm%
       %% Qualification
       {\fontfamily{\rmdefault}\selectfont%
         {\LARGE%
           \parbox[c]{10cm}{%
-            \begin{onehalfspace}%
+            %\begin{onehalfspace}%
               \centering%
-              \textit{A thesis submitted for the degree of} \\ %
+              {\Large \textit{A thesis submitted for the degree of}} \\ %
               \textit{Doctor of Philosophy}%
-            \end{onehalfspace}%
+            %\end{onehalfspace}%
           }\\%
           %% University
-          [2mm] {\textsc{The University of Edinburgh}} \\%
+          [10mm] {\textsc{The University of Edinburgh}} \\%
           %% Date
           [10mm]\@date
         }}}%
   \end{center}\par%
   \vfil\null}
-
 
 %% This is not a chapter
 \newenvironment{precontent}
@@ -124,6 +123,7 @@
   \renewcommand{\chaptermark}[1]{}%
   \pagestyle{plain}%
   % \titlespacing*{\chapter}{0pt}{0pt}{30pt}%
+  % \RedeclareSectionCommand[beforeskip=0pt,afterskip=3\baselineskip]{chapter}
 }%
 {
   %% Restart numbering
@@ -131,6 +131,7 @@
   \setcounter{secnumdepth}{2}%
   \cleardoublepage
 }
+
 
 
 \newcommand{\standarddeclaration}[1]{%
@@ -161,24 +162,6 @@
   \usebox{\mybox}\\%
   %
   \vspace*{5cm}%
-}
-
-% a command to indicate current editing progress
-\newcommand{\resume}{
-  \begin{center}
-    \color{set2}
-    \hrule
-    \vspace{1pt}
-    \hrule
-    \hrule
-    \vspace{10pt}
-    \textbf{This section is not yet complete.}
-    \vspace{10pt}
-    \hrule
-    \hrule
-    \vspace{1pt}
-    \hrule
-  \end{center}
 }
 
 % % do not reset page numbers at \mainmatter
@@ -302,7 +285,6 @@
       \rule{0.9\textwidth}{.5pt}%
     }{\enskip}%
 }
-\RedeclareSectionCommand[beforeskip=0pt,afterskip=8\baselineskip]{chapter}
 
 \RequirePackage{array}
 

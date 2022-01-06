@@ -53,6 +53,7 @@
     linkcolor=blue,
     filecolor=magenta,
     urlcolor=cyan,
+    citecolor=blue,
     pdfpagemode=FullScreen,
     }
 
@@ -63,7 +64,7 @@
 \input{00-frontmatter.tex}
 
 \mainmatter
-
+\RedeclareSectionCommand[beforeskip=0pt,afterskip=8\baselineskip]{chapter}
 \chapter{Introduction}
 \label{chapter:introduction}
 \input{01-introduction.tex}
