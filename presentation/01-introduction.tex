@@ -1,0 +1,66 @@
+\begin{frame}
+\frametitle{FluiDB at a glance}
+
+\begin{itemize}
+\item FluiDB is an in-memory RDBMS that optimizes data layout for
+  space efficiency w.r.t. the workload
+\item The main novelty relates to the introduction of reversible
+  relational operations which affords a new perspective on query
+  planning and view selection.
+\item FluiDB materializes all intermediate results and deletes garbage
+  collects when she runs out of space.
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Fundamental principle demo}
+
+  TODO
+\end{frame}
+
+\begin{frame}
+  \frametitle{The interesting components}
+
+  \begin{itemize}
+  \item Graph management and query normal form representation
+  \item Logical planning infrastructure
+  \item Antisthenis: An incremental numeric evaluation system for cost
+    estimation.
+  \item Logical planning algorithm and garbage collector
+  \item Code generation system.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Architecture}
+
+
+  % XXX: At the beginning of each case circle the relevant part of it
+  % as an introduction.
+  \begin{tikzdiagram_h}
+    \tikzset{db/.style={cylinder,draw,shape border rotate=90,aspect=.3}};
+    \tikzset{sys/.style={rectangle,draw}};
+    \tikzset{outer/.style={cloud,draw,aspect=3}};
+
+    \node[outer] (query) {Query stream};
+    \node[sys] (graph_builder) [below = of query] {Graph Builder};
+
+    \node[sys] (qnf) [left = of graph_builder] {QNF processor};
+
+    \node[db] (bqg) [right = of graph_builder] {RA Graph};
+    \node[sys] (planner) [below = of graph_builder] {Planner};
+
+    \node[sys] (antisthenis) [left = of planner] {Antisthenis};
+    \node[sys] (codegen) [below = of planner] {C++ generation};
+    \node[sys] (cc) [below = of codegen] {C++ Compiler};
+    \node[outer] (hw) [below = of cc] {CPU/Filesystem};
+
+
+  \end{tikzdiagram_h}
+\end{frame}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "presentation"
+%%% End:

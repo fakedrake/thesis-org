@@ -963,7 +963,7 @@ isDeletable n = do
 
 -- | An n-node that was not deletable should not be considered again
 -- for deletion and is therefore marked as concrete.
-markAsConcret n = do
+markAsConcrete n = do
   st <- getNodeState n
   case st of
     Initial m -> setNodeState (Concrete m)

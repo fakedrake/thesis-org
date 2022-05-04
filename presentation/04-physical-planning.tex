@@ -1,0 +1,44 @@
+\begin{frame}
+  \frametitle{Physical planning}
+  \framesubtitle{\hask{HCntT} logic monad}
+
+  Logic framework for ``fair'' traversal of the plan search space. Intricudes:
+
+  \begin{itemize}
+  \item \hask{a <//> b}: Try the rest of the computation with \hask{a}
+    and if it fails try \hask{b}.
+  \item \hask{once c}: try the continuation with values from \hask{c}
+    until one works and stick with that one.
+  \item \hask{halt n}: yield to a scheduler and assigne priority
+    \hask{n} to the continuation.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Physical planning}
+  \framesubtitle{Business logic}
+  % XXX: Show in a tree.
+  \begin{code}
+    \begin{haskellcode}
+    materialize n = unless (materialized n) $ do
+      op <- inputOps n
+      outputs <- possibleOutputs n op
+      let inputs = inputsOf op
+      -- Assuming we materialized the output, what is the cost of the
+      -- outputs
+      once (gc outputs)
+      histCost <- withMaterialized outputs $ historicalCosts
+      -- Stop and schedule this branch according to its cost
+      halt (cost op + histCost + anticipatedCost inputs)
+      -- Recursively materialize the input relations
+      mapM materialize inputs
+      registerPlan op
+      mapM (setState Materialized) output
+    \end{haskellcode}
+  \end{code}
+\end{frame}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "presentation"
+%%% End:

@@ -1,0 +1,70 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{thesisdefinitions}[2021/12/01 package thesis defintions]
+
+% TIKZ stuff
+\RequirePackage{environ}
+\RequirePackage{tikz}
+\makeatletter
+\usetikzlibrary{
+  decorations.pathreplacing,
+  positioning,
+  matrix,
+  arrows.meta,
+  graphs,
+  shapes.misc,
+  shapes.symbols,
+  shapes.geometric,
+  fit}
+
+
+\newsavebox{\tikzpic}
+\NewEnviron{tikzdiagram_h}{%
+  \begin{lrbox}{\tikzpic}%
+    \begin{tikzpicture}
+      \BODY
+    \end{tikzpicture}
+  \end{lrbox}
+  \begin{center}
+    \resizebox{!}{.8\textheight}{\usebox{\tikzpic}}
+  \end{center}
+}
+
+\NewEnviron{tikzdiagram_w}{%
+  \begin{lrbox}{\tikzpic}%
+    \begin{tikzpicture}
+      \BODY
+    \end{tikzpicture}
+  \end{lrbox}%
+  \begin{center}
+    \resizebox{\textwidth}{!}{\usebox{\tikzpic}}
+  \end{center}
+}
+
+\makeatother
+
+
+
+\RequirePackage{amsmath}
+\RequirePackage{cancel}
+\usepackage{cancel}
+\newcommand{\lsemi}{\ltimes}
+\newcommand{\rsemi}{\rtimes}
+\newcommand{\lnsemi}{\cancel\ltimes}
+\newcommand{\rnsemi}{\cancel\rtimes}
+
+\RequirePackage{float}
+\RequirePackage{caption}
+\RequirePackage[outputdir=./build/,newfloat,draft=false]{minted}
+\setminted{autogobble=true,breaklines=true,linenos=true}
+\RequirePackage{fontspec}
+\setmonofont{FiraCode}[Scale=0.7]
+\newminted{sql}{}
+\newminted{cpp}{}
+\newminted{haskell}{}
+\newminted{py}{}
+\newenvironment{code}{\captionsetup{type=listing}}{}
+
+\newcommand{\hask}[1]{\mintinline{haskell}{#1}}
+\newcommand{\py}[1]{\mintinline{python}{#1}}
+\newcommand{\cpp}[1]{\mintinline{cpp}{#1}}
+\newcommand{\sql}[1]{\mintinline{sql}{#1}}
