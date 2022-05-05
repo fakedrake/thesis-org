@@ -13,10 +13,32 @@
 \end{frame}
 
 
-\begin{frame}
-  \frametitle{Fundamental principle demo}
+\newcommand{\n}[1]{node {\(#1\)}}
+\newcommand{\bn}[1]{node[mat] {\(#1\)}}
 
-  TODO
+\begin{frame}
+  \frametitle{Fundamental principle}
+
+  \begin{tikzdiagram_w}
+    \tikzset{
+      grow=up,
+      sibling distance=3cm,
+      level distance=3cm,
+      every node/.style={draw},
+      mat/.style={fill=gray!30}
+    };
+
+    \node {\(\li\)} % \li
+    child { \bn{\sigma_{q} \li }} % σ_q
+    child { \bn{\sigma_{\neg q} \li}} % σ_nq
+    child { \n{\sigma_{\neg p} \li}}  % σ_np
+    child {
+      \n{\sigma_{p} \li} % σ_p
+      child {\n{\sigma_{p \land r} \li} } % σ_pq
+      child {\n{\sigma_{p \land \neg r} \li}} % σ_rpq
+    } ;
+  \end{tikzdiagram_w}
+
 \end{frame}
 
 \begin{frame}
@@ -56,7 +78,10 @@
     \node[sys] (cc) [below = of codegen] {C++ Compiler};
     \node[outer] (hw) [below = of cc] {CPU/Filesystem};
 
-
+    \draw[->] (query) -> (graph_builder) -> (planner) -> (codegen) -> (cc) -> (hw);
+    \draw[<->] (planner) -> (antisthenis);
+    \draw[<->] (graph_builder) -> (qnf);
+    \draw[<->] (graph_builder) -> (bqg);
   \end{tikzdiagram_h}
 \end{frame}
 

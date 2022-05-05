@@ -14,9 +14,42 @@
   \includegraphics[width=.9\linewidth]{../plans/io_perf_61000.pdf}
 \end{frame}
 
-\begin{frame}
-  \frametitle{Having enough rope rope}
+\newcommand\joingr[4]{
+  \begin{tikzdiagram_h}
+    \tikzset{node distance=4cm}
+    \tikzset{nomat/.style={ellipse,draw}}
+    \tikzset{mat/.style={ellipse,draw,fill=gray!30}}
+    \tikzset{need/.style={ellipse,draw,fill=red}}
+    \tikzset{tnode/.style={rectangle,draw}}
 
-  \texttt{Demonstrate that all being able to materialize all outputs
-    of a join allows us to delete the inputs that may be useful.}
+    \node[tnode] (t) {\(\Join\)};
+    \node[#3] (o) [above of=t] {\(A_{useful} \Join B\)};
+    \node[#4] (a_l) [above left of=t] {\(A_{useful} \lnsemi B\)};
+    \node[#4] (a_r) [above right of=t] {\(A_{useful} \rnsemi B\)};
+    \node[#2] (i_l) [below left of=t] {\(A_{useful}\)};
+    \node[#1] (i_r) [below right of=t] {\(B\)};
+
+    \path (t) edge (o);
+    \path (t) edge (a_l);
+    \path (t) edge (i_l);
+    \path (t) edge (a_r);
+    \path (t) edge (i_r);
+  \end{tikzdiagram_h}
+}
+
+\begin{frame}
+  \frametitle{Having enough rope}
+  \joingr{mat}{mat}{nomat}{nomat}
+\end{frame}
+\begin{frame}
+  \frametitle{Having enough rope}
+  \joingr{mat}{mat}{mat}{mat}
+\end{frame}
+\begin{frame}
+  \frametitle{Having enough rope}
+  \joingr{nomat}{nomat}{mat}{mat}
+\end{frame}
+\begin{frame}
+  \frametitle{Having enough rope}
+  \joingr{nomat}{need}{mat}{mat}
 \end{frame}

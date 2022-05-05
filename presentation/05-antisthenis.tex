@@ -8,12 +8,13 @@
   \item Input is mostly the same between runs: \textbf{incremental}.
   \item \textbf{Order of computation} highly affects the performance
     (eg absorbig elements, min).
-  \item Self referrential computations.
+  \item Self referrential computations may appear earlier than the
+    absorbing element.
   \end{itemize}
 \end{frame}
 
 \begin{frame}
-  \frametitle{Antisthenis example}
+  \frametitle{Antisthenis: Expression graphs}
   \begin{columns}
     \begin{column}{0.5\textwidth}
       \begin{align*}
@@ -29,4 +30,34 @@
       \end{center}
     \end{column}
   \end{columns}
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Antisthenis: Absorbing element}
+  \begin{align*}
+    A &= {\color{red}B} \times {\color{gray}C} \times D \\
+    {\color{red}B} &= {\color{red}\sum_i{i}} \\
+    {\color{gray}C} &= {\color{gray}10 - 10} \\
+    D &= \sum_i{i}
+  \end{align*}
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Antisthenis: Early stopping -- recursive expressions}
+  \framesubtitle{While expressions may be self-referential, we can
+    sometimes still evaluate them.}
+  \begin{align*}
+    A &= min({\color{red}B}, C, {\color{blue}D}) \\
+    {\color{red}B} &= b_1 + b_2 \cdot {\color{blue}D} \\
+    C &= c_1 + {\color{gray}c_2 \cdot A} \\
+    {\color{blue}D} &= d_1 + d_2 \cdot {\color{red}B} \\
+  \end{align*}
+  \hrule
+  \begin{align*}
+    b_1 &= b_2 = d_1 = d_2 = 1 \\
+    c_1 &= 3 \\
+    c_2 &= 0
+  \end{align*}
 \end{frame}
