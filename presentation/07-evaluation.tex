@@ -19,7 +19,8 @@
     \tikzset{node distance=4cm}
     \tikzset{nomat/.style={ellipse,draw}}
     \tikzset{mat/.style={ellipse,draw,fill=gray!30}}
-    \tikzset{need/.style={ellipse,draw,fill=red}}
+    \tikzset{have/.style={ellipse,draw,fill=green!30}}
+    \tikzset{need/.style={ellipse,draw,fill=red!30}}
     \tikzset{tnode/.style={rectangle,draw}}
 
     \node[tnode] (t) {\(\Join\)};
@@ -37,19 +38,22 @@
   \end{tikzdiagram_h}
 }
 
-\begin{frame}
-  \frametitle{Having enough rope}
-  \joingr{mat}{mat}{nomat}{nomat}
+
+\begin{frame}{Plenty of memory}
+  \only<1>{\joingr{mat}{mat}{nomat}{nomat}}
+  \only<2>{\joingr{mat}{mat}{mat}{mat}}
+  \only<3>{\joingr{mat}{have}{mat}{mat}}
 \end{frame}
-\begin{frame}
-  \frametitle{Having enough rope}
-  \joingr{mat}{mat}{mat}{mat}
+
+\begin{frame}{Being on a budget}
+  \only<1>{\joingr{mat}{mat}{nomat}{nomat}}
+  \only<2>{\joingr{mat}{mat}{mat}{nomat}}
+  \only<3>{\joingr{mat}{have}{mat}{nomat}}
 \end{frame}
-\begin{frame}
-  \frametitle{Having enough rope}
-  \joingr{nomat}{nomat}{mat}{mat}
-\end{frame}
-\begin{frame}
-  \frametitle{Having enough rope}
-  \joingr{nomat}{need}{mat}{mat}
+
+\begin{frame}{Having just enough rope}
+  \only<1>{\joingr{mat}{mat}{nomat}{nomat}}
+  \only<2>{\joingr{mat}{mat}{mat}{mat}}
+  \only<3>{\joingr{nomat}{nomat}{mat}{mat}}
+  \only<4>{\joingr{nomat}{need}{mat}{mat}}
 \end{frame}

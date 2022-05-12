@@ -19,43 +19,8 @@
 \end{frame}
 
 
-\newcommand{\n}[1]{node {\(#1\)}}
-\newcommand{\bn}[1]{node[mat] {\(#1\)}}
 
-\newcommand\fundamentalprinciple[7]{
-  \begin{tikzdiagram_w}
-    \tikzset{
-      grow=up,
-      sibling distance=3cm,
-      level distance=3cm,
-      every node/.style={draw},
-      mat/.style={fill=gray!30},
-      nomat/.style={}
-    };
-
-    \node[#7] {\(\li\)} % \li
-    child { node[#6] {\(\sigma_{q} \li \)}} % σ_q
-    child { node[#5] {\(\sigma_{\neg q} \li\)}} % σ_nq
-    child { node[#4] { \(\sigma_{\neg p} \li \)}}  % σ_np
-    child {
-      node[#3]{\(\sigma_{p} \li\)} % σ_p
-      child {node[#2]{\(\sigma_{p \land r} \li\)} } % σ_pq
-      child {node[#1]{\(\sigma_{p \land \neg r} \li\)}} % σ_rpq
-    } ;
-  \end{tikzdiagram_w}
-}
-
-\begin{frame}
-  \frametitle{Example 1: \(\sigma_{p \land r} \li\)}
-  \only<1>{\fundamentalprinciple{nomat}{nomat}{nomat}{nomat}{mat}{mat}{nomat}}
-  \only<2>{\fundamentalprinciple{nomat}{nomat}{nomat}{nomat}{mat}{mat}{mat}}
-  \only<3>{\fundamentalprinciple{nomat}{nomat}{nomat}{nomat}{nomat}{nomat}{mat}}
-  \only<4>{\fundamentalprinciple{nomat}{nomat}{mat}{mat}{nomat}{nomat}{mat}}
-  \only<5>{\fundamentalprinciple{nomat}{nomat}{mat}{mat}{nomat}{nomat}{nomat}}
-  \only<6>{\fundamentalprinciple{nomat}{mat}{mat}{mat}{nomat}{nomat}{nomat}}
-\end{frame}
-
-\begin{frame}[fragile]{Template query}
+\begin{frame}[fragile]{Example 1: Template query}
 \begin{minted}[escapeinside=||,mathescape=true]{sql}
   select      n_name, avg(l_discount)
   from        lineitem, customer, nation, order
@@ -68,7 +33,7 @@
 \end{frame}
 
 
-\begin{frame}{Example 2: Traditionally greedy plan}
+\begin{frame}{Example 1: Traditionally greedy plan}
   \begin{tikzdiagram_h}
     \tikzset{
       every node/.style={draw,rectangle, align=center},
@@ -93,37 +58,82 @@
   \end{tikzdiagram_h}
 \end{frame}
 
-\begin{frame}{Example 2: Adapt to workload}
-  \begin{tikzdiagram_h}
-    \tikzset{
+
+\newcommand\exampleparams[3]{
+  \tikzset{
       every node/.style={draw,rectangle, align=center},
       sibling distance=5cm,
-      level distance=1.5cm
+      level distance=1.5cm,
+      inimat/.style={#1},
+      midmat/.style={#2},
+      endmat/.style={#3},
+      nomat/.style={}
     };
-    \node{\gamma}
+}
+\begin{frame}{Example 1: Adapt to workload}
+  \begin{tikzdiagram_h}
+    \only<-2>{\exampleparams{fill=gray!30}{}{}}
+    \only<2,3,4>{\exampleparams{fill=gray!30}{fill=gray!30}{fill=gray!30}}
+    \only<5->{\exampleparams{fill=gray!10}{}{fill=gray!30}}
+
+    \node [endmat] {\gamma}
     child {
-      node{\(\sigma_{shipdate > \$\{min\_date\}}\)}
-      child {node (mat){\(\Join\)}
-        child {node{\(\Join\)}
-          child {node{\(\Join\)}
-            child { node (li) {lineitem}}
-            child { node (nation) {nation}}
+      node [midmat] {\(\sigma_{shipdate > \$\{min\_date\}}\)}
+      child {node [endmat] (mat){\(\Join\)}
+        child {node [midmat] {\(\Join\)}
+          child {node [midmat] {\(\Join\)}
+            child { node [inimat] (li) {lineitem}}
+            child { node [inimat] (nation) {nation}}
           }
-          child {node (cust) {customer}}
+          child {node [inimat] (cust) {customer}}
         }
-        child {node (order) {order}}
+        child {node [inimat] (order) {order}}
       }
     };
-    \only<2->{\node[draw=none] (n) [left = of mat] {Keep materialized} edge [-stealth] (mat);}
-    \uncover<3>{\path node[draw=none] (n) [below = of order] {Redundant data}
+    \only<3->{\node[draw=none] (n) [left = of mat] {Keep materialized} edge [-stealth] (mat);}
+    \uncover<4->{\path node[draw=none] (n) [below = of order] {Redundant data}
       edge [-stealth] (li)
       edge [-stealth] (order)
       edge [-stealth] (cust)
       edge [-stealth] (nation);}
-
-
   \end{tikzdiagram_h}
+\end{frame}
 
+
+\newcommand{\n}[1]{node {\(#1\)}}
+\newcommand{\bn}[1]{node[mat] {\(#1\)}}
+
+\newcommand\fundamentalprinciple[7]{
+  \begin{tikzdiagram_w}
+    \tikzset{
+      grow=up,
+      sibling distance=3cm,
+      level distance=3cm,
+      every node/.style={draw},
+      mat/.style={fill=gray!30},
+      sol/.style={fill=green!30},
+      nomat/.style={}
+    };
+
+    \node[#7] {\(\li\)} % \li
+    child { node[#6] {\(\sigma_{q} \li \)}} % σ_q
+    child { node[#5] {\(\sigma_{\neg q} \li\)}} % σ_nq
+    child { node[#4] { \(\sigma_{\neg p} \li \)}}  % σ_np
+    child {
+      node[#3]{\(\sigma_{p} \li\)} % σ_p
+      child {node[#2]{\(\sigma_{p \land r} \li\)} } % σ_pq
+      child {node[#1]{\(\sigma_{p \land \neg r} \li\)}} % σ_rpq
+    } ;
+  \end{tikzdiagram_w}
+}
+
+\begin{frame}{Example 2: Plan with missing primary data}
+  \only<1>{\fundamentalprinciple{nomat}{sol}{nomat}{nomat}{mat}{mat}{nomat}}
+  \only<2>{\fundamentalprinciple{nomat}{sol}{nomat}{nomat}{mat}{mat}{mat}}
+  \only<3>{\fundamentalprinciple{nomat}{sol}{nomat}{nomat}{nomat}{nomat}{mat}}
+  \only<4>{\fundamentalprinciple{nomat}{sol}{mat}{mat}{nomat}{nomat}{mat}}
+  \only<5>{\fundamentalprinciple{nomat}{sol}{mat}{mat}{nomat}{nomat}{nomat}}
+  \only<6>{\fundamentalprinciple{nomat}{mat}{mat}{mat}{nomat}{nomat}{nomat}}
 \end{frame}
 
 
