@@ -68,7 +68,7 @@
 \end{frame}
 
 
-\begin{frame}{Example 2: Being traditionally greedy}
+\begin{frame}{Example 2: Traditionally greedy plan}
   \begin{tikzdiagram_h}
     \tikzset{
       every node/.style={draw,rectangle, align=center},
@@ -106,16 +106,22 @@
       child {node (mat){\(\Join\)}
         child {node{\(\Join\)}
           child {node{\(\Join\)}
-            child { node{lineitem}}
-            child { node {nation}}
+            child { node (li) {lineitem}}
+            child { node (nation) {nation}}
           }
-          child {node{customer}}
+          child {node (cust) {customer}}
         }
-        child {node{order}}
+        child {node (order) {order}}
       }
     };
-    \only<2>{\node[draw=none] (n) [left = of mat] {Keep materialized}
-      edge [-stealth] (mat);}
+    \only<2->{\node[draw=none] (n) [left = of mat] {Keep materialized} edge [-stealth] (mat);}
+    \uncover<3>{\path node[draw=none] (n) [below = of order] {Redundant data}
+      edge [-stealth] (li)
+      edge [-stealth] (order)
+      edge [-stealth] (cust)
+      edge [-stealth] (nation);}
+
+
   \end{tikzdiagram_h}
 
 \end{frame}
