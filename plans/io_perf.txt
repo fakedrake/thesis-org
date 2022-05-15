@@ -351,7 +351,7 @@ query:time:1640375942,reads:190784,writes:190944
 query:time:1640375958,reads:190752,writes:190976
 ./ssb-workload/query-indiv-65000-013.cpp
 query:time:1640375974,reads:190752,writes:190976
-
+}
 baseline {
 ./ssb-workload/query-indiv-61000-001.cpp
 query:time:1640386762,reads:124736,writes:124864

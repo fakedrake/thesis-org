@@ -126,7 +126,7 @@ nonTerm = do
 \begin{haskellcode}
 interleaveTest :: [(Int,Int,Int)]
 interleaveTest = runLogic @[] $ do
-  (a,b,c) <- genNaturals >*< genNaturals >*< genNaturals
+  (a,b,c) <-  (,,) <$$> genNaturals >*< genNaturals >*< genNaturals
   guard $ a + b - c == 10
   return (a,b,c)
 \end{haskellcode}

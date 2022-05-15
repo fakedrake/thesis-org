@@ -2,9 +2,11 @@
   \frametitle{FluiDB at a glance}
 
   \begin{itemize}
-  \item FluiDB is an in-memory RDBMS
+  \item FluiDB is an intermediate result (IR) recycling, in-memory RDBMS
+  \item FluiDB materializes all intermediate results and garbage
+    collects when she runs out of space.
   \item Radical approach to IR recycling: adapt data layout to the
-    workload
+    workload:
     \begin{itemize}
     \item enable efficient plans
     \item constrained (quality) budget
@@ -13,27 +15,54 @@
   \item The main novelty relates to the introduction of reversible
     relational operations which affords a new perspective on query
     planning and view selection.
-  \item FluiDB materializes all intermediate results and deletes garbage
-    collects when she runs out of space.
   \end{itemize}
 \end{frame}
 
 
-
-\begin{frame}[fragile]{Example 1: Template query}
+\newcommand\mindatevar{{\color{red}\$\{min\_date\}}}
+\defverbatim[colored]\sqlexample{
+  \begin{code}
 \begin{minted}[escapeinside=||,mathescape=true]{sql}
   select      n_name, avg(l_discount)
   from        lineitem, customer, nation, order
   where       l_orderkey = o_orderkey
   and         c_custkey = o_custkey
   and         c_nationkey = n_nationkey
-  and         l_shipdate > |\(\mathit{\$\{min\_date\}}\)|
+  and         l_shipdate > |\mindatevar|
   group by    n_name
 \end{minted}
+  \end{code}
+}
+
+\begin{frame}{Example 1: Workload based on template
+    query}{\mindatevar is instantiated for each query in the
+    workload.}
+
+  \begin{sized}{!}{0.4\textheight}
+    \begin{minipage}{\textwidth}
+      \sqlexample
+    \end{minipage}
+  \end{sized}
+
+
+  \begin{sized}{!}{0.4\textheight}
+    \begin{tikzpicture}
+      \tikzset{tbl/.style={draw,rectangle,minimum height=2cm,minimum width=2cm}};
+      \node[tbl] (lo) {lineorder};
+      \node[tbl] (p) [above left = of lo] {part};
+      \node[tbl] (c) [above right = of lo] {customer};
+      \node[tbl] (s) [below right = of lo] {supplier};
+      \node[tbl] (d) [below left = of lo] {date};
+      \draw [-stealth] (c) -- (lo);
+      \draw [-stealth] (p) -- (lo);
+      \draw [-stealth] (s) -- (lo);
+      \draw [-stealth] (d) -- (lo);
+    \end{tikzpicture}
+  \end{sized}
 \end{frame}
 
 
-\begin{frame}{Example 1: Traditionally greedy plan}
+\begin{frame}{Example 1: Traditional single-query plan}{Selection push down}
   \begin{tikzdiagram_h}
     \tikzset{
       every node/.style={draw,rectangle, align=center},
@@ -121,8 +150,8 @@
     child { node[#4] { \(\sigma_{\neg p} \li \)}}  % σ_np
     child {
       node[#3]{\(\sigma_{p} \li\)} % σ_p
-      child {node[#2]{\(\sigma_{p \land r} \li\)} } % σ_pq
-      child {node[#1]{\(\sigma_{p \land \neg r} \li\)}} % σ_rpq
+      child {node[#2]{\(\pi \sigma_{p} \li\)} } % π σ_p
+      child {node[#1]{\(\pi \sigma_{p} \li\)}} % π σ_r
     } ;
   \end{tikzdiagram_w}
 }

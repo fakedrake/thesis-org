@@ -1,3 +1,84 @@
+
+\defverbatim[colored]\alternatives{
+\begin{haskellcode}
+  indexWords :: [(String,String)]
+  indexWords = do
+    sentence <- return "the red and brown fox" <|> return "the black and blue bear"
+    w <- words sentence -- for each word
+    guard $ w `notElem` ["the", "and"] -- skip the boring words
+    return (w,sentence)
+\end{haskellcode}
+}
+
+\defverbatim[colored]\alternativesres{
+\begin{verbatim}
+> indexWords
+[("red","the red and brown fox")
+,("brown","the red and brown fox")
+,("fox","the red and brown fox")
+,("black","the black and blue bear")
+,("blue","the black and blue bear")
+,("bear","the black and blue bear")]
+\end{verbatim}
+}
+
+\begin{frame}{List as a monad = backtracking}
+  \alternatives
+  \uncover<2>{ \alternativesres}
+\end{frame}
+
+
+\defverbatim[colored]\unfairexample{
+\begin{haskellcode}
+  nonTerm :: [(Int,Int,Int)]
+  nonTerm = do
+    -- >  (,) <$> [1..3] <*> [1..3]
+    -- [(1,1),(1,2),(1,3),(2,1),(2,2),(2,3),(3,1),(3,2),(3,3)]
+    (a,b,c) <- (,,) <$> [0..] <*> [0..] <*> [..]
+    guard $ a + b - c == 10
+    return (a,b,c)
+\end{haskellcode}
+}
+
+\defverbatim[colored]\unfairres{
+\begin{verbatim}
+> take 3 nonTerm
+\end{verbatim}
+}
+
+
+\begin{frame}{List based logic/backtracking (unfair)}
+  \unfairexample
+  \uncover<2>{\unfairres}
+  \uncover<2>{\centering \(\bot\)}
+\end{frame}
+
+
+\defverbatim[colored]\fairexample{
+\begin{haskellcode}
+  term :: [(Int,Int,Int)]
+  term = do
+    -- (>*<) :: [a -> b] -> [a] -> [b]
+    -- > (,) <$> [1..3] >*< [1..3]
+    -- [(1,1),(2,1),(1,2),(2,2),(3,1),(3,2),(1,3),(2,3),(3,3)]
+    (a,b,c) <- (,,) <$> [0..] >*< [0..] >*< [0..]
+    guard $ a + b - c == 10
+    return (a,b,c)
+\end{haskellcode}
+}
+
+\defverbatim[colored]\fairexampleres{
+\begin{verbatim}
+  > take 5 term
+  [(5,5,0),(6,4,0),(6,5,1),(4,6,0),(5,6,1)]
+\end{verbatim}
+}
+
+\begin{frame}{List based logic/backtracking (fair)}
+\fairexample
+\uncover<2>{\fairexampleres}
+\end{frame}
+
 \begin{frame}
   \frametitle{Physical planning}
   \framesubtitle{\hask{HCntT} logic monad}
@@ -12,6 +93,25 @@
   \item \hask{halt n}: yield to a scheduler and assigne priority
     \hask{n} to the continuation.
   \end{itemize}
+\end{frame}
+
+\defverbatim[colored]\gcexample{
+  \begin{haskellcode}
+    gc reqSize = do
+      -- Try the current epoch and if that fails retry with a new epoch.
+      return () <//> newEpoch
+      -- find the deletable n-nodes and sort them by size
+      deleteables <- sortOnM getNodeSize =<< filterM isDeletable =<< getAllNodes
+      -- Try deleting each n-node and stop deleting when amassing enough
+      -- free pages.
+      forM_ deletables $ \n -> do
+        freePgs <- getFreePages
+        when (freePgs < reqSize) $ tryDelete n <//> markAsConcrete n
+\end{haskellcode}
+}
+
+\begin{frame}{The GC}
+  \gcexample
 \end{frame}
 
 \begin{frame}[fragile]

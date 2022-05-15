@@ -42,6 +42,13 @@
 
 \makeatother
 
+\newsavebox{\sizedbox}
+\NewEnviron{sized}[2]{%
+  \begin{lrbox}{\sizedbox}%
+    \BODY
+  \end{lrbox}
+  \resizebox{#1}{#2}{\usebox{\sizedbox}}
+}
 
 
 \RequirePackage{amsmath}

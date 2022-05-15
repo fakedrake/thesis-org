@@ -1,3 +1,4 @@
+# C-u M-x run-python nix-shell --command "ipython -i --simple-prompt" ..
 from collections import defaultdict
 import re
 import numpy as np
@@ -74,21 +75,21 @@ def parse_block(lines_i):
     188096), (197888, 188096), (190784, 190944)])
 
     """
-    l = next(lines_i,None)
+    n, l = next(lines_i,(None,None))
     if l is None: return None
     head = parse_block_head(l)
     if head is None: return None
     res = []
     size = -1
     while True:
-        l = next(lines_i)
+        n, l = next(lines_i)
         if parse_block_tail(l):
             break
         size = parse_size(l)
-        l = next(lines_i)
+        n, l = next(lines_i)
         x = parse_line(l)
         if l is None or size is None:
-            raise RuntimeError("Bad line: '" + l + "'")
+            raise RuntimeError(f"Bad line {n}: '{l}")
 
         res.append(x)
 
@@ -111,16 +112,23 @@ def parse_file_contents(lines):
 
 def parse_file(fname):
     with open(fname,'r') as f:
-        return parse_file_contents((l.strip() for l in f))
+        return parse_file_contents(enumerate((l.strip() for l in f)))
 
 def my_len(x):
     return len(x) if isinstance(x,list) else x.shape[0]
 
-def make_plots(data, max_qs):
-    """
-    >>> make_plots(parse_file('io_perf.txt')[60000]).savefig('io_perf_60000.pdf')
-    >>> make_plots(parse_file('io_perf.txt')[22000]).savefig('io_perf_22000.pdf')
-    """
+def make_cum_plots(data, max_qs):
+    pass
+
+def cum(data):
+    cum = np.zeros_like(data)
+    acc = 0
+    for i in range(len(data)):
+        acc += data[i]
+        cum[i] = acc
+    return cum
+
+def make_plots(data, ty, pages, max_qs=12):
     SAMPLES = 30
     # create plot
     fig, ax = plt.subplots()
@@ -140,30 +148,49 @@ def make_plots(data, max_qs):
     base_len = my_len(baseline_data0)
     baseline_data = np.tile(baseline_data0, (main_len // base_len + 1) )[:main_len]
 
-    baseline = plt.bar(index, baseline_data, bar_width,
-                       alpha=opacity,
-                       color='orange',
-                       label='Baseline')
+    if ty == 'bar':
+        plt.bar(index, baseline_data, bar_width,
+                alpha=opacity,
+                color='orange',
+                label='Baseline')
 
-    worklad = plt.bar(index + bar_width, main_data, bar_width,
-                     alpha=opacity,
-                     color='green',
-                     label='Workload')
+        plt.bar(index + bar_width, main_data, bar_width,
+                color='green',
+                label='Workload')
+    elif ty == 'cum':
+        x_base = np.arange(len(baseline_data))
+        x_main = np.arange(len(main_data))
+        plt.plot(x_base,
+                 cum(baseline_data),
+                 color='orange',
+                 label='Baseline')
+
+        plt.plot(x_main,
+                 cum(main_data),
+                 alpha=opacity,
+                 color='green',
+                 label='Workload')
+    else:
+        raise RuntimeError("The ty arg must be 'cum' or 'bar'")
 
     plt.xlabel('SSB Query')
     plt.ylabel('# Page IO')
-    plt.title('FluiDB performance on SSB TPC-H')
+    plt.title(f'FluiDB performance on SSB TPC-H ({pages} pages)')
     plt.xticks(index + bar_width,
                ['%d' % (i % max_qs + 1) for i in range(SAMPLES)],
                fontsize='small')
     plt.legend()
-
     plt.tight_layout()
     return plt
 
 
 def main():
-    for size,max_qs in [(22000,13), (60000,13), (23000,13),(65000,13),(61000,13)]:
-        pdf_file = 'io_perf_%d.pdf' % size
-        print("building:",pdf_file)
-        make_plots(parse_file('io_perf.txt')[size], max_qs).savefig(pdf_file)
+    parsed = parse_file('io_perf.txt')
+    for size,max_qs in [(22000,13), (60000, 13), (23000, 13), (65000, 13), (61000, 13)]:
+        pdf_file = f'pres_io_perf_%s_{size}.pdf'
+        parsed_size = parsed[size]
+        for ty in ['bar', 'cum']:
+            fig = make_plots(parsed_size, ty, size, max_qs)
+            print("building:", pdf_file % ty)
+            fig.savefig(pdf_file % ty)
+            fig.close()
