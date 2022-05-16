@@ -17,6 +17,8 @@ let
       xcolor
       tcolorbox
       titlesec
+      adjustbox
+      collectbox
       environ
       abstract
       cancel

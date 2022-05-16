@@ -13,6 +13,7 @@
   \end{itemize}
 \end{frame}
 
+
 \begin{frame}
   \frametitle{Antisthenis: Expression graphs}
   \begin{columns}
@@ -44,9 +45,8 @@
 \end{frame}
 
 
-\begin{frame}
-  \frametitle{Antisthenis: Early stopping -- recursive expressions}
-  \framesubtitle{While expressions may be self-referential, we can
+\begin{frame}{Antisthenis: Early stopping -- recursive expressions}
+  {While expressions may be self-referential, we can
     sometimes still evaluate them.}
   \begin{align*}
     A &= min({\color{red}B}, C, {\color{blue}D}) \\
@@ -60,4 +60,31 @@
     c_1 &= 3 \\
     c_2 &= 0
   \end{align*}
+\end{frame}
+
+\newcommand{\wlor}{\mathop{\bigvee}\displaylimits}
+\newcommand{\wland}{\mathop{\bigwedge}\displaylimits}
+\begin{frame}{Kinds of operations: Materializability}
+  \[
+    matable(n) := \wlor_{depset \in depsets(n)}\wland_{dep \in depset} mat(dep) \lor matable(dep)
+  \]
+  \uncover<2>{
+    \begin{itemize}
+    \item Recursive -- normally we would maintain a visited set.
+    \item Incremental evaluation is inhibited.
+    \item Bot \(\land\) and \(\lor\) have absorbing elements.
+    \end{itemize}}
+\end{frame}
+
+\begin{frame}{Kinds of operations: Estimated cost}
+    \[
+  \scalebox{0.7}{
+    \(cost(n) := \min\limits_{depset \in depsets(n)}\left[cost_{op}(operator(depset)) + \sum_{dep \in depset}\neg mat(n) \cdot cost(dep)\right]\)
+    }
+    \]
+  \uncover<2>{
+    \begin{itemize}
+    \item Recursive -- Incremental evaluation is inhibited.
+    \item \(\min\) can be exploited for early stopping
+    \end{itemize}}
 \end{frame}
