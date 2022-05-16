@@ -14,6 +14,77 @@
   \item Mark outputs as materialized
   \end{itemize}
 \end{frame}
+
+
+\newcommand\planner[9]{
+  \begin{tikzdiagram_h}
+    \tikzset{node distance=2cm};
+    \tikzset{nnode/.style={ellipse,draw}};
+    \tikzset{tnode/.style={rectangle,draw}};
+
+    \node[nnode] (a) [fill=#1] {A};
+    \node[nnode] (b) [right of=a,fill=#2] {B};
+    \node[nnode] (c) [right of=b,fill=#3] {C};
+    \node[tnode] (to1) [below of = b] {};
+    \path (to1) edge (a);
+    \path (to1) edge (b);
+    \path (to1) edge (c);
+    \node[nnode] (d) [below left of = to1,fill=#4] {X};
+    \node[nnode] (e) [below right of = to1,fill=#5] {E};
+    \path (to1) edge (e);
+    \path (to1) edge (d);
+
+    \node[tnode] (to2) [above left of = d] {};
+    \node[nnode] (f) [above left of = to2,fill=#6] {F};
+    \node[nnode] (g) [below left of = to2,fill=#7] {G};
+    \path (to2) edge (d);
+    \path (to2) edge (f);
+    \path (to2) edge (g);
+
+    \node[tnode] (tu1) [below of = d] {};
+    \node[nnode] (h) [below left of = tu1,fill=#8] {H};
+    \node[nnode] (i) [below right of = tu1,fill=#9] {I};
+    \path (tu1) edge (d);
+    \path (tu1) edge (h);
+    \path (tu1) edge (i);
+  \end{tikzdiagram_h}
+}
+
+\renewcommand\n{none}
+\newcommand\g{green!30}
+\renewcommand\o{gray!30}
+\newcommand\oo{gray!20}
+\newcommand\inputsetsmsg{For each input set}
+
+\begin{frame}{Planning algorithm}
+  \only<1>{
+    \framesubtitle{Materialize node X (if it is not already materialized)}
+    \planner{\n}{\n}{\n}{\g}{\n}{\n}{\n}{\n}{\n}
+  }
+ \only<2>{
+    \framesubtitle{\inputsetsmsg}
+    \planner{\n}{\n}{\n}{\o}{\n}{\g}{\n}{\n}{\n}
+  }
+ \only<3>{
+    \framesubtitle{\inputsetsmsg}
+    \planner{\n}{\n}{\n}{\o}{\n}{\n}{\n}{\g}{\g}
+  }
+ \only<4>{
+    \framesubtitle{\inputsetsmsg}
+    \planner{\g}{\g}{\g}{\o}{\n}{\n}{\n}{\n}{\n}
+  }
+ \only<5>{
+    \framesubtitle{For each output set containing the node}
+    \planner{\oo}{\oo}{\oo}{\o}{\g}{\n}{\n}{\n}{\n}
+  }
+ \only<6>{
+   \framesubtitle{Schedule the current branch}
+   \[priority = \sum_{op \in \text{planned ops}} cost(op) + \sum_{h \in hist.} cost_{stoch.}(h) + \sum_{d \in deps} cost_{exp.}(d)\]
+   \planner{\g}{\g}{\g}{\o}{\g}{\n}{\n}{\n}{\n}
+  }
+
+
+\end{frame}
 %%% Local Variables:
 %%% mode: latex
 %%% TeX-master: "presentation"
