@@ -19,6 +19,10 @@ let
       titlesec
       adjustbox
       collectbox
+      emoji
+      datetime2
+      etoolbox
+      tracklang
       environ
       abstract
       cancel

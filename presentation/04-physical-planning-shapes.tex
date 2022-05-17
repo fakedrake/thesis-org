@@ -1,21 +1,3 @@
-\begin{frame}{Planning algorithm [TODO shapes]}
-  \begin{itemize}
-  \item A network with reverse nodes
-  \item Check depsets for materializable
-  \item Chose an output set
-  \item Garbage collect to create the output set
-  \item Halt by combining
-    \begin{itemize}
-    \item History cost
-    \item Current tirgger
-    \item Input cost
-    \end{itemize}
-  \item Recurse on chosen inputs
-  \item Mark outputs as materialized
-  \end{itemize}
-\end{frame}
-
-
 \newcommand\planner[9]{
   \begin{tikzdiagram_h}
     \tikzset{node distance=2cm};
@@ -52,9 +34,10 @@
 
 \renewcommand\n{none}
 \newcommand\g{green!30}
+\newcommand\dg{green}
 \renewcommand\o{gray!30}
 \newcommand\oo{gray!20}
-\newcommand\inputsetsmsg{For each input set}
+\newcommand\inputsetsmsg{For each (materializable) input set}
 
 \begin{frame}{Planning algorithm}
   \only<1>{
@@ -80,11 +63,44 @@
  \only<6>{
    \framesubtitle{Schedule the current branch}
    \[priority = \sum_{op \in \text{planned ops}} cost(op) + \sum_{h \in hist.} cost_{stoch.}(h) + \sum_{d \in deps} cost_{exp.}(d)\]
-   \planner{\g}{\g}{\g}{\o}{\g}{\n}{\n}{\n}{\n}
   }
-
+ \only<7>{
+   \framesubtitle{Recursively materialize the inputs}
+   \planner{\g}{\g}{\g}{\o}{\n}{\n}{\n}{\n}{\n}
+ }
+ \only<8>{
+   \framesubtitle{Once the inputs are materialized, garbage collect to make room for the outputs}
+   \planner{\dg}{\dg}{\dg}{\g}{\g}{\n}{\n}{\n}{\n}
+ }
+ \only<9>{
+   \framesubtitle{Mark the outputs as materialized and register the operator for the plan}
+   \planner{\dg}{\dg}{\dg}{\dg}{\dg}{\n}{\n}{\n}{\n}
+ }
 
 \end{frame}
+
+\begin{frame}{Profit!}
+  \centering{\emoji{moneybag}}
+\end{frame}
+
+\begin{frame}{Planning algorithm (recap)}
+  \begin{itemize}
+  \item A network with reverse nodes
+  \item Check depsets for materializable
+  \item Chose an output set
+  \item Halt by combining
+    \begin{itemize}
+    \item Cost of operations so far.
+    \item Cost of historical costs given the materialized nodes.
+    \item Expected cost of input.
+    \end{itemize}
+  \item Recurse on chosen inputs.
+  \item Garbage collect to make space forthe output set
+  \item Mark outputs as materialized and register the operator as tirggered.
+  \end{itemize}
+\end{frame}
+
+
 %%% Local Variables:
 %%% mode: latex
 %%% TeX-master: "presentation"
