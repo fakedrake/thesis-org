@@ -1,3 +1,20 @@
+\begin{frame}{Planning algorithm overview}
+  \begin{itemize}
+  \item A network with reverse nodes
+  \item Check depsets for materializable
+  \item Chose an output set
+  \item Halt by combining
+    \begin{itemize}
+    \item Cost of operations so far.
+    \item Cost of historical costs given the materialized nodes.
+    \item Expected cost of input.
+    \end{itemize}
+  \item Recurse on chosen inputs.
+  \item Garbage collect to make space for the output set
+  \item Mark outputs as materialized and register the operator as tirggered.
+  \end{itemize}
+\end{frame}
+
 \newcommand\planner[9]{
   \begin{tikzdiagram_h}
     \tikzset{node distance=2cm};
@@ -81,23 +98,6 @@
 
 \begin{frame}{Profit!}
   \centering{\emoji{moneybag}}
-\end{frame}
-
-\begin{frame}{Planning algorithm (recap)}
-  \begin{itemize}
-  \item A network with reverse nodes
-  \item Check depsets for materializable
-  \item Chose an output set
-  \item Halt by combining
-    \begin{itemize}
-    \item Cost of operations so far.
-    \item Cost of historical costs given the materialized nodes.
-    \item Expected cost of input.
-    \end{itemize}
-  \item Recurse on chosen inputs.
-  \item Garbage collect to make space forthe output set
-  \item Mark outputs as materialized and register the operator as tirggered.
-  \end{itemize}
 \end{frame}
 
 
