@@ -34,8 +34,8 @@ let
       koma-script
       framed
     ; });
-  # py = pkgs.python39.withPackages (p: with p; [pandas numpy pygments matplotlib]);
-  py = pkgs.python39.withPackages (p: with p; []);
+  py = pkgs.python39.withPackages (p: with p; [pandas numpy pygments matplotlib]);
+  # py = pkgs.python39.withPackages (p: with p; []);
 in pkgs.stdenv.mkDerivation {
   pname = "phd-thesis";
   version = "0.0.1";
@@ -48,4 +48,5 @@ in pkgs.stdenv.mkDerivation {
   # ${./.} is the path to /nix/store/... ${toString ./.} evaluates to
   # the current directory.
   LUA_PATH = "${toString ./.}/lua/?.lua;$LUA_PATH";
+
 }
