@@ -152,30 +152,32 @@ def make_plots(data, ty, pages, max_qs=12):
         plt.bar(index, baseline_data, bar_width,
                 alpha=opacity,
                 color='orange',
-                label='Baseline')
+                label='Isolated Query FluiDB')
 
         plt.bar(index + bar_width, main_data, bar_width,
                 color='green',
-                label='Workload')
+                label='FluiDB')
     elif ty == 'cum':
         x_base = np.arange(len(baseline_data))
         x_main = np.arange(len(main_data))
         plt.plot(x_base,
                  cum(baseline_data),
                  color='orange',
-                 label='Baseline')
+                 label='Isolated Query FluiDB')
 
         plt.plot(x_main,
                  cum(main_data),
                  alpha=opacity,
                  color='green',
-                 label='Workload')
+                 label='FluiDB')
     else:
         raise RuntimeError("The ty arg must be 'cum' or 'bar'")
 
+
+    ax.yaxis.set_major_formatter(lambda x,pos: f"{int(x/1000)}K")
     plt.xlabel('SSB Query')
     plt.ylabel('# Page IO')
-    plt.title(f'FluiDB performance on SSB TPC-H ({pages} pages)')
+    plt.title(f'FluiDB performance on SSB TPC-H ({int(pages / 10)}K  pages)')
     plt.xticks(index + bar_width,
                ['%d' % (i % max_qs + 1) for i in range(SAMPLES)],
                fontsize='small')

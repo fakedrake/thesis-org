@@ -11,6 +11,16 @@
   file = {/Users/cperivol/Zotero/storage/UW93FCQV/79358.html}
 }
 
+@inproceedings{abokhamisFAQQuestionsAsked2016,
+  title = {{{FAQ}}: Questions Asked Frequently},
+  shorttitle = {{{FAQ}}},
+  booktitle = {Proceedings of the 35th {{ACM SIGMOD-SIGACT-SIGAI Symposium}} on {{Principles}} of {{Database Systems}}},
+  author = {Abo Khamis, Mahmoud and Ngo, Hung Q. and Rudra, Atri},
+  date = {2016},
+  pages = {13--28},
+  file = {/Users/cperivol/Zotero/storage/ERXF7PLS/Abo Khamis et al. - 2016 - FAQ questions asked frequently.pdf;/Users/cperivol/Zotero/storage/5MBGXGFM/2902251.html}
+}
+
 @online{AdaptonComposableDemanddriven,
   title = {Adapton: Composable, Demand-Driven Incremental Computation: {{ACM SIGPLAN Notices}}: {{Vol}} 49, {{No}} 6},
   url = {https://dl.acm.org/doi/abs/10.1145/2666356.2594324},
@@ -89,6 +99,16 @@
   file = {/Users/cperivol/Zotero/storage/I3LXQP7G/Armbrust et al. - 2015 - Spark SQL Relational Data Processing in Spark.pdf}
 }
 
+@inproceedings{arumugamDataPathSystemDatacentric2010,
+  title = {The {{DataPath}} System: A Data-Centric Analytic Processing Engine for Large Data Warehouses},
+  shorttitle = {The {{DataPath}} System},
+  booktitle = {Proceedings of the 2010 {{ACM SIGMOD International Conference}} on {{Management}} of Data},
+  author = {Arumugam, Subi and Dobra, Alin and Jermaine, Christopher M. and Pansare, Niketan and Perez, Luis},
+  date = {2010},
+  pages = {519--530},
+  file = {/Users/cperivol/Zotero/storage/MP598H3W/Arumugam et al. - 2010 - The DataPath system a data-centric analytic proce.pdf;/Users/cperivol/Zotero/storage/73JW4XJA/1807167.html}
+}
+
 @inproceedings{asadaArrowsAreStrong2010,
   title = {Arrows Are Strong Monads},
   booktitle = {Proceedings of the Third {{ACM SIGPLAN}} Workshop on {{Mathematically}} Structured Functional Programming - {{MSFP}} '10},
@@ -130,6 +150,27 @@
   url = {https://dl.acm.org/doi/abs/10.1145/1090189.1086390},
   urldate = {2021-10-20},
   file = {/Users/cperivol/Zotero/storage/H6GJA5B6/1090189.html}
+}
+
+@incollection{baezPhysicsTopologyLogic2011,
+  title = {Physics, {{Topology}}, {{Logic}} and {{Computation}}: {{A Rosetta Stone}}},
+  shorttitle = {Physics, {{Topology}}, {{Logic}} and {{Computation}}},
+  booktitle = {New {{Structures}} for {{Physics}}},
+  author = {Baez, J. and Stay, M.},
+  editor = {Coecke, Bob},
+  date = {2011},
+  series = {Lecture {{Notes}} in {{Physics}}},
+  pages = {95--172},
+  publisher = {{Springer}},
+  location = {{Berlin, Heidelberg}},
+  doi = {10.1007/978-3-642-12821-9_2},
+  url = {https://doi.org/10.1007/978-3-642-12821-9_2},
+  urldate = {2022-09-04},
+  abstract = {In physics, Feynman diagrams are used to reason about quantum processes. In the 1980s, it became clear that underlying these diagrams is a powerful analogy between quantum physics and topology. Namely, a linear operator behaves very much like a “cobordism”: a manifold representing spacetime, going between two manifolds representing space. This led to a burst of work on topological quantum field theory and “quantum topology”. But this was just the beginning: similar diagrams can be used to reason about logic, where they represent proofs, and computation, where they represent programs. With the rise of interest in quantum cryptography and quantum computation, it became clear that there is extensive network of analogies between physics, topology, logic and computation. In this expository paper, we make some of these analogies precise using the concept of “closed symmetric monoidal category”. We assume no prior knowledge of category theory, proof theory or computer science.},
+  isbn = {978-3-642-12821-9},
+  langid = {english},
+  keywords = {Inference Rule,Intuitionistic Logic,Lambda Calculus,Monoidal Category,Unit Object},
+  file = {/Users/cperivol/Zotero/storage/IEA8L8W3/Baez and Stay - 2011 - Physics, Topology, Logic and Computation A Rosett.pdf}
 }
 
 @inproceedings{barataOverviewDecisionSupport2015,
@@ -392,6 +433,23 @@
   file = {/Users/cperivol/Zotero/storage/5GR8TTDC/Camacho-Rodríguez et al. - 2016 - Reuse-based optimization for pig latin.pdf;/Users/cperivol/Zotero/storage/RKNZH5DF/2983323.html}
 }
 
+@article{candeaScalablePredictableJoin2009,
+  title = {A Scalable, Predictable Join Operator for Highly Concurrent Data Warehouses},
+  author = {Candea, George and Polyzotis, Neoklis and Vingralek, Radek},
+  date = {2009-08-01},
+  journaltitle = {Proceedings of the VLDB Endowment},
+  shortjournal = {Proc. VLDB Endow.},
+  volume = {2},
+  number = {1},
+  pages = {277--288},
+  issn = {2150-8097},
+  doi = {10.14778/1687627.1687659},
+  url = {https://doi.org/10.14778/1687627.1687659},
+  urldate = {2022-09-04},
+  abstract = {Conventional data warehouses employ the query-at-a-time model, which maps each query to a distinct physical plan. When several queries execute concurrently, this model introduces contention, because the physical plans---unaware of each other---compete for access to the underlying I/O and computation resources. As a result, while modern systems can efficiently optimize and evaluate a single complex data analysis query, their performance suffers significantly when multiple complex queries run at the same time. We describe an augmentation of traditional query engines that improves join throughput in large-scale concurrent data warehouses. In contrast to the conventional query-at-a-time model, our approach employs a single physical plan that can share I/O, computation, and tuple storage across all in-flight join queries. We use an "always-on" pipeline of non-blocking operators, coupled with a controller that continuously examines the current query mix and performs run-time optimizations. Our design allows the query engine to scale gracefully to large data sets, provide predictable execution times, and reduce contention. In our empirical evaluation, we found that our prototype outperforms conventional commercial systems by an order of magnitude for tens to hundreds of concurrent queries.},
+  file = {/Users/cperivol/Zotero/storage/TWVDA6KA/Candea et al. - 2009 - A scalable, predictable join operator for highly c.pdf}
+}
+
 @article{chamberlinHistoryEvaluationSystem1981,
   title = {A History and Evaluation of {{System R}}},
   author = {Chamberlin, Donald D. and Astrahan, Morton M. and Blasgen, Michael W. and Gray, James N. and King, W. Frank and Lindsay, Bruce G. and Lorie, Raymond and Mehl, James W. and Price, Thomas G. and Putzolu, Franco and Selinger, Patricia Griffiths and Schkolnick, Mario and Slutz, Donald R. and Traiger, Irving L. and Wade, Bradford W. and Yost, Robert A.},
@@ -474,6 +532,25 @@
   file = {/Users/cperivol/Zotero/storage/ZT2TM6I4/Chen et al. - 2016 - The MemSQL query optimizer a modern optimizer for.pdf}
 }
 
+@article{cheungSlothBeingLazy2016,
+  title = {Sloth: {{Being Lazy Is}} a {{Virtue}} ({{When Issuing Database Queries}})},
+  shorttitle = {Sloth},
+  author = {Cheung, Alvin and Madden, Samuel and Solar-Lezama, Armando},
+  date = {2016-06-06},
+  journaltitle = {ACM Transactions on Database Systems},
+  shortjournal = {ACM Trans. Database Syst.},
+  volume = {41},
+  number = {2},
+  pages = {8:1--8:42},
+  issn = {0362-5915},
+  doi = {10.1145/2894749},
+  url = {https://doi.org/10.1145/2894749},
+  urldate = {2022-09-04},
+  abstract = {Many web applications store persistent data in databases. During execution, such applications spend a significant amount of time communicating with the database for retrieval and storing of persistent data over the network. These network round-trips represent a significant fraction of the overall execution time for many applications (especially those that issue a lot of database queries) and, as a result, increase their latency. While there has been prior work that aims to eliminate round-trips by batching queries, they are limited by (1) a requirement that developers manually identify batching opportunities, or (2) the fact that they employ static program analysis techniques that cannot exploit many opportunities for batching, as many of these opportunities require knowing precise information about the state of the running program. In this article, we present Sloth, a new system that extends traditional lazy evaluation to expose query batching opportunities during application execution, even across loops, branches, and method boundaries. Many such opportunities often require expensive and sophisticated static analysis to recognize from the application source code. Rather than doing so, Sloth instead makes use of dynamic analysis to capture information about the program state and, based on that information, decides how to batch queries and when to issue them to the database. We formalize extended lazy evaluation and prove that it preserves program semantics when executed under standard semantics. Furthermore, we describe our implementation of Sloth and our experience in evaluating Sloth using over 100 benchmarks from two large-scale open-source applications, in which Sloth achieved up to a 3 × reduction in page load time by delaying computation using extended lazy evaluation.},
+  keywords = {Application performance,lazy evaluation,query optimization},
+  file = {/Users/cperivol/Zotero/storage/KFZYVMQL/Cheung et al. - 2016 - Sloth Being Lazy Is a Virtue (When Issuing Databa.pdf}
+}
+
 @article{chirkovaMaterializedViews2011,
   title = {Materialized Views},
   author = {Chirkova, Rada and Yang, Jun},
@@ -486,7 +563,7 @@
   file = {/Users/cperivol/Zotero/storage/CL6RS42Q/Chirkova and Yang - 2011 - Materialized views.pdf}
 }
 
-@online{chuAxiomaticFoundationsAlgorithms2018,
+@unpublished{chuAxiomaticFoundationsAlgorithms2018,
   title = {Axiomatic Foundations and Algorithms for Deciding Semantic Equivalences of {{SQL}} Queries},
   author = {Chu, Shumo and Murphy, Brendan and Roesch, Jared and Cheung, Alvin and Suciu, Dan},
   date = {2018},
@@ -534,6 +611,14 @@
   date = {2019},
   pages = {1889--1892},
   file = {/Users/cperivol/Zotero/storage/JJTXBEHR/Chung et al. - 2019 - Peering through the dark An owl's view of inter-j.pdf;/Users/cperivol/Zotero/storage/65LVK6SJ/3299869.html}
+}
+
+@article{ComputingQueriesDerived,
+  title = {Computing {{Queries}} from {{Derived Relations}}},
+  pages = {11},
+  abstract = {Assume that a set of derived relations are available in stored form. Given a query (or subquery), can it be computed from the derived relations and, if so, how? Variants of this problem arise in several areas of query processing. Relation fragments stored at a site in a distributed database system, database snapshots, and intermediate results obtained during the processing of a query are all examples of stored, derived relations. In this paper we give necessary and sufficient conditions for when a query is computable from a single derived relation. It is assumed that both the query and the derived relation are defined by PSJ-expressions, that is, relational algebra expressions involving only projections, selections, and joins, in any combination. The solution is constructive: not only does it tell whether the query is computable or not, but it also shows how to compute it.},
+  langid = {english},
+  file = {/Users/cperivol/Zotero/storage/TP5EBBIF/Computing Queries from Derived Relations.pdf}
 }
 
 @online{DatabaseSystemsComplete,
@@ -663,7 +748,7 @@
   file = {/Users/cperivol/Zotero/storage/945SCPWL/Eidhof et al. - 2009 - Rapid Prototyping in TEX 5.pdf}
 }
 
-@online{elghandourReStoreReusingResults2012,
+@unpublished{elghandourReStoreReusingResults2012,
   title = {{{ReStore}}: Reusing Results of {{MapReduce}} Jobs},
   shorttitle = {{{ReStore}}},
   author = {Elghandour, Iman and Aboulnaga, Ashraf},
@@ -674,7 +759,7 @@
   file = {/Users/cperivol/Zotero/storage/5738YWYN/Elghandour and Aboulnaga - 2012 - ReStore reusing results of MapReduce jobs.pdf;/Users/cperivol/Zotero/storage/JCS7Q8UZ/1203.html}
 }
 
-@online{elghandourReStoreReusingResults2012a,
+@unpublished{elghandourReStoreReusingResults2012a,
   title = {{{ReStore}}: {{Reusing Results}} of {{MapReduce Jobs}}},
   shorttitle = {{{ReStore}}},
   author = {Elghandour, Iman and Aboulnaga, Ashraf},
@@ -833,6 +918,26 @@
   urldate = {2021-10-20},
   abstract = {A trampolined program is organized as a single loop in which computations are scheduled and their execution allowed to proceed in discrete steps. Writing programs in trampolined style supports primitives for multithreading without language support for continuations. Various forms of trampolining allow for different degrees of interaction between threads. We present two architectures based on an only mildly intrusive trampolined style. Concurrency can be supported at multiple levels of granularity by performing the trampolining transformation multiple times.},
   isbn = {978-1-58113-111-6}
+}
+
+@inproceedings{giannikisCrescando2010,
+  title = {Crescando},
+  booktitle = {Proceedings of the 2010 {{ACM SIGMOD International Conference}} on {{Management}} of Data},
+  author = {Giannikis, Georgios and Unterbrunner, Philipp and Meyer, Jeremy and Alonso, Gustavo and Fauser, Dietmar and Kossmann, Donald},
+  date = {2010},
+  pages = {1227--1230},
+  file = {/Users/cperivol/Zotero/storage/RK92P9LS/Giannikis et al. - 2010 - Crescando.pdf;/Users/cperivol/Zotero/storage/N7SLWXCN/1807167.html}
+}
+
+@unpublished{giannikisSharedDBKillingOne2012,
+  title = {{{SharedDB}}: Killing One Thousand Queries with One Stone},
+  shorttitle = {{{SharedDB}}},
+  author = {Giannikis, Georgios and Alonso, Gustavo and Kossmann, Donald},
+  date = {2012},
+  eprint = {1203.0056},
+  eprinttype = {arxiv},
+  archiveprefix = {arXiv},
+  file = {/Users/cperivol/Zotero/storage/9TZ66HNU/Giannikis et al. - 2012 - SharedDB killing one thousand queries with one st.pdf;/Users/cperivol/Zotero/storage/F6TD2MGJ/1203.html}
 }
 
 @article{giannikisSharedWorkloadOptimization2014,
@@ -1017,6 +1122,15 @@
   file = {/Users/cperivol/Zotero/storage/TKJVNHS3/Gunda et al. - 2010 - Nectar Automatic Management of Data and Computati.pdf}
 }
 
+@article{guoEnergyefficientDatabaseSystems2022,
+  title = {Energy-Efficient {{Database Systems}}: {{A Systematic Survey}}},
+  shorttitle = {Energy-Efficient {{Database Systems}}},
+  author = {Guo, Binglei and Yu, Jiong and Yang, Dexian and Leng, Hongyong and Liao, Bin},
+  date = {2022},
+  journaltitle = {ACM Computing Surveys (CSUR)},
+  publisher = {{ACM New York, NY}}
+}
+
 @inproceedings{guptaSelectionViewsMaterialize1997,
   title = {Selection of Views to Materialize in a Data Warehouse},
   booktitle = {Database {{Theory}} — {{ICDT}} '97},
@@ -1034,6 +1148,24 @@
   keywords = {Data Cube,Greedy Algorithm,Greedy Heuristic,Monotonicity Property,Outgoing Edge},
   annotation = {00000},
   file = {/Users/cperivol/Zotero/storage/5BUG8DZV/Gupta - 1997 - Selection of views to materialize in a data wareho.pdf}
+}
+
+@inproceedings{guptaSelectionViewsMaterialize1999,
+  title = {Selection of {{Views}} to {{Materialize Under}} a {{Maintenance Cost Constraint}}},
+  booktitle = {Database {{Theory}} — {{ICDT}}’99},
+  author = {Gupta, Himanshu and Mumick, Inderpal Singh},
+  editor = {Beeri, Catriel and Buneman, Peter},
+  date = {1999},
+  series = {Lecture {{Notes}} in {{Computer Science}}},
+  pages = {453--470},
+  publisher = {{Springer}},
+  location = {{Berlin, Heidelberg}},
+  doi = {10.1007/3-540-49257-7_28},
+  abstract = {A data warehouse stores materialized views derived from one or more sources for the purpose of efficiently implementing decision-support or OLAP queries. One of the most important decisions in designing a data warehouse is the selection of materialized views to be maintained at the warehouse. The goal is to select an appropriate set of views that minimizes total query response time and/or the cost of maintaining the selected views, given a limited amount of resource such as materialization time, storage space, or total view maintenance time. In this article, we develop algorithms to select a set of views to materialize in a data warehouse in order to minimize the total query response time under the constraint of a given total view maintenance time. As the above maintenance-cost view-selection problem is extremely intractable, we tackle some special cases and design approximation algorithms. First, we design an approximation greedy algorithm for the maintenance-cost view-selection problem in OR view graphs, which arise in many practical applications, e.g., data cubes. We prove that the query benefit of the solution delivered by the proposed greedy heuristic is within 63\% of that of the optimal solution. Second, we also design an A* heuristic, that delivers an optimal solution, for the general case of AND-OR view graphs. We implemented our algorithms and a performance study of the algorithms shows that the proposed greedy algorithm for OR view graphs almost always delivers an optimal solution.},
+  isbn = {978-3-540-49257-3},
+  langid = {english},
+  keywords = {Data Cube,Greedy Algorithm,Greedy Heuristic,Maintenance Time,View Graph},
+  file = {/Users/cperivol/Zotero/storage/MR6AHH7G/Gupta and Mumick - 1999 - Selection of Views to Materialize Under a Maintena.pdf}
 }
 
 @article{halevyAnsweringQueriesUsing2001,
@@ -1131,6 +1263,28 @@
   date = {2018},
   pages = {409--439},
   file = {/Users/cperivol/Zotero/storage/P7484JHD/3226595.html}
+}
+
+@inproceedings{harizopoulosQpipeSimultaneouslyPipelined2005,
+  title = {Qpipe: {{A}} Simultaneously Pipelined Relational Query Engine},
+  shorttitle = {Qpipe},
+  booktitle = {Proceedings of the 2005 {{ACM SIGMOD}} International Conference on {{Management}} of Data},
+  author = {Harizopoulos, Stavros and Shkapenyuk, Vladislav and Ailamaki, Anastassia},
+  date = {2005},
+  pages = {383--394},
+  file = {/Users/cperivol/Zotero/storage/7PXDALS8/Harizopoulos et al. - 2005 - Qpipe A simultaneously pipelined relational query.pdf;/Users/cperivol/Zotero/storage/MVARMZLE/1066157.html}
+}
+
+@article{harizopoulosStagedDBDesigningDatabase2005,
+  title = {{{StagedDB}}: {{Designing Database Servers}} for {{Modern Hardware}}.},
+  shorttitle = {{{StagedDB}}},
+  author = {Harizopoulos, Stavros and Ailamaki, Anastassia},
+  date = {2005},
+  journaltitle = {IEEE Data Eng. Bull.},
+  volume = {28},
+  number = {2},
+  pages = {11--16},
+  file = {/Users/cperivol/Zotero/storage/2BKWC4FV/Harizopoulos and Ailamaki - 2005 - StagedDB Designing Database Servers for Modern Ha.pdf}
 }
 
 @article{haynesLogicContinuations1987,
@@ -1313,6 +1467,19 @@
   file = {/Users/cperivol/Zotero/storage/7NXADTI8/Idreos et al. - 2007 - Database Cracking..pdf}
 }
 
+@article{idreosMonetdbTwoDecades2012,
+  title = {Monetdb: {{Two}} Decades of Research in Column-Oriented Database},
+  shorttitle = {Monetdb},
+  author = {Idreos, S. and Groffen, F. and Nes, N. and Manegold, S. and Mullender, S. and Kersten, M.},
+  date = {2012},
+  journaltitle = {IEEE Data Engineering Bulletin},
+  volume = {35},
+  number = {1},
+  pages = {40--45},
+  publisher = {{Citeseer}},
+  file = {/Users/cperivol/Zotero/storage/4G8TX5YI/Idreos et al. - 2012 - Monetdb Two decades of research in column-oriente.pdf}
+}
+
 @online{IEEEXploreFullText,
   title = {{{IEEE Xplore Full-Text PDF}}:},
   url = {https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=5447892},
@@ -1348,7 +1515,7 @@
   file = {/Users/cperivol/Zotero/storage/PPKVQE6V/2001 - Intel ® Itanium ™ Processor- specific Application .pdf;/Users/cperivol/Zotero/storage/SDYPSXMW/summary.html}
 }
 
-@online{itzhakyAutomatedVerificationWeb2016,
+@unpublished{itzhakyAutomatedVerificationWeb2016,
   title = {On the Automated Verification of Web Applications with Embedded {{SQL}}},
   author = {Itzhaky, Shachar and Kotek, Tomer and Rinetzky, Noam and Sagiv, Mooly and Tamir, Orr and Veith, Helmut and Zuleger, Florian},
   date = {2016},
@@ -1593,6 +1760,19 @@
   eventtitle = {{{IEEE Transactions}} on {{Knowledge}} and {{Data Engineering}}},
   keywords = {bytecode interpreter,Computer bugs,debugging,Debugging,Engines,Optimization,query compilation,Query processing,register allocation,Semantics,Throughput,Tools},
   annotation = {00000}
+}
+
+@article{kotidisDynamatDynamicView1999,
+  title = {Dynamat: {{A}} Dynamic View Management System for Data Warehouses},
+  shorttitle = {Dynamat},
+  author = {Kotidis, Yannis and Roussopoulos, Nick},
+  date = {1999},
+  journaltitle = {ACM Sigmod record},
+  volume = {28},
+  number = {2},
+  pages = {371--382},
+  publisher = {{ACM New York, NY, USA}},
+  file = {/Users/cperivol/Zotero/storage/YEIFUNCV/Kotidis and Roussopoulos - 1999 - Dynamat A dynamic view management system for data.pdf;/Users/cperivol/Zotero/storage/LMIZIANL/304181.html}
 }
 
 @article{kraskaSageDBLearnedDatabase,
@@ -1846,6 +2026,16 @@
   file = {/Users/cperivol/Zotero/storage/QKE8D3NZ/Liu et al. - 2016 - Kodiak Leveraging materialized views for very low.pdf;/Users/cperivol/Zotero/storage/T4F29ZSW/3007263.html}
 }
 
+@inproceedings{makreshanskiBatchDBEfficientIsolated2017,
+  title = {{{BatchDB}}: {{Efficient}} Isolated Execution of Hybrid {{OLTP}}+ {{OLAP}} Workloads for Interactive Applications},
+  shorttitle = {{{BatchDB}}},
+  booktitle = {Proceedings of the 2017 {{ACM International Conference}} on {{Management}} of {{Data}}},
+  author = {Makreshanski, Darko and Giceva, Jana and Barthels, Claude and Alonso, Gustavo},
+  date = {2017},
+  pages = {37--50},
+  file = {/Users/cperivol/Zotero/storage/C89EQJ5B/Makreshanski et al. - 2017 - BatchDB Efficient isolated execution of hybrid OL.pdf;/Users/cperivol/Zotero/storage/S5ZBKANB/3035918.html}
+}
+
 @report{makreshanskiMqjoinEfficientShared2016,
   title = {Mqjoin: {{Efficient}} Shared Execution of Main-Memory Joins},
   shorttitle = {Mqjoin},
@@ -1853,6 +2043,15 @@
   date = {2016},
   institution = {{ETH Zurich}},
   file = {/Users/cperivol/Zotero/storage/3E8UAMYX/Makreshanski et al. - 2016 - Mqjoin Efficient shared execution of main-memory .pdf}
+}
+
+@report{makreshanskiMqjoinEfficientShared2016a,
+  title = {Mqjoin: {{Efficient}} Shared Execution of Main-Memory Joins},
+  shorttitle = {Mqjoin},
+  author = {Makreshanski, Darko and Giannikis, Georgios and Alonso, Gustavo and Kossmann, Donald},
+  date = {2016},
+  institution = {{ETH Zurich}},
+  file = {/Users/cperivol/Zotero/storage/6RSNULZG/Makreshanski et al. - 2016 - Mqjoin Efficient shared execution of main-memory .pdf}
 }
 
 @article{mamiSurveyViewSelection2012,
@@ -1886,7 +2085,7 @@
   file = {/Users/cperivol/Zotero/storage/F3GLFWWS/Marcus et al. - 2019 - Neo a learned query optimizer.pdf}
 }
 
-@online{marcusNeoLearnedQuery2019a,
+@unpublished{marcusNeoLearnedQuery2019a,
   title = {Neo: {{A}} Learned Query Optimizer},
   shorttitle = {Neo},
   author = {Marcus, Ryan and Negi, Parimarjan and Mao, Hongzi and Zhang, Chi and Alizadeh, Mohammad and Kraska, Tim and Papaemmanouil, Olga and Tatbul, Nesime},
@@ -1920,6 +2119,25 @@
   date = {2013},
   journaltitle = {Proceedings of the Code Mesh London},
   shortjournal = {Proceedings of the Code Mesh London}
+}
+
+@inproceedings{marroquinPayOneGet2018,
+  title = {Pay {{One}}, {{Get Hundreds}} for {{Free}}: {{Reducing Cloud Costs}} through {{Shared Query Execution}}},
+  shorttitle = {Pay {{One}}, {{Get Hundreds}} for {{Free}}},
+  booktitle = {Proceedings of the {{ACM Symposium}} on {{Cloud Computing}}},
+  author = {Marroquín, Renato and Müller, Ingo and Makreshanski, Darko and Alonso, Gustavo},
+  date = {2018-10-11},
+  series = {{{SoCC}} '18},
+  pages = {439--450},
+  publisher = {{Association for Computing Machinery}},
+  location = {{New York, NY, USA}},
+  doi = {10.1145/3267809.3267822},
+  url = {https://doi.org/10.1145/3267809.3267822},
+  urldate = {2022-09-04},
+  abstract = {Cloud-based data analysis is nowadays common practice because of the lower system management overhead as well as the pay-as-you-go pricing model. The pricing model, however, is not always suitable for query processing as heavy use results in high costs. For example, in query-as-a-service systems, where users are charged per processed byte, collections of queries accessing the same data frequently can become expensive. The problem is compounded by the limited options for the user to optimize query execution when using declarative interfaces such as SQL. In this paper, we show how, without modifying existing systems and without the involvement of the cloud provider, it is possible to significantly reduce the overhead, and hence the cost, of query-as-a-service systems. Our approach is based on query rewriting so that multiple concurrent queries are combined into a single query. Our experiments show the aggregated amount of work done by the shared execution is smaller than in a query-at-a-time approach. Since queries are charged per byte processed, the cost of executing a group of queries is often the same as executing a single one of them. As an example, we demonstrate how the shared execution of the TPC-H benchmark is up to 100x and 16x cheaper in Amazon Athena and bigquery than using a query-at-a-time approach while achieving a higher throughput.},
+  isbn = {978-1-4503-6011-1},
+  keywords = {Cloud Computing,Data Warehouse,Query Processing,Serverless,Shared Workload Execution},
+  file = {/Users/cperivol/Zotero/storage/TNFDTZQI/Marroquín et al. - 2018 - Pay One, Get Hundreds for Free Reducing Cloud Cos.pdf}
 }
 
 @misc{martinSQLGImplementationApache2020,
@@ -2074,6 +2292,25 @@
   langid = {english},
   keywords = {Data structures,Datatype-generic programming,Incremental computing,Shortcut fusion},
   file = {/Users/cperivol/Zotero/storage/F4EG3CU9/S0167642317300692.html}
+}
+
+@article{mounaProResProactiveReselection2022,
+  title = {{{ProRes}}: {{Proactive}} Re-Selection of Materialized Views},
+  shorttitle = {{{ProRes}}},
+  author = {Mouna, Mustapha and Bellatreche, Ladjel and Boustia, Narhimene},
+  date = {2022},
+  journaltitle = {Computer Science and Information Systems},
+  shortjournal = {ComSIS},
+  volume = {19},
+  number = {2},
+  pages = {735--762},
+  issn = {1820-0214, 2406-1018},
+  doi = {10.2298/CSIS210606003M},
+  url = {http://www.doiserbia.nb.rs/Article.aspx?ID=1820-02142200003M},
+  urldate = {2022-09-03},
+  abstract = {Materialized View Selection is one of the most studied problems in the database field, covering SQL and NoSQL technologies as well as different deployment infrastructures (centralized, parallel, cloud). This problem has become more complex with the arrival of data warehouses, being coupled with the physical design phase that aims at optimizing query performance. Selecting the best set of materialized views to optimize query performance is a challenging task. Given their importance and the complexity of their selection, several research efforts both from academia and industry have been conducted. Results are promising – some solutions are being implemented by commercial and open-source DBMSs –, but they do not factor in the following properties of nowadays analytical queries: (i) largescale queries, (ii) their dynamicity, and (iii) their high interaction. Studies to date fail to consider that complete set of properties. Considering the three properties simultaneously is crucial regarding today’s analytical requirements, which involve dynamic and interactive queries. In this paper, we first present a concise state of the art of the materialized view selection problem (VSP) by analyzing its ecosystem. Secondly, we propose a proactive re-selection approach that considers the three properties concurrently. It features two main phases: offline and online. In the offline phase, we manage a set of the first queries based on a given threshold δ by selecting materialized views through a hypergraph structure. The second phase manages the addition of new queries by scheduling them, updates the structure of the hypergraph, and selects new views by eliminating the least beneficial ones. Finally, extensive experiments are conducted using the Star Schema Benchmark data set to evaluate the effectiveness and efficiency of our approach.},
+  langid = {english},
+  file = {/Users/cperivol/Zotero/storage/PYYPP47F/Mouna et al. - 2022 - ProRes Proactive re-selection of materialized vie.pdf}
 }
 
 @inproceedings{mullerMemoryEfficientKeyForeignKey2021,
@@ -2281,7 +2518,7 @@
   file = {/Users/cperivol/Zotero/storage/9QVKQ5XJ/O'Neil et al. - 1. Star Schema Based on TPC-H.pdf}
 }
 
-@online{ortizEmpiricalAnalysisDeep2019,
+@unpublished{ortizEmpiricalAnalysisDeep2019,
   title = {An {{Empirical Analysis}} of {{Deep Learning}} for {{Cardinality Estimation}}},
   author = {Ortiz, Jennifer and Balazinska, Magdalena and Gehrke, Johannes and Keerthi, S. Sathiya},
   date = {2019-09-11},
@@ -2352,6 +2589,30 @@
   url = {https://github.com/fakedrake/ssb-dbgen},
   urldate = {2021-11-15},
   abstract = {Star Schema Benchmark dbgen}
+}
+
+@inproceedings{phanDynamicMaterializationQuery2008,
+  title = {Dynamic Materialization of Query Views for Data Warehouse Workloads},
+  booktitle = {2008 {{IEEE}} 24th {{International Conference}} on {{Data Engineering}}},
+  author = {Phan, Thomas and Li, Wen-Syan},
+  date = {2008},
+  pages = {436--445},
+  publisher = {{IEEE}},
+  file = {/Users/cperivol/Zotero/storage/EIRB5ZNJ/4497452.html}
+}
+
+@inproceedings{phanDynamicMaterializationQuery2008a,
+  title = {Dynamic {{Materialization}} of {{Query Views}} for {{Data Warehouse Workloads}}},
+  booktitle = {2008 {{IEEE}} 24th {{International Conference}} on {{Data Engineering}}},
+  author = {Phan, Thomas and Li, Wen-Syan},
+  date = {2008-04},
+  pages = {436--445},
+  issn = {2375-026X},
+  doi = {10.1109/ICDE.2008.4497452},
+  abstract = {A materialized view, or Materialized Query Table (MQT), is an auxiliary table with precomputed data that can be used to significantly improve the performance of a database query. Previous research efforts have focused on finding the best candidate MQT set, with a common static heuristic being to greedily pre-materialize the MQTs prior to executing the workload. While this approach is sound when the size of the MQT set on disk is small, it will not be able to pre-materialize all MQTs and indexes when faced with real-world disk limits and view maintenance costs, and thus a static heuristic will fail to exploit the potentially large benefits of those MQTs not selected for materialization. In this paper we present an automated, dynamic MQT management scheme that materializes views and creates indexes in an on-demand fashion as a workload executes and manages them with an LRU cache. In order to maximize the benefit of executing queries with MQTs, the scheme makes an adaptive tradeoff between the MQT materializations, the base table accesses, and the benefit of MQT hits in the cache. To find the workload permutation that produces the overall highest net benefit, we use a genetic algorithm to search the N! solution space, and to avoid materializing seldom-used MQTs, we prune the set of MQT candidates. We ran our dynamic management on a TPC-H workload and found that our scheme produces higher benefit across a variety of scenarios; we demonstrate over 60\% improvement in MQT benefit under harsh conditions when the size of available MQTs with indexes is larger than the cache.},
+  eventtitle = {2008 {{IEEE}} 24th {{International Conference}} on {{Data Engineering}}},
+  keywords = {Cost function,Data warehouses,Database systems,Dynamic scheduling,Genetic algorithms,Job shop scheduling,Query processing,Radio access networks},
+  file = {/Users/cperivol/Zotero/storage/FULFKGHL/Phan and Li - 2008 - Dynamic Materialization of Query Views for Data Wa.pdf;/Users/cperivol/Zotero/storage/YHB9W92P/4497452.html}
 }
 
 @online{PrecompiledHeadersPCH,
@@ -2438,6 +2699,16 @@
   file = {/Users/cperivol/Zotero/storage/69LK5ACA/summary.html}
 }
 
+@inproceedings{ramanConstanttimeQueryProcessing2008,
+  title = {Constant-Time Query Processing},
+  booktitle = {2008 {{IEEE}} 24th {{International Conference}} on {{Data Engineering}}},
+  author = {Raman, Vijayshankar and Swart, Garret and Qiao, Lin and Reiss, Frederick and Dialani, Vijay and Kossmann, Donald and Narang, Inderpal and Sidle, Richard},
+  date = {2008},
+  pages = {60--69},
+  publisher = {{IEEE}},
+  file = {/Users/cperivol/Zotero/storage/YD2N3D9G/4497414.html}
+}
+
 @article{rivasUnifiedViewMonadic2018,
   title = {A Unified View of Monadic and Applicative Non-Determinism},
   author = {Rivas, Exequiel and Jaskelioff, Mauro and Schrijvers, Tom},
@@ -2466,7 +2737,7 @@
   file = {/Users/cperivol/Zotero/storage/4VPCKWHZ/Rogers et al. - 2017 - Multi-query optimization.pdf;/Users/cperivol/Zotero/storage/SNL4ZYF7/en.html}
 }
 
-@online{royDonTrashYour2000,
+@unpublished{royDonTrashYour2000,
   title = {Don't Trash Your Intermediate Results, Cache'em},
   author = {Roy, Prasan and Ramamritham, Krithi and Seshadri, S. and Shenoy, Pradeep and Sudarshan, S.},
   date = {2000},
@@ -2548,6 +2819,16 @@
   file = {/Users/cperivol/Zotero/storage/YRWD7E3R/Schaarschmidt et al. - 2015 - Towards automated polyglot persistence.pdf;/Users/cperivol/Zotero/storage/65MGR2N6/2452.html}
 }
 
+@inproceedings{scheuermannWatchmanDataWarehouse1996,
+  title = {Watchman: {{A}} Data Warehouse Intelligent Cache Manager},
+  shorttitle = {Watchman},
+  booktitle = {Proceedings of the {{VLDB Conference}}},
+  author = {Scheuermann, Peter and Shim, Junho and Vingralek, Radek},
+  date = {1996},
+  issue = {NAS 1.26: 112997},
+  file = {/Users/cperivol/Zotero/storage/GMAC33SX/Scheuermann et al. - 1996 - Watchman A data warehouse intelligent cache manag.pdf;/Users/cperivol/Zotero/storage/4MCDRR2X/19980002734.html}
+}
+
 @article{sellisMultipleQueryOptimization1987,
   title = {Multiple-{{Query Optimization}}.},
   author = {Sellis, T. K.},
@@ -2558,6 +2839,17 @@
   langid = {american},
   annotation = {00000  Accepted: 2007-05-23T09:36:49Z},
   file = {/Users/cperivol/Zotero/storage/DYNK8T5R/Sellis - 1987 - Multiple-Query Optimization..pdf;/Users/cperivol/Zotero/storage/JEUU8L5K/4543.html}
+}
+
+@article{sellisMultiplequeryOptimization1988,
+  title = {Multiple-Query Optimization},
+  author = {Sellis, Timos K.},
+  date = {1988},
+  journaltitle = {ACM Transactions on Database Systems (TODS)},
+  volume = {13},
+  number = {1},
+  pages = {23--52},
+  publisher = {{ACM New York, NY, USA}}
 }
 
 @article{shaikhhaBuildingEfficientQuery2018,
@@ -2576,6 +2868,24 @@
   abstract = {Abstraction without regret refers to the vision of using high-level programming languages for systems development without experiencing a negative impact on performance. A database system designed according to this vision offers both increased productivity and high performance instead of sacrificing the former for the latter as is the case with existing, monolithic implementations that are hard to maintain and extend. In this article, we realize this vision in the domain of analytical query processing. We present LegoBase, a query engine written in the high-level programming language Scala. The key technique to regain efficiency is to apply generative programming: LegoBase performs source-to-source compilation and optimizes database systems code by converting the high-level Scala code to specialized, low-level C code. We show how generative programming allows to easily implement a wide spectrum of optimizations, such as introducing data partitioning or switching from a row to a column data layout, which are difficult to achieve with existing low-level query compilers that handle only queries. We demonstrate that sufficiently powerful abstractions are essential for dealing with the complexity of the optimization effort, shielding developers from compiler internals and decoupling individual optimizations from each other. We evaluate our approach with the TPC-H benchmark and show that (a) with all optimizations enabled, our architecture significantly outperforms a commercial in-memory database as well as an existing query compiler. (b) Programmers need to provide just a few hundred lines of high-level code for implementing the optimizations, instead of complicated low-level code that is required by existing query compilation approaches. (c) These optimizations may potentially come at the cost of using more system memory for improved performance. (d) The compilation overhead is low compared to the overall execution time, thus making our approach usable in practice for compiling query engines.},
   keywords = {abstraction without regret,code generation,High-level programming languages,optimizing compilers,query compilation,query processing},
   file = {/Users/cperivol/Zotero/storage/CECAMX8F/Shaikhha et al. - 2018 - Building Efficient Query Engines in a High-Level L.pdf}
+}
+
+@article{shangCrocodileDBEfficientDatabase,
+  title = {{{CrocodileDB}}: {{Efﬁcient Database Execution}} through {{Intelligent Deferment}}},
+  author = {Shang, Zechao and Liang, Xi and Tang, Dixin and Ding, Cong and Elmore, Aaron J and Krishnan, Sanjay and Franklin, Michael J},
+  pages = {8},
+  abstract = {The end of Moore’s law will push database system designers to be more judicious with computation as the growth in data outpaces the availability of computational resources. Eagerness, or aggressively consuming resources to immediately and quickly complete the task at hand, is one source of wasted resources in modern data systems where the systems expend unnecessary resources waiting on queries, data, or both. Intelligently deferring a task to a later point in time can increase result reuse, reduce work that might later be invalidated, or avoid unnecessary work altogether. We propose a research prototype system, CrocodileDB, which is a resource-efficient database system that automatically optimizes deferment based on user-specification and workload prediction. CrocodileDB integrates new ways of specifying timing information, new query execution policies, new task schedulers, and new data loading schemes.},
+  langid = {english},
+  file = {/Users/cperivol/Zotero/storage/T5DFKKEN/Shang et al. - CrocodileDB Efﬁcient Database Execution through I.pdf}
+}
+
+@inproceedings{shangCrocodileDBEfficientDatabase2020,
+  title = {{{CrocodileDB}}: {{Efficient Database Execution}} through {{Intelligent Deferment}}.},
+  shorttitle = {{{CrocodileDB}}},
+  booktitle = {{{CIDR}}},
+  author = {Shang, Zechao and Liang, Xi and Tang, Dixin and Ding, Cong and Elmore, Aaron J. and Krishnan, Sanjay and Franklin, Michael J.},
+  date = {2020},
+  file = {/Users/cperivol/Zotero/storage/UAW3HU49/Shang et al. - 2020 - CrocodileDB Efficient Database Execution through .pdf}
 }
 
 @inproceedings{shankarQueryOptimizationMicrosoft2012,
@@ -2687,7 +2997,7 @@
   file = {/Users/cperivol/Zotero/storage/KAYPWGPD/Stillger et al. - 2001 - LEO-DB2's learning optimizer.pdf}
 }
 
-@online{sunEndtoendLearningbasedCost2019,
+@unpublished{sunEndtoendLearningbasedCost2019,
   title = {An End-to-End Learning-Based Cost Estimator},
   author = {Sun, Ji and Li, Guoliang},
   date = {2019},
@@ -2796,6 +3106,13 @@
   pages = {1782--1785},
   publisher = {{VLDB Endowment}},
   file = {/Users/cperivol/Zotero/storage/MLPJXY2E/Tian et al. - 2019 - Synergistic graph and SQL analytics inside IBM Db2.pdf;/Users/cperivol/Zotero/storage/C24DAJ7N/3352063.html}
+}
+
+@online{TroubleshootingTranslatorIssues,
+  title = {Troubleshooting Translator Issues [{{Zotero Documentation}}]},
+  url = {https://www.zotero.org/support/troubleshooting_translator_issues},
+  urldate = {2022-09-03},
+  file = {/Users/cperivol/Zotero/storage/J93RG6JV/troubleshooting_translator_issues.html}
 }
 
 @inproceedings{ullmanInformationIntegrationUsing1997,
@@ -2926,6 +3243,16 @@
   file = {/Users/cperivol/Zotero/storage/SEAZUZJI/Waas - 2009 - Beyond Conventional Data Warehousing — Massively P.pdf}
 }
 
+@inproceedings{wangCoscanCooperativeScan2011,
+  title = {Coscan: Cooperative Scan Sharing in the Cloud},
+  shorttitle = {Coscan},
+  booktitle = {Proceedings of the 2nd {{ACM Symposium}} on {{Cloud Computing}}},
+  author = {Wang, Xiaodan and Olston, Christopher and Sarma, Anish Das and Burns, Randal},
+  date = {2011},
+  pages = {1--12},
+  file = {/Users/cperivol/Zotero/storage/TPFHA9BF/Wang et al. - 2011 - Coscan cooperative scan sharing in the cloud.pdf;/Users/cperivol/Zotero/storage/THNV2THI/2038916.html}
+}
+
 @article{wangMultiqueryOptimizationMapreduce2013,
   title = {Multi-Query Optimization in Mapreduce Framework},
   author = {Wang, Guoping and Chan, Chee-Yong},
@@ -3021,7 +3348,7 @@
   volume = {18}
 }
 
-@online{xinHelixHolisticOptimization2018,
+@unpublished{xinHelixHolisticOptimization2018,
   title = {Helix: {{Holistic}} Optimization for Accelerating Iterative Machine Learning},
   shorttitle = {Helix},
   author = {Xin, Doris and Macke, Stephen and Ma, Litian and Liu, Jialin and Song, Shuchen and Parameswaran, Aditya},
@@ -3032,7 +3359,7 @@
   file = {/Users/cperivol/Zotero/storage/QTZA4N7J/Xin et al. - 2018 - Helix Holistic optimization for accelerating iter.pdf;/Users/cperivol/Zotero/storage/RQ9Z8ZCK/1812.html}
 }
 
-@online{xinHowDevelopersIterate2018,
+@unpublished{xinHowDevelopersIterate2018,
   title = {How {{Developers Iterate}} on {{Machine Learning Workflows}}–{{A Survey}} of the {{Applied Machine Learning Literature}}},
   author = {Xin, Doris and Ma, Litian and Song, Shuchen and Parameswaran, Aditya},
   date = {2018},
@@ -3136,6 +3463,16 @@
   date = {2007},
   pages = {533--544},
   file = {/Users/cperivol/Zotero/storage/VWYRCUC4/Zhou et al. - 2007 - Efficient exploitation of similar subexpressions f.pdf}
+}
+
+@inproceedings{zilioRecommendingMaterializedViews2004,
+  title = {Recommending Materialized Views and Indexes with the {{IBM DB2}} Design Advisor},
+  booktitle = {International {{Conference}} on {{Autonomic Computing}}, 2004. {{Proceedings}}.},
+  author = {Zilio, Daniel C. and Zuzarte, Calisto and Lightstone, Sam and Ma, Wenbin and Lohman, Guy M. and Cochrane, Roberta J. and Pirahesh, Hamid and Colby, Latha and Gryz, Jarek and Alton, Eric},
+  date = {2004},
+  pages = {180--187},
+  publisher = {{IEEE}},
+  file = {/Users/cperivol/Zotero/storage/A2U276CS/1301362.html}
 }
 
 @online{zotero-531,

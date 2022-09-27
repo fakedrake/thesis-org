@@ -15,13 +15,13 @@
     \tikzset{tnode/.style={rectangle,draw}};
 
     \node[nnode] (a) {A};
-    \node[nnode] (b) [right of=a] {B};
-    \node[nnode] (c) [right of=b] {C};
+    \node[nnode] (b) [right of=a,fill=gray!30] {B};
+    \node[nnode] (c) [right of=b,fill=gray!30] {C};
 
     \node[tnode] (tab) [above of = a] {\(\Join\)};
     \node[nnode] (ab) [above of=tab] {AB};
     \node[tnode] (tbc) [above of = c] {\(\Join\)};
-    \node[nnode] (bc) [above of=tbc] {BC};
+    \node[nnode] (bc) [above of=tbc,fill=gray!30] {BC};
     \node[tnode] (tac) [above of = b] {\(\Join\)};
     \node[nnode] (ac) [above of=tac] {AC};
 
