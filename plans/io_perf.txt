@@ -1,4 +1,128 @@
-baseline {
+baseline 1700K {
+./ssb-workload/query-indiv-17000-001.cpp
+query:time:1664143625,reads:188256,writes:187232
+./ssb-workload/query-indiv-17000-002.cpp
+query:time:1664143635,reads:285888,writes:186240
+./ssb-workload/query-indiv-17000-003.cpp
+query:time:1664143645,reads:188256,writes:187232
+./ssb-workload/query-indiv-17000-004.cpp
+query:time:1664143655,reads:285888,writes:186240
+./ssb-workload/query-indiv-17000-005.cpp
+query:time:1664143665,reads:188256,writes:187232
+./ssb-workload/query-indiv-17000-006.cpp
+query:time:1664143675,reads:285888,writes:186240
+./ssb-workload/query-indiv-17000-007.cpp
+query:time:1664143685,reads:188256,writes:187232
+./ssb-workload/query-indiv-17000-008.cpp
+query:time:1664143695,reads:285888,writes:186240
+./ssb-workload/query-indiv-17000-009.cpp
+query:time:1664143705,reads:188256,writes:187232
+./ssb-workload/query-indiv-17000-010.cpp
+query:time:1664143715,reads:285888,writes:186240
+./ssb-workload/query-indiv-17000-011.cpp
+query:time:1664143725,reads:188256,writes:187232
+./ssb-workload/query-indiv-17000-012.cpp
+query:time:1664143734,reads:285888,writes:186240
+./ssb-workload/query-indiv-17000-013.cpp
+query:time:1664143744,reads:188256,writes:187232
+./ssb-workload/query-indiv-17000-014.cpp
+query:time:1664143754,reads:285888,writes:186240
+./ssb-workload/query-indiv-17000-015.cpp
+query:time:1664143764,reads:188256,writes:187232
+./ssb-workload/query-indiv-17000-016.cpp
+query:time:1664143774,reads:285888,writes:186240
+./ssb-workload/query-indiv-17000-017.cpp
+query:time:1664143784,reads:188256,writes:187232
+./ssb-workload/query-indiv-17000-018.cpp
+query:time:1664143794,reads:285888,writes:186240
+./ssb-workload/query-indiv-17000-019.cpp
+query:time:1664143804,reads:188256,writes:187232
+./ssb-workload/query-indiv-17000-020.cpp
+query:time:1664143813,reads:285888,writes:186240
+./ssb-workload/query-indiv-17000-021.cpp
+query:time:1664143824,reads:188256,writes:187232
+./ssb-workload/query-indiv-17000-022.cpp
+query:time:1664143833,reads:285888,writes:186240
+./ssb-workload/query-indiv-17000-023.cpp
+query:time:1664143843,reads:188256,writes:187232
+./ssb-workload/query-indiv-17000-024.cpp
+query:time:1664143853,reads:285888,writes:186240
+./ssb-workload/query-indiv-17000-025.cpp
+query:time:1664143863,reads:188256,writes:187232
+./ssb-workload/query-indiv-17000-026.cpp
+query:time:1664143873,reads:285888,writes:186240
+./ssb-workload/query-indiv-17000-027.cpp
+query:time:1664143883,reads:188256,writes:187232
+./ssb-workload/query-indiv-17000-028.cpp
+query:time:1664143893,reads:285888,writes:186240
+./ssb-workload/query-indiv-17000-029.cpp
+query:time:1664143903,reads:188256,writes:187232
+./ssb-workload/query-indiv-17000-030.cpp
+query:time:1664143913,reads:285888,writes:186240
+}
+main 1700K {
+./ssb-workload/query-main-17000-001.cpp
+query:time:1664143922,reads:285888,writes:186240
+./ssb-workload/query-main-17000-002.cpp
+query:time:1664143932,reads:188256,writes:187232
+./ssb-workload/query-main-17000-003.cpp
+query:time:1664143944,reads:254816,writes:253952
+./ssb-workload/query-main-17000-004.cpp
+query:time:1664143954,reads:187168,writes:187168
+./ssb-workload/query-main-17000-005.cpp
+query:time:1664143964,reads:2113824,writes:127200
+./ssb-workload/query-main-17000-006.cpp
+query:time:1664143974,reads:187168,writes:187168
+./ssb-workload/query-main-17000-007.cpp
+query:time:1664143985,reads:254816,writes:253952
+./ssb-workload/query-main-17000-008.cpp
+query:time:1664143995,reads:187168,writes:187168
+./ssb-workload/query-main-17000-009.cpp
+query:time:1664144005,reads:2113824,writes:127200
+./ssb-workload/query-main-17000-010.cpp
+query:time:1664144015,reads:187168,writes:187168
+./ssb-workload/query-main-17000-011.cpp
+query:time:1664144027,reads:254816,writes:253952
+./ssb-workload/query-main-17000-012.cpp
+query:time:1664144037,reads:187168,writes:187168
+./ssb-workload/query-main-17000-013.cpp
+query:time:1664144046,reads:2113824,writes:127200
+./ssb-workload/query-main-17000-014.cpp
+query:time:1664144056,reads:187168,writes:187168
+./ssb-workload/query-main-17000-015.cpp
+query:time:1664144068,reads:254816,writes:253952
+./ssb-workload/query-main-17000-016.cpp
+query:time:1664144078,reads:187168,writes:187168
+./ssb-workload/query-main-17000-017.cpp
+query:time:1664144087,reads:2113824,writes:127200
+./ssb-workload/query-main-17000-018.cpp
+query:time:1664144097,reads:187168,writes:187168
+./ssb-workload/query-main-17000-019.cpp
+query:time:1664144109,reads:254816,writes:253952
+./ssb-workload/query-main-17000-020.cpp
+query:time:1664144119,reads:187168,writes:187168
+./ssb-workload/query-main-17000-021.cpp
+query:time:1664144129,reads:2113824,writes:127200
+./ssb-workload/query-main-17000-022.cpp
+query:time:1664144139,reads:187168,writes:187168
+./ssb-workload/query-main-17000-023.cpp
+query:time:1664144150,reads:254816,writes:253952
+./ssb-workload/query-main-17000-024.cpp
+query:time:1664144160,reads:187168,writes:187168
+./ssb-workload/query-main-17000-025.cpp
+query:time:1664144170,reads:2113824,writes:127200
+./ssb-workload/query-main-17000-026.cpp
+query:time:1664144180,reads:187168,writes:187168
+./ssb-workload/query-main-17000-027.cpp
+query:time:1664144191,reads:254816,writes:253952
+./ssb-workload/query-main-17000-028.cpp
+query:time:1664144201,reads:187168,writes:187168
+./ssb-workload/query-main-17000-029.cpp
+query:time:1664144211,reads:2113824,writes:127200
+./ssb-workload/query-main-17000-030.cpp
+query:time:1664144221,reads:187168,writes:187168
+}
+baseline 2200K {
 ./ssb-workload/query-indiv-22000-001.cpp
 query:time:1639481778,reads:124736,writes:124864
 ./ssb-workload/query-indiv-22000-002.cpp
@@ -22,7 +146,7 @@ query:time:1639481894,reads:197888,writes:188096
 ./ssb-workload/query-indiv-22000-011.cpp
 query:time:1639481910,reads:190784,writes:190944
 }
-main {
+main 2200K {
 ./ssb-workload/query-main-22000-001.cpp
 query:time:1639481918,reads:124736,writes:124864
 ./ssb-workload/query-main-22000-002.cpp
@@ -84,7 +208,7 @@ query:time:1639482203,reads:188480,writes:187712
 ./ssb-workload/query-main-22000-030.cpp
 query:time:1639482210,reads:224,writes:224
 }
-baseline {
+baseline 6000K {
 ./ssb-workload/query-indiv-60000-001.cpp
 query:time:1639485752,reads:124736,writes:124864
 ./ssb-workload/query-indiv-60000-002.cpp
@@ -110,7 +234,7 @@ query:time:1639485867,reads:197888,writes:188096
 ./ssb-workload/query-indiv-60000-012.cpp
 query:time:1639485883,reads:190784,writes:190944
 }
-main {
+main 6000K {
 ./ssb-workload/query-main-60000-001.cpp
 query:time:1639485891,reads:124736,writes:124864
 ./ssb-workload/query-main-60000-002.cpp
@@ -172,7 +296,7 @@ query:time:1639486145,reads:896,writes:960
 ./ssb-workload/query-main-60000-030.cpp
 query:time:1639486152,reads:160,writes:160
 }
-main {
+main 2300K {
 ./ssb-workload/query-main-23000-001.cpp
 query:time:1640375326,reads:124736,writes:124864
 ./ssb-workload/query-main-23000-002.cpp
@@ -234,7 +358,7 @@ query:time:1640375631,reads:124704,writes:124800
 ./ssb-workload/query-main-23000-030.cpp
 query:time:1640375645,reads:188736,writes:188000
 }
-baseline {
+baseline 2300K {
 ./ssb-workload/query-indiv-23000-001.cpp
 query:time:1640375163,reads:124736,writes:124864
 ./ssb-workload/query-indiv-23000-002.cpp
@@ -262,7 +386,7 @@ query:time:1640375302,reads:190752,writes:190976
 ./ssb-workload/query-indiv-23000-013.cpp
 query:time:1640375318,reads:190752,writes:190976
 }
-main {
+main 6500K {
 ./ssb-workload/query-main-65000-001.cpp
 query:time:1640373943,reads:124736,writes:124864
 ./ssb-workload/query-main-65000-002.cpp
@@ -324,7 +448,7 @@ query:time:1640374205,reads:384,writes:480
 ./ssb-workload/query-main-65000-030.cpp
 query:time:1640374213,reads:352,writes:352
 }
-baseline {
+baseline 6500K {
 ./ssb-workload/query-indiv-65000-001.cpp
 query:time:1640375820,reads:124736,writes:124864
 ./ssb-workload/query-indiv-65000-002.cpp
@@ -352,7 +476,7 @@ query:time:1640375958,reads:190752,writes:190976
 ./ssb-workload/query-indiv-65000-013.cpp
 query:time:1640375974,reads:190752,writes:190976
 }
-baseline {
+baseline 6100K {
 ./ssb-workload/query-indiv-61000-001.cpp
 query:time:1640386762,reads:124736,writes:124864
 ./ssb-workload/query-indiv-61000-002.cpp
@@ -380,7 +504,7 @@ query:time:1640386901,reads:190752,writes:190976
 ./ssb-workload/query-indiv-61000-013.cpp
 query:time:1640386917,reads:190752,writes:190976
 }
-main {
+main 6100K {
 ./ssb-workload/query-main-61000-001.cpp
 query:time:1640386925,reads:124736,writes:124864
 ./ssb-workload/query-main-61000-002.cpp
