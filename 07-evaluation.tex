@@ -20,6 +20,127 @@ Or learn the wasteful vengeance to remove}
   sometimes break in interesting ways.
 \end{summary}
 
+\begin{contribution}{Evaluation}
+
+  TODO:
+  \begin{itemize}
+  \item Best/worst scenaria
+  \end{itemize}
+
+\end{contribution}
+
+\begin{contribution}{Best/worst scenaria}
+
+The actual best case scenario for FluiDB is a workload consisting of a
+single query. FluiDB will just repeatedly return a reference to the
+table created. A realistic scenario that is quite good for FluiDB is
+the presented star schema which is the SSB-TPC-H where the number of
+the possible expensive queries (joins) is fairly limited.
+
+
+Worst case scenario in the absence of memory constraints is a workload
+that has minimal reuse (or the queries that reuse are very far
+apart). This extreme case can be simularted by repeating the
+schema. For a workload of \(N\) queries we would have a repeated \(N\)
+times TPC-H-SSB schema amouting to \(5 \times N\) tables:
+
+\[
+  customer_1, date_1 lineorder_1, part_1, supplier_1 \\
+  customer_2, date_2 lineorder_2, part_2, supplier_2 \\
+  ... \\
+  customer_N, date_N lineorder_N, part_N, supplier_N \\
+\]
+
+Each query \(Q_i\) will reference tables \(<table>_i\) instead of
+\(<table>\).
+
+In terms of the query runtime his is equivalent to running each query
+from scratch each time, i.e. the /"baseline"/ in each figure.
+
+In the presence of constrained memory the worst case is one where the
+GC always deletes primary nodes that are needed by the next query so
+each query needs to recreate the primary tables. A simple example is:
+
+
+# Write the C++ by hand...
+\[
+Q_1 := lineorder \Join date \Join customer \\
+Q_2 := lineorder \Join part \Join supplier \\
+Q_3 := lineorder \Join date \Join customer \\
+Q_4 := lineorder \Join part \Join supplier \\
+...
+\]
+
+In a memory constrained situation the garbage collector needs to
+delete \(lineorder\) in order to make space for the final join of each
+\(Q_i\), meaning that it needs to recreate \(lineorder\) at each step
+by projecting on \(lineorder \Join part\) for \(Q_{2i + 1}\) and in
+\(lineorder \Join data\) for each \(Q_{2i}\). In slightly more general
+terms this kind of form oscillation that is the worst case workload
+for FluiDB means that every operator in the plan is, not only used
+only once, but needs to be undone. This renders the worst case cost of
+each operator to be its cost + the cost of it's recerse.
+
+It is hard to compare this case with other databases or even with
+non-GC FluiDB operation because normal databases will fail with OOM if
+their budget can't accomodate all the primary, and every stage of
+intermediate and final relations for the particuar workload. While
+this is not a great situation for FluiDB, then, it is in fact much
+better than a failure to resolve the query.
+
+\todo{Insert the plots}
+
+\end{contribution}
+
+
+\begin{contribution}{Overheads}
+
+Overheads range between 9 and 11 secs per query. There are however
+things that we can do to mitigate it.
+
+\end{contribution}
+
+
+\begin{contribution}{Membory budget sensitivity}
+
+\begin{quote}
+A sensitivity analysis of the impact of the memory budget –
+especially with respect to the role of the garbage collector (GC)
+and benefits the proposed system makes even when enough memory is
+available and no GC is needed. This will help bring to the fore and
+crystalize the benefits of the proposed system.
+\end{quote}
+
+
+\begin{itemize}
+\item The more memory the less the GC will be triggered.
+\item GC triggers are generally only important to the performance of the
+  result when a deleted table is reused. (given that deleting a
+  relation is much cheaper than creating it)
+\item The system is still important in the absense of the GC:
+  \begin{itemize}
+  \item At the minimum level there are certain relations being kept which
+    will at worst leave the performance of running the following
+    queries unaffected unaffected.
+  \item FluiDB minimizes the overall cost of queries encountered so even
+    in the absence of GC runs it will be able to optimize workloads
+    that share many expensive intermediate results.
+  \item An extreme version of this is demonstrated in figure <figure with
+    unlimited budget>.
+  \end{itemize}
+\end{itemize}
+
+
+\end{contribution}
+
+\begin{contribution}{Exeprimental setup}
+  \begin{quote}
+    A better *description of the experimental setup*, including a better
+    justification for the various sizes used and a description of the used
+    hardware.
+  \end{quote}
+\end{contribution}
+
 We based our evaluation on the Star Schema Benchmark (SSB)
 \cite{barataOverviewDecisionSupport2015} which is a variation of
 TPC-H. Like TPC-H it models the data warehouse of a wholesale

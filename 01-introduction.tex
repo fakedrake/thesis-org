@@ -394,6 +394,83 @@ particularly useful in contexts where (fast) memory is scarce compared
 to the data, particularly in-memory databases. In that vain we lean
 heavily on executing plans by transpiling the plan to C++ code.
 
+\begin{contribution}{Architecture}
+
+  The overall system is comprized of three internal their
+  interlocation being described in diagram \ref{fig:architecture}. An
+  SQL query is initially parsed and passed to the \emph{Grpah Builder}
+  which correlates it and its possible subqueries to historical
+  queries using the \emph{QNF processor} which evaluates the
+  equivalence between subplans. This way an the \emph{Relational
+    Algebra (RA) Graph} which is comprised of nodes corresponding to
+  relations connected by operations that describe, often
+  bidirectional, means of computing them from other relations. The
+  next level in the pipeline is the planner, which traverses the graph
+  using an A^{\star} inspired branch and boud algorithm in order to
+  come up with a plan that both efficiently computes the reuqested
+  query and optimizes the data layout to provide oportinity for
+  efficient future plans. Prunning of the search space is assisted by
+  \emph{Antisthenis}, an incremental framework optimized for
+  efficiently calculating the expected cost of materializing a
+  relation without actually planning for it as well as wether a
+  relation is materializable at all given the currently materialized
+  relations. The plan generated has the form of a sequence of
+  operators and relation deletions which are finally translated to C++
+  and compiled with an off-the-shelf compiler.
+
+  \begin{figure}[H]
+  \begin{tikzdiagram}
+    \tikzset{db/.style={cylinder,draw,shape border rotate=90,aspect=.3}};
+    \tikzset{sys/.style={rectangle,draw}};
+    \tikzset{outer/.style={cloud,draw,aspect=3}};
+
+    \node[outer] (query) {Query stream};
+    \node[sys] (graph_builder) [below = of query] {Graph Builder};
+
+    \node[sys] (qnf) [left = of graph_builder] {QNF processor};
+
+    \node[db] (bqg) [right = of graph_builder] {RA Graph};
+    \node[sys] (planner) [below = of graph_builder] {Planner};
+
+    \node[sys] (antisthenis) [left = of planner] {Antisthenis};
+    \node[sys] (codegen) [below = of planner] {C++ generation};
+    \node[sys] (cc) [below = of codegen] {C++ Compiler};
+    \node[outer] (hw) [below = of cc] {CPU/Filesystem};
+
+    \draw[->] (query) -> (graph_builder) -> (planner) -> (codegen) -> (cc) -> (hw);
+    \draw[<->] (planner) -> (antisthenis);
+    \draw[<->] (graph_builder) -> (qnf);
+    \draw[<->] (graph_builder) -> (bqg);
+  \end{tikzdiagram}
+  \caption{\label{fig:architecture}The system architecture}
+\end{figure}
+
+\end{contribution}
+
+\begin{correction}{Contributions}
+The contributions of this work are summarized by the following points
+
+\begin{itemize}
+\item Provide an overview of the literature regarding recycling
+\item Provide a framework and a case study for a novel approach of
+  unifying query planning and intermediate result management.
+\item Introduce the idea of dynamic reconstruction of primary data and
+  describe a system implementing it.
+\item Introduce reversible relational operators and how they can be
+  used to create effective plans in membory constrained environments.
+\item Introduce a novel variant of a branch and bound algorithm used
+  for planning relational queries.
+\item Intoriduce Antisthenis, a novel approach to incremental
+  computation used for the needs of query planning that aggressively
+  takes advantage of the particular properties of the computations
+  involved in plan cost estimation and relation materializability.
+\item An experimental evaluation of how all these parts fit together
+  to compose FluiDB, particularly in the context of a star schema
+  based  benchmark.
+\end{itemize}
+
+\end{correction}
+
 This thesis describes in detail how we implemented FluiDB, a system
 targeted at performing this kind of reasoning for planning and
 executing queries. In chapter \ref{chapter:background} we provide a

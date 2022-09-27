@@ -1,0 +1,102 @@
+\dictum[something]{ A dictum here }
+
+\begin{summary}
+\item Todo
+\end{summary}
+
+\begin{correction}{Related work}
+  \emph{The entire chapter}
+\end{correction}
+
+The fundametal problem being solved by FluiDB falls under the very
+general umbrella of \emph{optimizing multiple queries simulatenously}. This
+problem is central to database research and there is a very wide
+diversity of approaches to solving it. It is useful, however, to
+understand this less like a single problem more like a family of
+problems. To help the reader understand the philosophy of FluiDB a
+high level view we propose an organization of the proposed algorithms
+that solve subsets of that problem exist in a space organized around
+two poles:
+
+\begin{itemize}
+\item The algorithm solves a \emph{set} of queries simulatenously
+\item The algorithm solves one query at a time from a \emph{stream} of queries.
+\end{itemize}
+
+While many design decisions are informed by the space a piece of work
+occupies in relation to this dipole, virtually all approaches involve
+identification of common subexpressions or sub-plans that can be
+shared between different queries and avoiding duplicate
+evaulation. This is indeed the unifying element of the work in the
+field.
+
+It is easier to conceptualize
+
+The former problem has heavily researched for decades and is a major
+ subfield in database research
+ \cite{sellisMultipleQueryOptimization1987,royEfficientExtensibleAlgorithms2000,ComputingQueriesDerived}. It's
+ focus is sligtly narrower as it focuses on identifying common
+ subqueries in an unordered set of queries.
+
+The latter has also been dubbed the View Selection Problem (VSP) but
+research has mostly focused on static query workloads,
+i.e. information about the query workload is known in advance and
+views are pre-materialized
+\cite{phanDynamicMaterializationQuery2008a}. Recently there have been
+attempts to mitigate this based on reinforcement learning and genetic
+algorithms due to high volumes, diversity and unpredictability of
+queries in modern workloads.
+
+Other systems:
+
+\begin{itemize}
+\item StagedDB \cite{harizopoulosStagedDBDesigningDatabase2005} and QPipe
+\cite{harizopoulosQpipeSimultaneouslyPipelined2005} share between
+queries that arrive within a window.
+\item MonetDB \cite{idreosMonetdbTwoDecades2012} and CoScan
+\cite{wangCoscanCooperativeScan2011} do dynaic scheduling to solve
+queries together.
+\item CJoin \cite{candeaScalablePredictableJoin2009} uses an "always-on"
+plan of join operations to execute the joins of all concurrent
+queries.
+\item Crescando \cite{ssgiannikisCrescando2010} and IBM Blink
+\cite{ramanConstanttimeQueryProcessing2008} attempt to share
+individual table scans between queries to reduce IO.
+\item DataPath \cite{arumugamDataPathSystemDatacentric2010}
+\item SharedDB \cite{giannikisSharedDBKillingOne2012} and BatchDB
+\cite{makreshanskiBatchDBEfficientIsolated2017} use a global query
+plan for grouped queries.
+\item MQJoin \cite{makreshanskiMqjoinEfficientShared2016a} shares join
+plan for grouped queriesexecution between hundrends of queries.
+\item Sloth \cite{cheungSlothBeingLazy2016} CrocodileDB
+\cite{shangCrocodileDBEfficientDatabase2020} exploit lazy or deferred
+execution to increaase the opportunitites for batching and therefore
+sharing.
+\item DynaMat \cite{kotidisDynamatDynamicView1999} and watchman
+\cite{scheuermannWatchmanDataWarehouse1996} do dynamic view
+selection.
+\end{itemize}
+
+ShareDB, DataPath, CJoin and QPipe focuses on sharing during runtime
+
+the pay-one-get-hundrends-for-free do only SQL rewriting to do runtime
+  plan for grouped queriessharing.
+
+
+\cite{mounaProResProactiveReselection2022}
+
+
+\section{Query equality}
+\label{sec:orga919a5f}
+
+\section{Subquery selection algorithm}
+\label{sec:org70319fb}
+
+\section{Eviction policy}
+\label{sec:orgd16def2}
+\bibliographystyle{unsrt}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:

@@ -298,4 +298,16 @@
 \newcommand{\textgreek}[1]{\bgroup\greekfont\emph{#1}\egroup}
 \newenvironment{greek}{\bgroup\greekfont}{\egroup}
 
+\newenvironment{correction}[1]
+    {\begin{center}
+    #1\\[1ex]
+    \begin{tabular}{|p{0.9\textwidth}|}
+    \hline\\
+    }
+    {
+    \\\\\hline
+    \end{tabular}
+    \end{center}
+    }
+
 \message{Hello world thesis!}
