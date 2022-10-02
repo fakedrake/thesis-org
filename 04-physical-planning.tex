@@ -31,10 +31,17 @@ up space in the underlying storage. Finally, we talk about the cost
 model that guides the plan search process.
 
 \begin{correction}{Contributions}
+  This chapter describes both an abstract logical framework and its
+  functional programming underpinnings, as well as its use for query
+  planning in FluiDB. The non-FluiDB-specific contributions of this
+  chapter are the following:
+
   \begin{itemize}
-  \item An overview of functional abstractions
-  \item A flexible framework for implementing best-first algorithms.
-  \item TODO
+  \item An overview of functional abstractions for backtracking
+    alogirithms.
+  \item A monadic framework for implementing best-first branch and
+    bound algorithms.
+  \item Cut and either operators implemented for best-first branch.
   \end{itemize}
 \end{correction}
 

@@ -92,43 +92,22 @@ class LineIter(object):
             if not l.is_cpp_path():
                 fr.append(l.parse())
 
-    if ty == 'bar':
-        plt.bar(index, baseline_data, bar_width,
-                alpha=opacity,
-                color='orange',
-                label='Isolated Query FluiDB')
+            try:
+                l = next(self.it)
+            except StopIteration:
+                return
 
-        plt.bar(index + bar_width, main_data, bar_width,
-                color='green',
-                label='FluiDB')
-    elif ty == 'cum':
-        x_base = np.arange(len(baseline_data))
-        x_main = np.arange(len(main_data))
-        plt.plot(x_base,
-                 cum(baseline_data),
-                 color='orange',
-                 label='Isolated Query FluiDB')
+        return Workload(wl_type, budget, fr)
 
-        plt.plot(x_main,
-                 cum(main_data),
-                 alpha=opacity,
-                 color='green',
-                 label='FluiDB')
-    else:
-        raise RuntimeError("The ty arg must be 'cum' or 'bar'")
+    def workloads(self) -> Iterable[Workload]:
+        wl = self.parse_workload()
+        while wl is not None:
+            yield wl
+            wl = self.parse_workload()
 
 
-    ax.yaxis.set_major_formatter(lambda x,pos: f"{int(x/1000)}K")
-    plt.xlabel('SSB Query')
-    plt.ylabel('# Page IO')
-    plt.title(f'FluiDB performance on SSB TPC-H ({int(pages / 10)}K  pages)')
-    plt.xticks(index + bar_width,
-               ['%d' % (i % max_qs + 1) for i in range(SAMPLES)],
-               fontsize='small')
-    plt.legend()
-    plt.tight_layout()
-    return plt
-
+def dataframe(wls):
+    from collections import defaultdict
     wls = list(wls)
     data_len = max(map(len, wls))
     d = defaultdict(lambda: pd.DataFrame())
@@ -170,7 +149,7 @@ def plot(budget: str,
 
 
 # WL_PATH = "ssb-workload/op_perf_prev.txt"
-WL_PATH = "ssb-workload/io_perf.txt"
+WL_PATH = "./io_perf.txt"
 SQLITE_DF = pd.DataFrame({"sqlite": it.islice(
     it.cycle([
         440434,
@@ -206,4 +185,42 @@ def main():
         print(plot(b, df[b], logarithmic=False, with_sqlite=SQLITE_DF))
 
     print("Plotting bad joins")
-    print(plot("1700K", df["1700K"], logarithmic=False))
+    print(plot("1700K", df["1700K"], logarithmic=False, max_qs=2))
+
+
+
+    # if ty == 'bar':
+    #     plt.bar(index, baseline_data, bar_width,
+    #             alpha=opacity,
+    #             color='orange',
+    #             label='Isolated Query FluiDB')
+
+    #     plt.bar(index + bar_width, main_data, bar_width,
+    #             color='green',
+    #             label='FluiDB')
+    # elif ty == 'cum':
+    #     x_base = np.arange(len(baseline_data))
+    #     x_main = np.arange(len(main_data))
+    #     plt.plot(x_base,
+    #              cum(baseline_data),
+    #              color='orange',
+    #              label='Isolated Query FluiDB')
+
+    #     plt.plot(x_main,
+    #              cum(main_data),
+    #              alpha=opacity,
+    #              color='green',
+    #              label='FluiDB')
+    # else:
+    #     raise RuntimeError("The ty arg must be 'cum' or 'bar'")
+
+    # ax.yaxis.set_major_formatter(lambda x,pos: f"{int(x/1000)}K")
+    # plt.xlabel('SSB Query')
+    # plt.ylabel('# Page IO')
+    # plt.title(f'FluiDB performance on SSB TPC-H ({int(pages / 10)}K  pages)')
+    # plt.xticks(index + bar_width,
+    #            ['%d' % (i % max_qs + 1) for i in range(SAMPLES)],
+    #            fontsize='small')
+    # plt.legend()
+    # plt.tight_layout()
+    # return plt

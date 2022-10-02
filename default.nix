@@ -37,7 +37,7 @@ let
   py = pkgs.python39.withPackages (p: with p; [pandas numpy pygments matplotlib]);
   # py = pkgs.python39.withPackages (p: with p; []);
 in pkgs.stdenv.mkDerivation {
-  pname = "phd-thesis";
+  pname = "thesis";
   version = "0.0.1";
   src = ./.;
   buildInputs = [tex py];

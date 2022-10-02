@@ -102,11 +102,11 @@
       {\fontfamily{\rmdefault}\selectfont%
         {\LARGE%
           \parbox[c]{10cm}{%
-            %\begin{onehalfspace}%
-              \centering%
-              {\Large \textit{A thesis submitted for the degree of}} \\ %
-              \textit{Doctor of Philosophy}%
-            %\end{onehalfspace}%
+            % \begin{onehalfspace}%
+            \centering%
+            {\Large \textit{A thesis submitted for the degree of}} \\ %
+            \textit{Doctor of Philosophy}%
+            % \end{onehalfspace}%
           }\\%
           %% University
           [10mm] {\textsc{The University of Edinburgh}} \\%
@@ -169,12 +169,12 @@
 % \let\mainmatterorig\mainmatter
 % \renewcommand\mainmatter
 % {\edef\p{\arabic{page}}%
-%   \mainmatterorig
+% \mainmatterorig
 %   % we need to compute the actual current page number. we know the page number
 %   % from _before_ we called \mainmatter. but what is it now? well, it is
 %   % certainly that +1. but we also need to account for the next chapter starting
 %   % on a "right" (odd) page. we do this by adding the page number modulo two.
-%   \setcounter{page}{\p+1+(\p-\p/2*2)}%
+% \setcounter{page}{\p+1+(\p-\p/2*2)}%
 % }
 
 
@@ -220,6 +220,7 @@
 \RequirePackage{tikz}
 \makeatletter
 \usetikzlibrary{
+  shapes.symbols,
   decorations.pathreplacing,
   positioning,
   matrix,
@@ -262,7 +263,7 @@
 \makeatother
 
 
-\RequirePackage{tcolorbox}
+\RequirePackage[most]{tcolorbox}
 \NewEnviron{summary}{%
   \begin{tcolorbox}[title=Chapter summary]
     \begin{itemize}
@@ -280,11 +281,11 @@
 \addtokomafont{chapter}{\makeuppertrue}
 \setkomafont{chapterprefix}{\normalsize\mdseries}
 \renewcommand*{\chapterformat}{%
-    \MakeUppercase{\chapappifchapterprefix{\nobreakspace}}\thechapter%
-    \IfUsePrefixLine{%
-      \par\nobreak\vspace{-\parskip}\vspace{-.5\baselineskip}%
-      \rule{0.9\textwidth}{.5pt}%
-    }{\enskip}%
+  \MakeUppercase{\chapappifchapterprefix{\nobreakspace}}\thechapter%
+  \IfUsePrefixLine{%
+    \par\nobreak\vspace{-\parskip}\vspace{-.5\baselineskip}%
+    \rule{0.9\textwidth}{.5pt}%
+  }{\enskip}%
 }
 
 \RequirePackage{array}
@@ -297,17 +298,17 @@
 \newfontfamily\greekfont[Script=Greek, Scale=MatchUppercase, Ligatures=TeX]{DejaVu Sans}
 \newcommand{\textgreek}[1]{\bgroup\greekfont\emph{#1}\egroup}
 \newenvironment{greek}{\bgroup\greekfont}{\egroup}
-
 \newenvironment{correction}[1]
-    {\begin{center}
-    #1\\[1ex]
-    \begin{tabular}{|p{0.9\textwidth}|}
-    \hline\\
-    }
-    {
-    \\\\\hline
-    \end{tabular}
-    \end{center}
-    }
+{
+  \begin{tcolorbox}[title=Correction: #1,
+    breakable,
+    enhanced,
+    colback=red!5!white,
+    colframe=red!75!black,
+    sharp corners ]
+  }
+  {
+  \end{tcolorbox}
+}
 
 \message{Hello world thesis!}

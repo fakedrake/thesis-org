@@ -394,7 +394,7 @@ particularly useful in contexts where (fast) memory is scarce compared
 to the data, particularly in-memory databases. In that vain we lean
 heavily on executing plans by transpiling the plan to C++ code.
 
-\begin{contribution}{Architecture}
+\begin{correction}{Architecture}
 
   The overall system is comprized of three internal their
   interlocation being described in diagram \ref{fig:architecture}. An
@@ -406,7 +406,7 @@ heavily on executing plans by transpiling the plan to C++ code.
   relations connected by operations that describe, often
   bidirectional, means of computing them from other relations. The
   next level in the pipeline is the planner, which traverses the graph
-  using an A^{\star} inspired branch and boud algorithm in order to
+  using an \(A^{\star}\) inspired branch and boud algorithm in order to
   come up with a plan that both efficiently computes the reuqested
   query and optimizes the data layout to provide oportinity for
   efficient future plans. Prunning of the search space is assisted by
@@ -445,7 +445,7 @@ heavily on executing plans by transpiling the plan to C++ code.
   \caption{\label{fig:architecture}The system architecture}
 \end{figure}
 
-\end{contribution}
+\end{correction}
 
 \begin{correction}{Contributions}
 The contributions of this work are summarized by the following points
