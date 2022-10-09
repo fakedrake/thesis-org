@@ -88,10 +88,9 @@ places where FluiDB does not take full advantage of the state of the
 art in database research.
 
 Starting with the latter, the most important place where FluiDB can do
-better is cardinality estimation. As mentioned in section
-(\ref{sec:size_estimation_problems}) FluiDB is very naive w.r.t. to
-how it estimates sizes. That said the propagator network structure
-used to estimate cardinalities can be augmented to propagate
+better is cardinality estimation. As mentioned FluiDB is very naive
+w.r.t. to how it estimates sizes. That said the propagator network
+structure used to estimate cardinalities can be augmented to propagate
 information about selectivity and statistics about each n-node. These
 statistics could be collected for every materialized intermediate
 relation to enrich the much needed information available during

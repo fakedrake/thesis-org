@@ -30,7 +30,7 @@ collection that generates plan fragments that allow the plan to free
 up space in the underlying storage. Finally, we talk about the cost
 model that guides the plan search process.
 
-\begin{correction}{Contributions}
+\begin{corrected}{Chapter contribition}
   This chapter describes both an abstract logical framework and its
   functional programming underpinnings, as well as its use for query
   planning in FluiDB. The non-FluiDB-specific contributions of this
@@ -40,10 +40,10 @@ model that guides the plan search process.
   \item An overview of functional abstractions for backtracking
     alogirithms.
   \item A monadic framework for implementing best-first branch and
-    bound algorithms.
-  \item Cut and either operators implemented for best-first branch.
+    bound algorithms that support cut and either cut and either
+    operators implemented for best-first branch.
   \end{itemize}
-\end{correction}
+\end{corrected}
 
 \section{HCntT logic monad}
 
@@ -311,7 +311,7 @@ dissolve :: (IsHeap h,Monad m) => HCntT h r m r -> ListT m r
     turning an \hask{HCntT} computation into a \hask{ListT}.}
 \end{code}
 
-The way dissolution works then (listing \ref{lst:dissovle_algo}), is to first
+The way dissolution works then (listing \ref{lst:dissolve_func}), is to first
 commit to the computation constructed by applying the continuation and
 obtaining an \hask{HRes} object. If that object contains concrete results they are
 yielded one by one into the resulting \hask{ListT}.

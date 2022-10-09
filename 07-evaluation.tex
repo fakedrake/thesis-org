@@ -1,10 +1,10 @@
 % Οι άνθρωποι γνωρίζουν τα γινόμενα.
 % Τα μέλλοντα γνωρίζουν οι θεοί,
 \dictum[The Iliad of Homer, Book I]{
-Tis time to save the few remains of war. \\
-But let some prophet, or some sacred sage, \\
-Explore the cause of great Apollo's rage; \\
-Or learn the wasteful vengeance to remove}
+  Tis time to save the few remains of war. \\
+  But let some prophet, or some sacred sage, \\
+  Explore the cause of great Apollo's rage; \\
+  Or learn the wasteful vengeance to remove}
 
 \begin{summary}
 \item FluiDB is well suited for join-heavy star schemata so we
@@ -20,134 +20,7 @@ Or learn the wasteful vengeance to remove}
   sometimes break in interesting ways.
 \end{summary}
 
-\begin{correction}{Best/worst scenaria}
-
-The actual best case scenario for FluiDB is a workload consisting of a
-single query. FluiDB will just repeatedly return a reference to the
-table created. A realistic scenario that is quite good for FluiDB is
-the presented star schema which is the SSB-TPC-H where the number of
-the possible expensive queries (joins) is fairly limited.
-
-The worst case scenario in the absence of memory constraints is a
-workload that has minimal reuse, or in the presence of memory
-constraints and therefore a GC the queries that reuse are very far
-apart and thereofre no sharing can be exploited. This extreme case can
-be simularted by repeating the schema such that a workload of \(N\)
-queries we would have a repeated \(N\) times TPC-H-SSB schema amouting
-to \(5 \times N\) tables:
-
-
-\begin{align*}
-  customer_1, date_1 lineorder_1, part_1, supplier_1 \\
-  customer_2, date_2 lineorder_2, part_2, supplier_2 \\
-  ... \\
-  customer_N, date_N lineorder_N, part_N, supplier_N \\
-\end{align*}
-
-Each query \(Q_i\) will reference tables \(<table>_i\) instead of
-\(<table>\).
-
-In terms of the query runtime this is equivalent to running each query
-from scratch each time, i.e. the /"baseline"/ in each figure.
-
-In the presence of constrained memory the more nuanced worst case is
-when the the GC always deletes primary nodes that are needed by the
-next query so each query needs to recreate the primary tables. A
-simple example is:
-
-
-\begin{align*}
-  Q_1 := lineorder \Join date \Join customer \\
-  Q_2 := lineorder \Join part \Join supplier \\
-  Q_3 := lineorder \Join date \Join customer \\
-  Q_4 := lineorder \Join part \Join supplier \\
-  ...
-\end{align*}
-
-In a memory constrained situation the garbage collector needs to
-delete \(lineorder\) in order to make space for the final join of each
-\(Q_i\), meaning that it needs to recreate \(lineorder\) at each step
-by projecting on \(lineorder \Join part\) for \(Q_{2i + 1}\) and in
-\(lineorder \Join data\) for each \(Q_{2i}\). In slightly more general
-terms this kind of form oscillation that is the worst case workload
-for FluiDB means that every operator in the plan is, not only used
-only once, but needs to be undone. This renders the worst case cost of
-each operator to be its cost + the cost of it's recerse.
-
-It is hard to compare this case with other databases or even with
-non-GC FluiDB operation because most database systems will fail with
-OOM if their budget can't accomodate all the primary, and every stage
-of intermediate and final relations for the particuar workload. While
-this is not a great situation for FluiDB, then, it is in fact much
-better than a failure to resolve the query.
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=.9\linewidth]{./plans/workload_1700K.pdf}
-\caption{\label{fig:gc_enemy}This plot shows a workload where the GC
-  opts to remove primary tables in order to make space for
-  intermediate results. The primary tables are then required so they
-  need to be reconstructed. The general shape of the queries is
-  \(A \Join B_0 \Join C_0\) and \(A \Join B_1 \Join C_1\) and the
-  budget is small enough that it can't fit the final result, the
-  intermediate result and the primary tables simulataneously. The GC
-  is therefore required to delete the primary tables forcing their
-  reconstruction the next time it is required.}
-\end{figure}
-\end{correction}
-
-
-\begin{correction}{Overheads}
-  The compilation overheads range between a staggering 9 and 11 secs
-  per query. While it is not ideal, there are things that can be done
-  to mitigate it like precompiling the headers (eg with the
-  \code{-fmodule-header} flag) or changing the granularity of the code
-  generation to generate individual operators, which would allow both
-  caching of compiled units as well as parallel
-  compilation. Optimizing the compilation process itself, however, is
-  beyond the scope of this thesis.
-\end{correction}
-
-
-\begin{correction}{Memory budget sensitivity}
-
-\begin{quote}
-A sensitivity analysis of the impact of the memory budget –
-especially with respect to the role of the garbage collector (GC)
-and benefits the proposed system makes even when enough memory is
-available and no GC is needed. This will help bring to the fore and
-crystalize the benefits of the proposed system.
-\end{quote}
-
-It becomes clear from the benchmark results so far that while the GC
-often makes the difference between FluiDB being able to successfully
-run a query and throwing OOM, and while we have put a lot of care in
-tuning it to make good decisions, it can have detrimental effects to
-the performance of the sustem as a whole. We can't get away from the
-fact that less the GC is triggered, the less likely it is to delete a
-query useful in the future.
-
-For that reason, as we discussed in chapter \ref{chapter4} in detail,
-FluiDB will only trigger the the GC when it runs out of memory, and
-the GC itself goes to great lengths to delete as few tables as
-possible. As demonstrated in figure \ref{fig:gc_enemy}, however, the
-harsh the memory constraints will casue the GC not only to run more
-often it will also be forced to evict relations that are likely to be
-necessary for future queries.
-
-While the GC is a central component of FluiDB, the latter is more than
-a simple cache system as it involves an advanced planner that can
-utilize reversible operations. This means that the search space for
-plans is, in principle, larger than the search space that would be
-available to a recycling RDBMS that does not take advantage of
-reversible operations. As mentioned the performance of FluiDB without
-triggering the GC is demonstrated in figure
-\ref{fig:extra_large_budget_plot}.
-\end{itemize}
-
-\end{correction}
-
-We based our evaluation on the Star Schema Benchmark (SSB)
+We based our evaluation of FluiDB on the Star Schema Benchmark (SSB)
 \cite{barataOverviewDecisionSupport2015} which is a variation of
 TPC-H. Like TPC-H it models the data warehouse of a wholesale
 supplier.
@@ -159,46 +32,46 @@ by merging the \sql{linenumber}, \sql{orders} and
 \sql{region} tables as shown in figure \ref{fig:ssb_tpch_schema}.
 
 \begin{figure}[p]
-\begin{tikzdiagram}
-  \tikzset{tbl/.style={draw,rectangle,minimum height=2cm,minimum width=2cm}};
-  \node[tbl] (lo) {lineorder};
-  \node[tbl] (p) [above left = of lo] {part};
-  \node[tbl] (c) [above right = of lo] {customer};
-  \node[tbl] (s) [below right = of lo] {supplier};
-  \node[tbl] (d) [below left = of lo] {date};
-  \draw [-stealth] (c) -- (lo);
-  \draw [-stealth] (p) -- (lo);
-  \draw [-stealth] (s) -- (lo);
-  \draw [-stealth] (d) -- (lo);
-\end{tikzdiagram}
-\caption{\label{fig:ssb_tpch_schema}The foreign key links in a SSB-TPC-H}
+  \begin{tikzdiagram}
+    \tikzset{tbl/.style={draw,rectangle,minimum height=2cm,minimum width=2cm}};
+    \node[tbl] (lo) {lineorder};
+    \node[tbl] (p) [above left = of lo] {part};
+    \node[tbl] (c) [above right = of lo] {customer};
+    \node[tbl] (s) [below right = of lo] {supplier};
+    \node[tbl] (d) [below left = of lo] {date};
+    \draw [-stealth] (c) -- (lo);
+    \draw [-stealth] (p) -- (lo);
+    \draw [-stealth] (s) -- (lo);
+    \draw [-stealth] (d) -- (lo);
+  \end{tikzdiagram}
+  \caption{\label{fig:ssb_tpch_schema}The foreign key links in a SSB-TPC-H}
 \end{figure}
 
 
 \begin{figure}[p]
-\begin{tikzdiagram}
-  \tikzset{tbl/.style={draw,rectangle,minimum height=2cm,minimum width=2cm}};
-  \tikzset{arr/.style={-stealth}};
-  \node[tbl]                     (r) {region};
-  \node[tbl, right=of r]         (n) {nation};
-  \node[tbl, above right = of n] (c) {customer};
-  \node[tbl, right = of n] (s) {supplier};
-  \node[tbl, right = of c]         (o) {orders};
-  \node[tbl, right=of s]         (ps) {partsupp};
-  \node[tbl, below left = of ps] (p) {part};
-  \node[tbl, right= of ps]        (l) {lineitem};
-  % Connection
-  \path [arr]
-  (r) edge (n)
-  (n) edge (c)
-  (c) edge (o)
-  (o) edge (l)
-  (n) edge (s)
-  (s) edge (ps)
-  (ps) edge (l)
-  (p) edge (ps);
-\end{tikzdiagram}
-\caption{\label{fig:tpch_schema}The foreign key links in a traditional TPC-H schema}
+  \begin{tikzdiagram}
+    \tikzset{tbl/.style={draw,rectangle,minimum height=2cm,minimum width=2cm}};
+    \tikzset{arr/.style={-stealth}};
+    \node[tbl]                     (r) {region};
+    \node[tbl, right=of r]         (n) {nation};
+    \node[tbl, above right = of n] (c) {customer};
+    \node[tbl, right = of n] (s) {supplier};
+    \node[tbl, right = of c]         (o) {orders};
+    \node[tbl, right=of s]         (ps) {partsupp};
+    \node[tbl, below left = of ps] (p) {part};
+    \node[tbl, right= of ps]        (l) {lineitem};
+    % Connection
+    \path [arr]
+    (r) edge (n)
+    (n) edge (c)
+    (c) edge (o)
+    (o) edge (l)
+    (n) edge (s)
+    (s) edge (ps)
+    (ps) edge (l)
+    (p) edge (ps);
+  \end{tikzdiagram}
+  \caption{\label{fig:tpch_schema}The foreign key links in a traditional TPC-H schema}
 \end{figure}
 
 
@@ -224,20 +97,6 @@ $ du -sh *.dat
 
 Which makes a total of approximately 200k pages of size 4KB.
 
-\begin{correction}{Exeprimental setup}
-  The lowest budget within which FluiDB was able to plan all 13
-  queries of SSB-TPC-H was 2300k pages and therefore that was the
-  lowest budget we used in our benchmarks. The highest budget we used
-  was 6500K pages which is a memory budget that allows the execution
-  of all queries without the GC needing to be triggered. Therefore
-  FluiDB will have the same performance running our benchmark workload
-  for any memory budget over 6500K pages.
-
-  The particulars hardware setup used for the experiment is not
-  important for our metrics since, as describe previously, we decided
-  that a more useful metric than wall clock time is page IO.
-\end{correction}
-
 In our experiment, we use page IO as a proxy for performance, despite
 the fact that FluiDB is an in-memory database. We think that this is a
 reasonable experimental approach because, as FluiDB leans heavily on
@@ -253,6 +112,18 @@ fine-tuning the compiler optimization passes. These techniques are
 beyond the scope of this work, FluiDB is focused on analytics
 workloads that do not include sub-second queries.
 
+
+\begin{corrected}{Exeprimental setup}
+  The lowest budget within which FluiDB was able to plan all 13
+  queries of SSB-TPC-H was 2300k pages and therefore that was the
+  lowest budget we used in our benchmarks. The highest budget we used
+  was 6500K pages which is a memory budget that allows the execution
+  of all queries without the GC needing to be triggered. Therefore
+  FluiDB will have the same performance running our benchmark workload
+  for any memory budget over 6500K pages.
+\end{corrected}
+
+
 \newcommand{\ioperfdescr}{The total page read/writes for each query of
   SSB TPC-H. The baseline is the query being run by FluiDB directly
   without any materialized n-nodes. The workload bars represent the
@@ -260,12 +131,12 @@ workloads that do not include sub-second queries.
   QDAG. The dashed line represents the performance of sqlite3 with all
   indexes stripped.}
 \begin{figure}[H]
-\centering
-% \includegraphics[width=.9\linewidth]{./plans/io_perf_23000.pdf}
-\includegraphics[width=.9\linewidth]{./plans/workload_2300K.pdf}
-\caption{\label{fig:min_budget_plot} \ioperfdescr The budget allowed
-  for this is the minimum budget within which FluiDB can run each
-  individual query (2300K pages).}
+  \centering
+  % \includegraphics[width=.9\linewidth]{./plans/io_perf_23000.pdf}
+  \includegraphics[width=.9\linewidth]{./plans/workload_2300K.pdf}
+  \caption{\label{fig:min_budget_plot} \ioperfdescr The budget allowed
+    for this is the minimum budget within which FluiDB can run each
+    individual query (2300K pages).}
 \end{figure}
 
 Figure \ref{fig:min_budget_plot} demonstrates that FluiDB running a
@@ -282,15 +153,15 @@ intermediate results as demonstrated in figure
 \ref{fig:large_budget_plot}.
 
 \begin{figure}[H]
-\centering
-%\includegraphics[width=.9\linewidth]{./plans/io_perf_61000.pdf}
-\includegraphics[width=.9\linewidth]{./plans/workload_6100K.pdf}
-\caption{\label{fig:large_budget_plot} \ioperfdescr The budget
-  allowed for this is about triple the minimum budget within which
-  FluiDB can run each individual query (6100K pages). A badly timed GC
-  run causes some individual queries to be slower than their
-  counterparts from a workload being run in a tight budget (figure
-  \ref{fig:min_budget_plot}).}
+  \centering
+  % \includegraphics[width=.9\linewidth]{./plans/io_perf_61000.pdf}
+  \includegraphics[width=.9\linewidth]{./plans/workload_6100K.pdf}
+  \caption{\label{fig:large_budget_plot} \ioperfdescr The budget
+    allowed for this is about triple the minimum budget within which
+    FluiDB can run each individual query (6100K pages). A badly timed GC
+    run causes some individual queries to be slower than their
+    counterparts from a workload being run in a tight budget (figure
+    \ref{fig:min_budget_plot}).}
 \end{figure}
 
 An interesting point here is the plan for evaluating query 7 is more
@@ -307,7 +178,7 @@ planning of query 7! The key lies slightly earlier in the workload
 FluiDB materializes in query 4 the join
 
 \[
-Q_{36} := \mathit{supplier} \Join_{\mathit{lo\_suppkey} = \mathit{s\_suppkey}} \mathit{lineorder}
+  Q_{36} := \mathit{supplier} \Join_{\mathit{lo\_suppkey} = \mathit{s\_suppkey}} \mathit{lineorder}
 \]
 
 and the corresponding antijoins \(Q_{35}\) and \(Q_{37}\), making the
@@ -404,54 +275,174 @@ deletion than \(\mathit{lineorder}\). A carefully designed set of
 heuristics for the GC should avoid this problem in most cases.
 
 \begin{figure}[p]
-\centering
-% \includegraphics[width=.9\linewidth]{./plans/io_perf_65000.pdf}
-\includegraphics[width=.9\linewidth]{./plans/workload_6500K.pdf}
-\caption{\label{fig:extra_large_budget_plot}
-\ioperfdescr. The budget
-  allowed for this is about triple the minimum budget within which
-  FluiDB can run each individual query (6500K pages).}
+  \centering
+  % \includegraphics[width=.9\linewidth]{./plans/io_perf_65000.pdf}
+  \includegraphics[width=.9\linewidth]{./plans/workload_6500K.pdf}
+  \caption{\label{fig:extra_large_budget_plot}
+    \ioperfdescr. The budget
+    allowed for this is about triple the minimum budget within which
+    FluiDB can run each individual query (6500K pages).}
 \end{figure}
 
+\begin{corrected}{Memory budget sensitivity}
+  It becomes clear from the benchmark results so far that while the GC
+  often makes the difference between FluiDB being able to successfully
+  run a query and throwing OOM, and while we have put a lot of care in
+  tuning it to make good decisions, it can have detrimental effects to
+  the performance of the sustem as a whole. We can't get away from the
+  fact that less the GC is triggered, the less likely it is to delete a
+  query useful in the future.
+
+  For that reason, as we discussed in chapter \ref{chapter:physical_planning}
+  in detail, FluiDB will only trigger the the GC when it runs out of
+  memory, and the GC itself goes to great lengths to delete as few
+  tables as possible. As demonstrated in figure \ref{fig:gc_enemy},
+  however, the harsh the memory constraints will casue the GC not only
+  to run more often it will also be forced to evict relations that are
+  likely to be necessary for future queries.
+
+  While the GC is a central component of FluiDB, the latter is more than
+  a simple cache system as it involves an advanced planner that can
+  utilize reversible operations. This means that the search space for
+  plans is, in principle, larger than the search space that would be
+  available to a recycling RDBMS that does not take advantage of
+  reversible operations. As mentioned the performance of FluiDB without
+  triggering the GC is demonstrated in figure
+  \ref{fig:extra_large_budget_plot}.
+\end{corrected}
+
+
+\begin{corrected}{Best/worst scenaria}
+  The actual best case scenario for FluiDB is a workload consisting of
+  a single query being executed repetedly. FluiDB will just repeatedly
+  return a reference to the table created at the first execution. A
+  realistic scenario that is quite good for FluiDB is the presented
+  star schema which is the SSB-TPC-H where the number of the possible
+  expensive queries (joins) is fairly limited and FluiDB is able to
+  eventually figure out which views to materialize and stick with
+  them.
+
+  The worst case scenario in the absence of memory constraints is a
+  workload that has minimal reuse, or in the presence of memory
+  constraints and therefore a GC the queries that reuse are very far
+  apart and thereofre no sharing can be exploited. This extreme case can
+  be simularted by repeating the schema such that a workload of \(N\)
+  queries we would have a repeated \(N\) times TPC-H-SSB schema amouting
+  to \(5 \times N\) tables:
+
+
+  \begin{align*}
+    customer_1, date_1 lineorder_1, part_1, supplier_1 \\
+    customer_2, date_2 lineorder_2, part_2, supplier_2 \\
+    ... \\
+    customer_N, date_N lineorder_N, part_N, supplier_N \\
+  \end{align*}
+
+  Each query \(Q_i\) will reference tables \(<table>_i\) instead of
+  \(<table>\).
+
+  In terms of the query runtime this is equivalent to running each query
+  from scratch each time, i.e. the /"baseline"/ in each figure.
+
+  In the presence of constrained memory the more nuanced worst case is
+  when the the GC always deletes primary nodes that are needed by the
+  next query so each query needs to recreate the primary tables. A
+  simple example is:
+
+
+  \begin{align*}
+    Q_1 := lineorder \Join date \Join customer \\
+    Q_2 := lineorder \Join part \Join supplier \\
+    Q_3 := lineorder \Join date \Join customer \\
+    Q_4 := lineorder \Join part \Join supplier \\
+    ...
+  \end{align*}
+
+  In a memory constrained situation the garbage collector needs to
+  delete \(lineorder\) in order to make space for the final join of each
+  \(Q_i\), meaning that it needs to recreate \(lineorder\) at each step
+  by projecting on \(lineorder \Join part\) for \(Q_{2i + 1}\) and in
+  \(lineorder \Join data\) for each \(Q_{2i}\). In slightly more general
+  terms this kind of form oscillation that is the worst case workload
+  for FluiDB means that every operator in the plan is, not only used
+  only once, but needs to be undone. This renders the worst case cost of
+  each operator to be its cost + the cost of it's recerse.
+
+  It is hard to compare this case with other databases or even with
+  non-GC FluiDB operation because most database systems will fail with
+  OOM if their budget can't accomodate all the primary, and every stage
+  of intermediate and final relations for the particuar workload. While
+  this is not a great situation for FluiDB, then, it is in fact much
+  better than a failure to resolve the query.
+
+  \begin{figure}[H]
+    \centering
+    \includegraphics[width=.9\linewidth]{./plans/workload_1700K.pdf}
+    \caption{\label{fig:gc_enemy}This plot shows a workload where the GC
+      opts to remove primary tables in order to make space for
+      intermediate results. The primary tables are then required so they
+      need to be reconstructed. The general shape of the queries is
+      \(A \Join B_0 \Join C_0\) and \(A \Join B_1 \Join C_1\) and the
+      budget is small enough that it can't fit the final result, the
+      intermediate result and the primary tables simulataneously. The GC
+      is therefore required to delete the primary tables forcing their
+      reconstruction the next time it is required.}
+  \end{figure}
+\end{corrected}
+
+
+\begin{corrected}{Overheads}
+  The compilation overheads range between a staggering 9 and 11 secs
+  per query. While it is not ideal, there are things that can be done
+  to mitigate it like precompiling the headers (eg with the
+  \code{-fmodule-header} flag) or changing the granularity of the code
+  generation to generate individual operators, which would allow both
+  caching of compiled units as well as parallel
+  compilation. Optimizing the compilation process itself, however, is
+  beyond the scope of this thesis as the overhead is constant (or more
+  precisely, a function of the query complexity) and this work focuses
+  on optimizing long running queries.
+\end{corrected}
+
 \begin{comment}
-\section{A note on size estimation}
-\label{sec:size_estimation_problems}
-The size of the budget may seem fairly excessive for the size required
-for the primary tables. To understand why that is, we need to look at
-the largest n-nodes in the QDAG:
+  \section{A note on size estimation}
+  \label{sec:size_estimation_problems}
+  The size of the budget may seem fairly excessive for the size required
+  for the primary tables. To understand why that is, we need to look at
+  the largest n-nodes in the QDAG:
 
-\begin{center}
-\begin{tabular}{rl}
-Pages & Expr\\
-\hline
-188000 & \(lineorder\)\\
-547100 & \(customer \Join (date \Join lineorder)\)\\
-376200 & \(\sigma ((customer \Join (date \Join lineorder)) \Join supplier)\)\\
-376200 & \(\sigma ((date \Join lineorder)) \Join supplier)\)\\
-273600 & \(\sigma (customer \Join (date \Join lineorder))\)\\
-188100 & \(\sigma ((\sigma (customer \Join (date \Join lineorder))) \Join supplier)\)\\
-\end{tabular}
-\end{center}
+  \begin{center}
+    \begin{tabular}{rl}
+      Pages & Expr\\
+      \hline
+      188000 & \(lineorder\)\\
+      547100 & \(customer \Join (date \Join lineorder)\)\\
+      376200 & \(\sigma ((customer \Join (date \Join lineorder)) \Join supplier)\)\\
+      376200 & \(\sigma ((date \Join lineorder)) \Join supplier)\)\\
+      273600 & \(\sigma (customer \Join (date \Join lineorder))\)\\
+      188100 & \(\sigma ((\sigma (customer \Join (date \Join lineorder))) \Join supplier)\)\\
+    \end{tabular}
+  \end{center}
 
-From looking at those n-nodes it seems that a sufficiently advanced
-garbage collector should be able to support plans that materialize the
-n-nodes in about half the budget as FluiDB should have been able to plan
-the query needing around double the pages required to store the largest equijoin
-which for us is \(customer\) date \(lineorder\).
+  From looking at those n-nodes it seems that a sufficiently advanced
+  garbage collector should be able to support plans that materialize the
+  n-nodes in about half the budget as FluiDB should have been able to plan
+  the query needing around double the pages required to store the largest equijoin
+  which for us is \(customer\) date \(lineorder\).
 
-The main issue, however, as it is with many query processing systems
-\cite{leisHowGoodAre2015}, is the cardinality estimator which assumes
-that in a natural join there are no foreign key lookup failures, that
-is, that all natural joins are extension joins. Therefore
+  The main issue, however, as it is with many query processing systems
+  \cite{leisHowGoodAre2015}, is the cardinality estimator which assumes
+  that in a natural join there are no foreign key lookup failures, that
+  is, that all natural joins are extension joins. Therefore
 
-\[
-\lvert \sigma _{p(customer)} (customer \Join (date \Join lineorder)) \rvert = \lvert (\sigma _{p(customer)} customer \Join (date \Join lineorder)) \rvert
-\]
+  \[
+    \lvert \sigma _{p(customer)} (customer \Join (date \Join lineorder)) \rvert = \lvert (\sigma _{p(customer)} customer \Join (date \Join lineorder)) \rvert
+  \]
 
 
-This causes FluiDB to vastly overestimate the size of plans that have
-selections pushed down, making these plans disproportionately
-unappealing.
+  This causes FluiDB to vastly overestimate the size of plans that have
+  selections pushed down, making these plans disproportionately
+  unappealing.
 \end{comment}
 
 \section{Conclusion}

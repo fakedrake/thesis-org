@@ -482,6 +482,201 @@ bridge the gap between intermediate result recycling and MQO by
 automatically grouping queries in a workload in such a way that
 computation can be maximally shared.
 
+
+
+\section{Related work}
+\label{sec:org234bf3c}
+
+Our work on FluiDB focuses on intermediate result recycling and query
+optimization but on our way to a solution to this particular problem
+we had to research fields that are fall outside the scope of database
+research. In this section we present the prior art in the three main
+fields in which the main contributions have been made:
+
+\begin{itemize}
+\item Intermediate result recycling (corresponding to chapter 3)
+\item Monadic backtracking (corresponding to chapter 4)
+\item Incremental computations (corresponding to antisthenis described in
+chapter 5)
+\end{itemize}
+
+\section{Intermediate result recycling}
+\label{sec:org9f362bb}
+
+The fundametal problem being solved by FluiDB falls under the very
+general umbrella of \emph{optimizing multiple queries simulatenously}. This
+problem is central to database research and there is a very wide
+diversity of approaches to solving it. It is useful, however, to
+understand this less like a single problem more like a family of
+problems. To help the reader understand the philosophy of FluiDB a
+high level view we propose an organization of the proposed algorithms
+that solve subsets of that problem exist in a space organized around
+two poles:
+
+\begin{itemize}
+\item The algorithm solves a \emph{set} of queries simulatenously
+\item The algorithm solves one query at a time from a \emph{stream} of queries.
+\end{itemize}
+
+While many design decisions are informed by the space a piece of work
+occupies in relation to this dipole, virtually all approaches involve
+identification of common subexpressions or sub-plans that can be
+shared between different queries and avoiding duplicate
+evaulation. This is indeed the unifying element of the work in the
+field.
+
+The former problem has heavily researched for decades and is a major
+ subfield in database research \cite{sellisMultipleQueryOptimization1987,royEfficientExtensibleAlgorithms2000,ComputingQueriesDerived}. It's
+ focus is sligtly narrower as it focuses on identifying common
+ subqueries in an unordered set of queries.
+
+The latter (amortized optimization of a \emph{stream} of queries) has also
+been dubbed the View Selection Problem (VSP) but research has mostly
+focused on static query workloads, i.e. information about the query
+workload is known in advance and views are pre-materialized
+\cite{phanDynamicMaterializationQuery2008a}. Recently there have been
+attempts to mitigate this based on reinforcement learning
+\cite{yuanAutomaticViewGeneration2020a} and genetic
+algorithms\cite{vijaykumarMaterializedViewSelection2012,zhangGeneticAlgorithmMaterialized1999,bayirGeneticAlgorithmMultipleQuery2007}
+due to high volumes, diversity and unpredictability of queries in
+modern workloads \cite{liMachineLearningDatabases2021a}. These
+approaches have important advantages and shape a field that is rapidly
+advances. So far, however, they improve on the heuristics based
+solutions. FluiDB's novelty, or at least certain aspects of it, is
+orthogonal in that it aspires to reshape the search space of plans, by
+introducing the GC and the reversible operations.
+
+On the MQO side, Harizopoulos' two projects StagedDB
+\cite{harizopoulosStagedDBDesigningDatabase2005} and QPipe
+\cite{harizopoulosQpipeSimultaneouslyPipelined2005} share between
+queries that arrive within a time window. This work is seminal and
+often cited in the field of MQO.
+
+CJoin \cite{candeaScalablePredictableJoin2009} uses an "always-on" plan
+of join operations to execute the joins of all concurrent
+queries. Similarly Crescando \cite{giannikisCrescando2010} attempts to
+share individual table scans, rather than joins, between queries to
+reduce IO. Crescando and other database systems that take similar
+approaches, like the aforementioned ones, aim at sharing computation
+between temporally overlapping query executions.
+
+DataPath \cite{arumugamDataPathSystemDatacentric2010} creates what they
+call a "data-centric approach" to query processing. It transposes the
+order in which a per-query system operates (what they call
+"computation-cetnric approach") where the system effectively iterates
+over the queries in an outer loop and each query iterates over the
+relevant data. Instead DataPath iterates over the data in an outer
+loop and an inner loop iterates over the queries looking for a query
+that has use for that data. This is a very different approach to the
+other but it boils down to sharing data fetches between the queries.
+
+SharedDB \cite{giannikisSharedDBKillingOne2012}, BatchDB
+\cite{makreshanskiBatchDBEfficientIsolated2017}]] and MQJoin
+\cite{makreshanskiMqjoinEfficientShared2016a}]] use a global query plan
+for grouped queries. This way of viewing query planning is
+conceptually much closer to FluiDB's approach. In fact the global
+query plan has many parallels to the QDAG that we will see in the next
+chapter. FluiDB, however, fundamentally differs from both these
+systems as it's aim processing streaming queries, rather than
+requiring ahead of time knowledge of the entire workload details leads
+to radically different design decisions like reversible queries and
+the introduction of the garbage collector.  Sloth
+\cite{cheungSlothBeingLazy2016} CrocodileDB
+\cite{shangCrocodileDBEfficientDatabase2020}]] exploit lazy or deferred
+execution to increaase the opportunitites for batching and therefore
+sharing.
+
+A slightly more proactive approach is taken by database systems like
+MonetDB \cite{idreosMonetdbTwoDecades2012} and CoScan
+\cite{wangCoscanCooperativeScan2011}]] that try schedule queries so
+that similar or overlapping queries are solved simulatenously,
+allowing the system to more easily share computation.
+
+A step closer to the aims of FluiDB is a parallel tradition roughly
+started in the 90s by DynaMat \cite{kotidisDynamatDynamicView1999} and
+watchman \cite{scheuermannWatchmanDataWarehouse1996} which do dynamic
+view selection, choosing which views maintain and which to evict
+aiming to reuse them in future queries.
+
+Even most recent work of view selection focuses on opportunistically
+reusing intermediate results that would be materialized
+\cite{ivanovaArchitectureRecyclingIntermediates2010,nagelRecyclingPipelinedQuery2013},
+taking advantage of tried-and-true optimization techques that are
+however geared towards query at a time processing. There have been
+attempts to unify the planner with the materialized view selection
+engine like HAWC \cite{perezHistoryawareQueryOptimization2014a}, which
+philosophically is the closest to FluiDB but, in contrast to FluiDB,
+neither incorporates a fully specialized optimizer towards nor takes
+into account selected views and intermediate results memory
+requirements during planning.
+
+Notable in this field is aslo Nectar
+\cite{gundaNectarAutomaticManagement2010}]] which is not RDBMs. It
+automatically compresses rarely used data into programs that generate
+that data. Nectar focuses on sharing computation and data as much as
+possible.
+
+\subsection{Backtracking and branch-and-bound}
+
+The fundamental framework on which we build our optimizer is a based
+on a backtracking monad. Backtracking monads have been researched
+quite a bit in the past decades
+\cite{kiselyovBacktrackingInterleavingTerminating,hinzeEfficientMonadicstyleBacktracking,hinzeDerivingBacktrackingMonad2000a,fischerReinventingHaskellBacktracking2009}. The
+simplest backtracking monad is essentially the list monad which
+combined with haskell's lazy semantics amounts simply to nested loops
+traversing the search space. More complex search patterns are
+introduced by using monad transformers
+\cite{hedgesMonadTransformersBacktracking2014} and particularly the
+continuation monad transformer
+\cite{hinzeMonadicStyleBacktracking1996}. This allows us to jump
+between branches (continuations) of the search space. The main problem
+being addressed by the literature is that some branches of the search
+can be large or infinite. The most popular approach for mitigating
+this, other than continuations, comes in the form of interleaving the
+exection of different branches via special operators
+\cite{kiselyovBacktrackingInterleavingTerminating2005}.
+
+Only recently \cite{kidneyAlgebrasWeightedSearch2021} has prioritized
+search been introduced to this area. Since we are able to quantify the
+priority of partially constructed query execution plans, this is
+fundamentally the approach we require, but we needed from our monad to
+support cut-like features. The combination of the latter and weighted
+search has, to our knowledge, not been addressed by the literature. In
+chapter 4 we present a monad that fits this particular bill.
+
+\subsection{Antisthenis}
+\label{sec:orgb080363}
+
+An important part of FluiDB is Antisthenis, our highly specialized
+incremental computation engine. Incremental computation is in it's
+essence an advanced conception of caching. Incremental improvements on
+simple memoization techniques
+\cite{pughIncrementalComputationFunction1989} have led the modern
+notion of self adjusting computation
+\cite{acarSelfadjustingComputation2005}. Self-adjusting computation
+usually models the computation as a graph of variables and paramenters
+and focuses on propagating changes of the paramenters to the variables
+in the graph.
+
+While there has been work on defining general frameworks for
+incrementalizing computation like
+\cite{hammerAdaptonComposableDemanddriven2014a} and
+\cite{andersonEfficientParallelSelfadjusting2021a}, most systems focus
+on incrementalizing spcific algorithms like
+trees\cite{acarDynamizingStaticAlgorithms2004}, kinetic data
+strucutres\cite{acarKineticAlgorithmsSelfadjusting2006}, convex hulls
+\cite{acarExperimentalAnalysisSelfadjusting2009}, Huffman
+coding\cite{acarTraceableDataTypes2010}, relational databases
+\cite{hornIncrementalRelationalLenses2018} and Bayesian inference
+\cite{acarAdaptiveBayesianInference2007}.
+
+
+
+None of the previous works have unified evaluation strategy with
+incremental computation in the context of recursive functions,
+particularly ones composed boolean of AND/OR and min/sum operators.
+
+
 \section{Conclusion}
 
 We presented an overview of the various techniques and challenges of

@@ -310,5 +310,17 @@
   {
   \end{tcolorbox}
 }
+\newenvironment{corrected}[1]
+{
+  \begin{tcolorbox}[title=Correction: #1,
+    breakable,
+    enhanced,
+    colback=green!5!white,
+    colframe=green!75!black,
+    sharp corners ]
+  }
+  {
+  \end{tcolorbox}
+}
 
 \message{Hello world thesis!}
