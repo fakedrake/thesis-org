@@ -113,7 +113,16 @@ beyond the scope of this work, FluiDB is focused on analytics
 workloads that do not include sub-second queries.
 
 
-\begin{corrected}{Exeprimental setup}
+\begin{corrected}{Experimental setup}
+
+  An important factor to the performance of FluiDB is the available
+  memory budget. Most traditional systems plan independently of their
+  memory constraints will die will an OOM exception if they are unable
+  to run the plan they constructed. FluiDB takes budget into account
+  while planning and is able to produce better plans under laxer
+  restrictions. We evaluate the performance of the system under
+  different budget restrictions.
+
   The lowest budget within which FluiDB was able to plan all 13
   queries of SSB-TPC-H was 2300k pages and therefore that was the
   lowest budget we used in our benchmarks. The highest budget we used
@@ -123,7 +132,7 @@ workloads that do not include sub-second queries.
   for any memory budget over 6500K pages.
 \end{corrected}
 
-
+\section{Analysis}
 \newcommand{\ioperfdescr}{The total page read/writes for each query of
   SSB TPC-H. The baseline is the query being run by FluiDB directly
   without any materialized n-nodes. The workload bars represent the
@@ -290,16 +299,17 @@ heuristics for the GC should avoid this problem in most cases.
   run a query and throwing OOM, and while we have put a lot of care in
   tuning it to make good decisions, it can have detrimental effects to
   the performance of the sustem as a whole. We can't get away from the
-  fact that less the GC is triggered, the less likely it is to delete a
-  query useful in the future.
+  fact that the less the GC is triggered, the less likely it is to
+  delete a query useful in the future.
 
-  For that reason, as we discussed in chapter \ref{chapter:physical_planning}
-  in detail, FluiDB will only trigger the the GC when it runs out of
-  memory, and the GC itself goes to great lengths to delete as few
-  tables as possible. As demonstrated in figure \ref{fig:gc_enemy},
-  however, the harsh the memory constraints will casue the GC not only
-  to run more often it will also be forced to evict relations that are
-  likely to be necessary for future queries.
+  For that reason, as we discussed in chapter
+  \ref{chapter:physical_planning} in detail, FluiDB will only trigger
+  the GC when it runs out of memory, and the GC itself goes to great
+  lengths to delete as few tables as possible. As demonstrated in
+  figure \ref{fig:gc_enemy}, however, the harsh the memory constraints
+  will casue the GC not only to run more often it will also be forced
+  to evict relations that are likely to be necessary for future
+  queries.
 
   While the GC is a central component of FluiDB, the latter is more than
   a simple cache system as it involves an advanced planner that can
@@ -313,6 +323,8 @@ heuristics for the GC should avoid this problem in most cases.
 
 
 \begin{corrected}{Best/worst scenaria}
+  \section{Best/worst case scenaria for FluiDB performance}
+
   The actual best case scenario for FluiDB is a workload consisting of
   a single query being executed repetedly. FluiDB will just repeatedly
   return a reference to the table created at the first execution. A
@@ -323,12 +335,11 @@ heuristics for the GC should avoid this problem in most cases.
   them.
 
   The worst case scenario in the absence of memory constraints is a
-  workload that has minimal reuse, or in the presence of memory
-  constraints and therefore a GC the queries that reuse are very far
-  apart and thereofre no sharing can be exploited. This extreme case can
-  be simularted by repeating the schema such that a workload of \(N\)
-  queries we would have a repeated \(N\) times TPC-H-SSB schema amouting
-  to \(5 \times N\) tables:
+  workload that has minimal reuse, the queries that reuse are very far
+  apart and thereofre no sharing can be exploited. This extreme case
+  can be simularted by repeating the schema such that a workload of
+  \(N\) queries we would have a repeated \(N\) times TPC-H-SSB schema
+  amouting to \(5 \times N\) tables:
 
 
   \begin{align*}
@@ -339,10 +350,9 @@ heuristics for the GC should avoid this problem in most cases.
   \end{align*}
 
   Each query \(Q_i\) will reference tables \(<table>_i\) instead of
-  \(<table>\).
-
-  In terms of the query runtime this is equivalent to running each query
-  from scratch each time, i.e. the /"baseline"/ in each figure.
+  \(<table>\). In terms of the query runtime this is equivalent to
+  running each query from scratch each time, i.e. the /"baseline"/ in
+  each figure.
 
   In the presence of constrained memory the more nuanced worst case is
   when the the GC always deletes primary nodes that are needed by the

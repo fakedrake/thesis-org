@@ -484,14 +484,14 @@ computation can be maximally shared.
 
 
 
+\begin{corrected}{Related work}
 \section{Related work}
-\label{sec:org234bf3c}
 
 Our work on FluiDB focuses on intermediate result recycling and query
 optimization but on our way to a solution to this particular problem
-we had to research fields that are fall outside the scope of database
-research. In this section we present the prior art in the three main
-fields in which the main contributions have been made:
+we had to also work in fields that are fall outside the scope of
+database research. In this section we present the prior art in the
+three main fields in which the main contributions have been made:
 
 \begin{itemize}
 \item Intermediate result recycling (corresponding to chapter 3)
@@ -500,8 +500,7 @@ fields in which the main contributions have been made:
 chapter 5)
 \end{itemize}
 
-\section{Intermediate result recycling}
-\label{sec:org9f362bb}
+\subsection{Intermediate result recycling}
 
 The fundametal problem being solved by FluiDB falls under the very
 general umbrella of \emph{optimizing multiple queries simulatenously}. This
@@ -571,47 +570,47 @@ that has use for that data. This is a very different approach to the
 other but it boils down to sharing data fetches between the queries.
 
 SharedDB \cite{giannikisSharedDBKillingOne2012}, BatchDB
-\cite{makreshanskiBatchDBEfficientIsolated2017}]] and MQJoin
-\cite{makreshanskiMqjoinEfficientShared2016a}]] use a global query plan
-for grouped queries. This way of viewing query planning is
-conceptually much closer to FluiDB's approach. In fact the global
-query plan has many parallels to the QDAG that we will see in the next
-chapter. FluiDB, however, fundamentally differs from both these
-systems as it's aim processing streaming queries, rather than
-requiring ahead of time knowledge of the entire workload details leads
-to radically different design decisions like reversible queries and
-the introduction of the garbage collector.  Sloth
-\cite{cheungSlothBeingLazy2016} CrocodileDB
-\cite{shangCrocodileDBEfficientDatabase2020}]] exploit lazy or deferred
+\cite{makreshanskiBatchDBEfficientIsolated2017} and MQJoin
+\cite{makreshanskiMqjoinEfficientShared2016a} use a global query plan
+for grouped queries. Sloth \cite{cheungSlothBeingLazy2016} CrocodileDB
+\cite{shangCrocodileDBEfficientDatabase2020} exploit lazy or deferred
 execution to increaase the opportunitites for batching and therefore
-sharing.
+sharing. This way of viewing query planning is conceptually much
+closer to FluiDB's approach. In fact the global query plan has many
+parallels to the QDAG that we will see in the next chapter. FluiDB,
+however, fundamentally differs from these systems as it's aim is
+processing streaming queries, rather than requiring ahead of time
+knowledge of the entire workload. This leads to radically different
+design decisions like reversible queries and the introduction of the
+garbage collector.
 
 A slightly more proactive approach is taken by database systems like
 MonetDB \cite{idreosMonetdbTwoDecades2012} and CoScan
-\cite{wangCoscanCooperativeScan2011}]] that try schedule queries so
-that similar or overlapping queries are solved simulatenously,
-allowing the system to more easily share computation.
+\cite{wangCoscanCooperativeScan2011} that try schedule queries so
+similar or overlapping queries are planned and executed
+simulatenously, allowing the system to more easily share computation.
 
 A step closer to the aims of FluiDB is a parallel tradition roughly
 started in the 90s by DynaMat \cite{kotidisDynamatDynamicView1999} and
 watchman \cite{scheuermannWatchmanDataWarehouse1996} which do dynamic
 view selection, choosing which views maintain and which to evict
-aiming to reuse them in future queries.
-
-Even most recent work of view selection focuses on opportunistically
-reusing intermediate results that would be materialized
+aiming to reuse them in future queries. These and even more recent
+work of view selection focuses on opportunistically reusing
+intermediate results that would be materialized
 \cite{ivanovaArchitectureRecyclingIntermediates2010,nagelRecyclingPipelinedQuery2013},
 taking advantage of tried-and-true optimization techques that are
-however geared towards query at a time processing. There have been
-attempts to unify the planner with the materialized view selection
-engine like HAWC \cite{perezHistoryawareQueryOptimization2014a}, which
-philosophically is the closest to FluiDB but, in contrast to FluiDB,
-neither incorporates a fully specialized optimizer towards nor takes
-into account selected views and intermediate results memory
-requirements during planning.
+however geared towards query at a time processing.
+
+There have been attempts to unify the planner with the materialized
+view selection engine like HAWC
+\cite{perezHistoryawareQueryOptimization2014a}, which philosophically
+is the closest to FluiDB but, in contrast to FluiDB, neither
+incorporates a fully specialized optimizer towards nor takes into
+account selected views and intermediate results memory requirements
+during planning.
 
 Notable in this field is aslo Nectar
-\cite{gundaNectarAutomaticManagement2010}]] which is not RDBMs. It
+\cite{gundaNectarAutomaticManagement2010} which is not RDBMs. It
 automatically compresses rarely used data into programs that generate
 that data. Nectar focuses on sharing computation and data as much as
 possible.
@@ -645,7 +644,6 @@ search has, to our knowledge, not been addressed by the literature. In
 chapter 4 we present a monad that fits this particular bill.
 
 \subsection{Antisthenis}
-\label{sec:orgb080363}
 
 An important part of FluiDB is Antisthenis, our highly specialized
 incremental computation engine. Incremental computation is in it's
@@ -675,7 +673,7 @@ coding\cite{acarTraceableDataTypes2010}, relational databases
 None of the previous works have unified evaluation strategy with
 incremental computation in the context of recursive functions,
 particularly ones composed boolean of AND/OR and min/sum operators.
-
+\end{corrected}
 
 \section{Conclusion}
 

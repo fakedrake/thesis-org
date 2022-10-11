@@ -401,22 +401,22 @@ heavily on executing plans by transpiling the plan to C++ code.
   SQL query is initially parsed and passed to the \emph{Grpah Builder}
   which correlates it and its possible subqueries to historical
   queries using the \emph{QNF processor} which evaluates the
-  equivalence between subplans. This way an the \emph{Relational
-    Algebra (RA) Graph} which is comprised of nodes corresponding to
-  relations connected by operations that describe, often
-  bidirectional, means of computing them from other relations. The
-  next level in the pipeline is the planner, which traverses the graph
-  using an \(A^{\star}\) inspired branch and boud algorithm in order to
-  come up with a plan that both efficiently computes the reuqested
-  query and optimizes the data layout to provide oportinity for
-  efficient future plans. Prunning of the search space is assisted by
-  \emph{Antisthenis}, an incremental framework optimized for
-  efficiently calculating the expected cost of materializing a
-  relation without actually planning for it as well as wether a
-  relation is materializable at all given the currently materialized
-  relations. The plan generated has the form of a sequence of
-  operators and relation deletions which are finally translated to C++
-  and compiled with an off-the-shelf compiler.
+  equivalence between subplans. This way the \emph{Relational Algebra
+    (RA) Graph} is populated with nodes corresponding to relations
+  connected by often bidirectional operators.
+
+  The next level in the pipeline is the planner, which traverses the
+  graph using an \(A^{\star}\) inspired branch and boud algorithm in
+  order to come up with a plan that a) efficiently computes the
+  reuqested query and b) optimizes the data layout to provide
+  oportinity for efficient future plans. Prunning of the search space
+  is assisted by \emph{Antisthenis}, an incremental framework
+  optimized a) for calculating the expected cost of materializing a
+  relation without actually planning for it as well as b) calculating
+  wether a relation is materializable at all given the currently
+  materialized relations. The plan generated has the form of a
+  sequence of operators and relation deletions which are finally
+  translated to C++ and compiled with an off-the-shelf compiler.
 
   \begin{figure}[H]
   \begin{tikzdiagram}
