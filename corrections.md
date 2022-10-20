@@ -44,7 +44,7 @@ addition, the thesis needs to improve in three main points:
     long-running queries where overheads such as compilation times
     represent a small percentage of overall query times. *(we were
     unable to make large enough data input that would make the 10s of
-    seconds of compilation seem low)*
+    seconds of compilation seem low)* # copy paste from the test. "More specifically this is the test from the thesis"
   - A characterization of the best- and worst-case scenarios for the
     presented technique, possibly using synthetic workloads, which
     allow control of possible data sharing among queries in the
@@ -66,4 +66,10 @@ Some individual chapters, such as chapter 5, would benefit from
 evaluations of the individual component discussed in the chapter. The
 student is encouraged to include additional evaluations for them. *(It
 was exceptionally hard to isolate the component in a useful scenario
-so this particular point was left unadressed).*
+so this particular point was left unadressed).* very embedded, timers dont make sense, in order to not compromize the and in order tonot make sumething that maps to reality i didn't make:
+
+- impact: measurement antisthenis in an isolated fashion changes FluiDB so much that it is a different system: the skew will.
+- it cant be replaced
+
+
+Spell check the thesis. many.
