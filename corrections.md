@@ -11,13 +11,16 @@ addition, the thesis needs to improve in three main points:
 - The thesis needs to better highlight the contributions made. The
   introduction chapter should explicitly list the main contributions
   made by the thesis and explain how it advances the knowledge in the
-  field. *(in the beginning of every chapter contribution were made
-  clear)*
+  field. 
+  
+  *in the beginning of every chapter contribution were made
+  clear*
 
   The introduction chapter would greatly benefit from an (possibly
   graphical) overview of the entire database system. Each technical
   chapter would greatly benefit from clarifying its individual
   contributions early on, and how it relates to the overall thesis.
+  
   *(added at the end of the chapter)*
 
 - The thesis needs a Related Work chapter that discusses related work
@@ -27,7 +30,9 @@ addition, the thesis needs to improve in three main points:
   analytical query processing (e.g., as performed in factorized DBs in
   ACM PODS 2015 and in the PGM-based ACM PODS 2016 (best paper award),
   research related to the functional programming techniques used in
-  the technical chapters. *see the end of Background chapter*
+  the technical chapters. 
+  
+  *Was added at the end of Background chapter*
 
 - The thesis needs an improved evaluation chapter. The evaluation
   chapter should be improved to include:
@@ -37,7 +42,10 @@ addition, the thesis needs to improve in three main points:
     is intended to put things in context. The committee understands
     that it is hard to create an even comparison field but an effort
     could be made using this DB without indexes and bounding available
-    memory. *(sqlite IO metrics were added to all grpahs)*
+    memory. 
+    
+    *(sqlite IO metrics were added to all grpahs)*
+    
   - A discussion of the overheads introduced, on what they depend on,
     and a clarification of the data-size independence of said
     overheads. Evaluation here could focus on experimenting with
@@ -50,21 +58,28 @@ addition, the thesis needs to improve in three main points:
   - A characterization of the best- and worst-case scenarios for the
     presented technique, possibly using synthetic workloads, which
     allow control of possible data sharing among queries in the
-    workload. *(a discussion of best and worst case scenario was added
+    workload. 
+    
+    *(a discussion of best and worst case scenario was added
     in the evaluation section)*
+    
   - A sensitivity analysis of the impact of the memory budget –
     especially with respect to the role of the garbage collector (GC)
     and benefits the proposed system makes even when enough memory is
     available and no GC is needed. This will help bring to the fore
-    and crystalize the benefits of the proposed system. *(One of the
-    experiment covers this, it is highlighed in the text)*
+    and crystalize the benefits of the proposed system.
+    
+    *(One of the experiment covers this, it is highlighed in the text)*
+    
   - A better description of the experimental setup, including a better
     justification for the various sizes used and a description of the
-    used hardware *(The experimental setup was discussed in the
-    evaluation section.)*
+    used hardware 
+    
+    *(The experimental setup was discussed in the evaluation section.)*
 
 
 Some individual chapters, such as chapter 5, would benefit from
 evaluations of the individual component discussed in the chapter. The
 student is encouraged to include additional evaluations for them. 
+
 *Antisthenis is a system very deeply embedded in the operation of FluiDB and the particular characteristics of the algorithm are essential to avoid non-termination of the planning process. For that reason it is not possible to replace it with a simpler algorithm for comaprison. Timing the planning process itself, and especially individual compponents of said process, is beyond the scope of this thesis as it is not fine tuned for performant planning but for producing performant plans.*
