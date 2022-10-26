@@ -42,9 +42,11 @@ addition, the thesis needs to improve in three main points:
     and a clarification of the data-size independence of said
     overheads. Evaluation here could focus on experimenting with
     long-running queries where overheads such as compilation times
-    represent a small percentage of overall query times. *(we were
-    unable to make large enough data input that would make the 10s of
-    seconds of compilation seem low)* # copy paste from the test. "More specifically this is the test from the thesis"
+    represent a small percentage of overall query times. 
+    
+    *From the thesis: The compilation overheads range between a staggering 9 and 11 secs per query. While it is not ideal, there are things that can be done to mitigate it like precom- piling the headers (eg with the -fmodule-header flag) or changing the granularity of the code generation to generate individual operators, which would allow both caching of compiled units as well as parallel compilation. Optimizing the compilation process itself, however, is beyond the scope of this thesis as the overhead is constant (or more precisely, a function of the query complexity) and this work focuses on optimizing long running queries.*
+    
+  
   - A characterization of the best- and worst-case scenarios for the
     presented technique, possibly using synthetic workloads, which
     allow control of possible data sharing among queries in the
@@ -64,12 +66,5 @@ addition, the thesis needs to improve in three main points:
 
 Some individual chapters, such as chapter 5, would benefit from
 evaluations of the individual component discussed in the chapter. The
-student is encouraged to include additional evaluations for them. *(It
-was exceptionally hard to isolate the component in a useful scenario
-so this particular point was left unadressed).* very embedded, timers dont make sense, in order to not compromize the and in order tonot make sumething that maps to reality i didn't make:
-
-- impact: measurement antisthenis in an isolated fashion changes FluiDB so much that it is a different system: the skew will.
-- it cant be replaced
-
-
-Spell check the thesis. many.
+student is encouraged to include additional evaluations for them. 
+*Antisthenis is a system very deeply embedded in the operation of FluiDB and the particular characteristics of the algorithm are essential to avoid non-termination of the planning process. For that reason it is not possible to replace it with a simpler algorithm for comaprison. Timing the planning process itself, and especially individual compponents of said process, is beyond the scope of this thesis as it is not fine tuned for performant planning but for producing performant plans.*
