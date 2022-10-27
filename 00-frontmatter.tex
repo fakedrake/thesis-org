@@ -18,7 +18,7 @@
 
 \chapter{Abstract}%
 
-It is a popular practice to use materialized intermediate results to improve the performance of RDBMSes. Work in this area has focused either optimizers matching existing materialized results in the cache and selecting intermediate results from a plan to survive the plan execution. To our knowledge, few attempts have been made to create plans with cached intermediate results in mind, and none that make any attempt to deduplicate the stored data to alleviate the storage cost of maintaining possibly large queries.
+It is a popular practice to use materialized intermediate results to improve the performance of RDBMSes. Work in this area has focused either optimisers matching existing materialized results in the cache and selecting intermediate results from a plan to survive the plan execution. To our knowledge, few attempts have been made to create plans with cached intermediate results in mind, and none that make any attempt to deduplicate the stored data to alleviate the storage cost of maintaining possibly large queries.
 
 We built \emph{FluiDB} to explore a novel approach to integrating the selection of materialized results with the planner to optimize the logical representation of data in memory. FluiDB materializes common intermediate results and deduplucates data to alleviate the cost of maintaining them. This is achieved by introducing \emph{reversible operations}: versions of normal relational operators that may produce complementary tables alongside the normal output, that allow the reconstruction of the input relations. A planner aware of such operations can build query plans that dynamically adapt the data layout to the plan under a constrained memory budget. This thesis revolves around four main chapters, each of which describes in detail a different part of FluiDB and a final one that goes into evaluation of the system.
 
@@ -40,7 +40,7 @@ A well-studied method of increasing efficiency is to store the answers to common
 
 The design of FluiDB aspires to take one more step in that direction. Instead of asking which materialized views should be allowed to survive the execution of a query plan, we frame the problem as one of adapting the layout of the data to maximize efficiency of answering the the sequence of queries as a whole.
 
-\chapter{Acknowledgements}%
+\chapter{Acknowledgments}%
 
 This thesis is dedicated to all the people that directly or indirectly
 supported me though my PhD studies, but also to all the people
@@ -57,17 +57,17 @@ in the general sense but because, especially during the first years of
 my thesis he went out of his way to make me feel included and gave
 value to my voice. For the similar reasons I would like to thank
 Christophe Dubach whose door was always open and his whiteboard always
-available, I deeply appreciate all the times he was willng to
+available, I deeply appreciate all the times he was willing to
 patiently listen to my crazy ideas.
 
 I would like to thank my family and especially my parents, for being
 with me every step of the bumpy road that was my PhD, but mostly
-because without their hard work and sacrifises a PhD would not have
-been an option for me. I am priviledged and humbled and I owe it
+because without their hard work and sacrifices a PhD would not have
+been an option for me. I am privileged and humbled and I owe it
 primarily to them.
 
 I would also like to thank Marina without whom I would definitely have
-given up in one of the many moments of desparation. Thank you for
+given up in one of the many moments of desperation. Thank you for
 helping me with the impossible task of finishing a PhD during a
 pandemic.
 

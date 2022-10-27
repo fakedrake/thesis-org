@@ -163,7 +163,7 @@ special layer is provided for aggregations \hask{Aggr} that makes it
 possible to disallow nested aggregation functions at the type level
 making the aggregation operator \hask{QGroup [(e,Expr (Aggr (Expr
   e)))] [Expr e]}, where the first argument of the constructor is the
-aggregation functions and their names, and the sectond argument is the
+aggregation functions and their names, and the second argument is the
 expressions on which the grouping should happen.
 
 The detailed definitions of the algebraic expressions are presented in
@@ -466,7 +466,7 @@ implementing a join operator might be figure \ref{fig:join_single_tnode}
 
 We could, however be slightly more flexible than that, as we
 might want to materialize \(A \rnsemi B\) but not \(A \lnsemi B\) to
-the end of ensuring the materializability of only \(A\) and not
+the end of ensuring the materialisability of only \(A\) and not
 \(B\).
 
 In this case neither the entire input nor the entire output are
@@ -562,7 +562,7 @@ is used to parse the matching text, it will return a result of type
   use the result of the former.
 \item the 'alternative' parser combinator \hask{<|> : p a -> p a -> p
     a} which tries one parser and if that fails tries another.
-\item Our parser implemenst \hask{MonadGen e p} which means it can generate a value of type \hask{p
+\item Our parser implements \hask{MonadGen e p} which means it can generate a value of type \hask{p
     e}  and does not consume any input. Useful for creating names for unnamed expressions in
   projections, groups. The function reifying this feature is called \hask{mkSymbol}.
 \end{itemize}
@@ -640,7 +640,7 @@ RA, and which remove redundancies. In brief, those are the following:
   \(s(A) \Join B\) is not.
 \end{itemize}
 
-Once the preliminary sanitization and simple optimization steps are
+Once the preliminary sanitisation and simple optimization steps are
 done we mark each instance of the primary table symbols with the
 columns and their types. This is simply information derived by the
 database schema.
@@ -688,7 +688,7 @@ values, but when references to columns of projections it is more
 complex.  For example, in the query \(\sigma_{p(a)} \pi_{a \mapsto
 f(X)}\), we need to infer the type of \(a\).  FluiDB will apply some
 very simple heuristics to fake proper type inference and that is usually
-enough to come up with accurate types as SQL's type system is fairly simle.
+enough to come up with accurate types as SQL's type system is fairly simple.
 
 \paragraph{Shared unique subtuple annotation on projections}
 
@@ -711,7 +711,7 @@ It is the selection of the associative order of joins.  The relation
 behaviors. From being similar to Cartesian products, being
 prohibitively costly, and exploding the cardinality of the result; to
 being similar to lookups, very cheap, and with a very small result.
-Optimizers that process queries in isolation can aggressively push
+Optimisers that process queries in isolation can aggressively push
 down selections and prune the search space of join combinations when
 they encounter expensive intermediate results.  FluiDB, however, needs
 to keep track even of more expensive intermediate results as the high
@@ -997,20 +997,20 @@ field (\hask{f} is instantiated to \hask{HashBag}) while a QNF column exposes
 \emph{exactly one} column (\hask{f} is instantiated to \hask{Identity}).
 
 We extend the notion of a column to to define names (see listing
-\ref{lst:qnf_name}), the atoms of predicates and other experessions
+\ref{lst:qnf_name}), the atoms of predicates and other expressions
 (see section \ref{sec:expressions_predicates}).  A name in the context
 of QNFs can be one of three different kinds:
 
 \begin{itemize}
-\item \textbf{A column of a nonprimary relation.} This relation
+\item \textbf{A column of a non-primary relation.} This relation
   \emph{must} be a member of the \hask{cnfProduct} collection of the
   QNF structure where the name appears.  Because there may be more
   than one equivalent query in the product collection, we index the
   columns with an integer.
 \item \textbf{A column of a primary table}. These columns have a name
   and are associated with a table (\hask{s}) which needs to be in the
-  product collection like in the case of nonprimary columns. It is
-  indexed much like the nonprimary relation.
+  product collection like in the case of non-primary columns. It is
+  indexed much like the non-primary relation.
 \item \textbf{A literal value}
 \end{itemize}
 
@@ -1123,7 +1123,7 @@ the atom \(a\) is encoded as a column of one of the \(Q_i\) subqueries.
 This way we can update the fields of the QNF without needing to keep
 the columns in sync with the columns referenced in \hask{qnfSel}. This
 eliminates the need for both indexing the columns and for dealing with
-primary colmns in \hask{QNFSelName}. This has to do with the way
+primary columns in \hask{QNFSelName}. This has to do with the way
 selections are being created: the RA expression \(\sigma_p A\) is
 translated by first translating \(A\) to a named QNF. Then \(p\)
 refers directly to the columns of the query.
@@ -1195,7 +1195,7 @@ inferred. In this subsection, we will look at a few parts of the QNF
 building process that are maybe less than obvious.
 
 QNFs are built bottom up from the leaves to the top.  Building the QNF
-we apply the operations incrementally to a named QNFs (NQNF).  Applyig
+we apply the operations incrementally to a named QNFs (NQNF).  Applying
 the operator \(\sigma_p\) to a QNF \(A\) we need to be able to to
 relate the symbols appearing in \(p\) with the columns of the QNF
 \(A\). To mitigate this, we define a \emph{named QNF} which is simply a
@@ -1217,7 +1217,7 @@ the following features:
   duplicated. The cache object is also shared between different QNF
   building processes that we know are likely to have have a lot of
   overlap, for example, when inserting n-nodes into the graph without
-  shared caching between QNF computatuions, FluiDB would be repeatedly computing the QNF of the
+  shared caching between QNF computations, FluiDB would be repeatedly computing the QNF of the
   same RA subqueries. This takes the form of simply memoizing the
   interface functions for building the QNF.
 \item The process of building a QNF can fail when processing malformed
@@ -1230,7 +1230,7 @@ the QNF (listing \ref{lst:qnf_build_monad})
 \begin{code}
   \begin{haskellcode}
     -- | The monad in which the computation happens. Not all transformations
-    -- require non-determninsm.
+    -- require non-determinism.
     type QNFBuild0 e s = StateT (QNFCache e s) (Either (QNFError e s))
     type QNFBuild e s = ListT (QNFBuild0 e s)
   \end{haskellcode}
@@ -1248,7 +1248,7 @@ It returns an \hask{NQNFResult} (listing \ref{lst:qnf_result}) contains
  (like in the case of aggregations), this is an empty list.
 \item The RA operator that was provided as input with the expression atoms
   translated to QNF names
-  refering to the input or output columns. The way the names in the operator expressions are translated to
+  referring to the input or output columns. The way the names in the operator expressions are translated to
   \hask{QNFName}s is specific to each operator. For example,
   in the selection operator, all atoms are directly translated
   using the name map of the input \hask{NQNFQuery}. When the operator is a
@@ -1403,7 +1403,7 @@ example, in the query
 and the \(a\) in \(a < y\) are not equal symbols as they refer to
 different columns. The former refers to a column in the table
 \(\gamma(\sigma_{a<y}(A))\) and the latter to the table \(A\). They
-both refer to some transformation of a column labelled \(a\). On the
+both refer to some transformation of a column labeled \(a\). On the
 other hand \(a\) in \(a=z\) and \(a\) in \(a=x\) are indeed equivalent
 as they refer to the same column. To clear up the confusion we will
 say that symbols are \emph{strictly-equivalent} if they refer to the
@@ -1415,7 +1415,7 @@ relational algebraic setting.
 In particular, each materialized n-node must have a precise extent
 that represents, among other things, the order of columns. The identities of these columns
 must be agnostic to the particular names defined by the user, the
-decorellating subsystem, or any other query processing step. \emph{Otherwise
+correlating subsystem, or any other query processing step. \emph{Otherwise
   it would be impossible for two clusters to share an input/output
   n-node. They would both be able to interact with it only in the case that
   they happen to be in total agreement about the column names of the
@@ -1924,7 +1924,7 @@ the propagator to enforce full consistency between the
 
 The full part and the default part of the the defaulting value are not
 necessarily structurally synchronized. We \emph{internally
-synchronise} a cell before triggering the propagator to make sure we
+synchronize} a cell before triggering the propagator to make sure we
 maintain the consistency of the newly promoted cells with the already
 existing full cells. It is notable that there is no formal guarantee that the propagator
 will be able to create structurally consistent cells. In that case the
@@ -1933,7 +1933,7 @@ the current scope of this work.
 
 When an n-node is to be materialized, the corresponding defaulting
 functor containing the value is \emph{promoted}.  Promotion of
-propagators is copying the default value of a non-full prpagator to
+propagators is copying the default value of a non-full propagator to
 the full state (listing \ref{lst:promote_defaulting}).
 
 

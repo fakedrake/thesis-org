@@ -66,7 +66,19 @@ Some individual chapters, such as chapter 5, would benefit from
 evaluations of the individual component discussed in the chapter. The
 student is encouraged to include additional evaluations for them. *(It
 was exceptionally hard to isolate the component in a useful scenario
-so this particular point was left unadressed).* very embedded, timers dont make sense, in order to not compromize the and in order tonot make sumething that maps to reality i didn't make:
+so this particular point was left unadressed).*
+
+(remember to do spellcheck)
+
+Antisthenis is a system very tightly coupled with FluiDB, it can't be
+trivially be isolated from the FluiDB context. In fact FluiDB depends
+on antisthenis-dictated order of operations to ensure termination so
+it's not trivial to replace Antisthenis in FluiDB without making
+fundamental changes to FluiDB's workflow.
+
+
+very embedded, timers dont make sense, in order to not compromize the
+and in order tonot make sumething that maps to reality i didn't make:
 
 - impact: measurement antisthenis in an isolated fashion changes FluiDB so much that it is a different system: the skew will.
 - it cant be replaced

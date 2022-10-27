@@ -3,7 +3,7 @@ movement, consciousness experiences the emergence of individuality in
 the unchangeable, and of the unchangeable in individuality.}
 
 \begin{summary}
-\item FluiDB is an in-memory RDBMs optimizes data layout for space
+\item FluiDB is an in-memory RDBMSes optimizes data layout for space
   efficiency w.r.t. the workload
 \item The main novelty relates to the introduction of reversible
   relational operations which affords a new perspective on query
@@ -236,7 +236,7 @@ can indeed generate workload plans similar to the one described.
 The solution we experiment with by implementing FluiDB resembles the
 solution provided in \cite{gouSupSearchEfficient2006} by Gou et.al for
 multi-query optimization (MQO). In their work they embed aggregations \sql{group by x1,
-..., xk} into the \(\subseteq\)-lattice that arises from the powerset
+..., xk} into the \(\subseteq\)-lattice that arises from the power set
 \(P(\{x_1, ..., x_k\})\). Thereby they encode the fact that \sql{group
   by A, B, C} is subsumed, or can be computed from of:
 \begin{itemize}
@@ -248,7 +248,7 @@ multi-query optimization (MQO). In their work they embed aggregations \sql{group
 
 Once the lattice is constructed a variant of the \(A^{\star}\) path finding is
 used algorithm to search for the optimal aggregation plan. However
-they make no attempt to recycle tables, ie. garbage collect tables,
+they make no attempt to recycle tables, i.e.. garbage collect tables,
 whose data can be found in other relations, and narrows it's attention
 to aggregations.
 
@@ -328,7 +328,7 @@ descending order of ``usefulness'':
     } ;\
 \end{tikzdiagram}
 \caption{\label{fig:intro_selectexample}The currently materialized relations are
-  marked with grey. Assuming the absence of null values and assuming
+  marked with gray. Assuming the absence of null values and assuming
   set semantics \(\li = \sigma_p \li \cup \sigma_{\neg p} \li\),
   FluiDB can find a plan to generate any relation involving \(\li\).. }
 \end{figure}
@@ -396,9 +396,9 @@ heavily on executing plans by transpiling the plan to C++ code.
 
 \begin{corrected}{Architecture}
 
-  The overall system is comprized of three internal their
+  The overall system is comprised of three internal their
   interlocation being described in diagram \ref{fig:architecture}. An
-  SQL query is initially parsed and passed to the \emph{Grpah Builder}
+  SQL query is initially parsed and passed to the \emph{Graph Builder}
   which correlates it and its possible subqueries to historical
   queries using the \emph{QNF processor} which evaluates the
   equivalence between subplans. This way the \emph{Relational Algebra
@@ -406,14 +406,14 @@ heavily on executing plans by transpiling the plan to C++ code.
   connected by often bidirectional operators.
 
   The next level in the pipeline is the planner, which traverses the
-  graph using an \(A^{\star}\) inspired branch and boud algorithm in
+  graph using an \(A^{\star}\) inspired branch and bound algorithm in
   order to come up with a plan that a) efficiently computes the
-  reuqested query and b) optimizes the data layout to provide
-  oportinity for efficient future plans. Prunning of the search space
+  requested query and b) optimizes the data layout to provide
+  opportunity for efficient future plans. Pruning of the search space
   is assisted by \emph{Antisthenis}, an incremental framework
   optimized a) for calculating the expected cost of materializing a
   relation without actually planning for it as well as b) calculating
-  wether a relation is materializable at all given the currently
+  whether a relation is materializable at all given the currently
   materialized relations. The plan generated has the form of a
   sequence of operators and relation deletions which are finally
   translated to C++ and compiled with an off-the-shelf compiler.
@@ -456,16 +456,16 @@ heavily on executing plans by transpiling the plan to C++ code.
   result recycling.
 \item We describe a framework and a case study for a novel approach of
   unifying query planning and intermediate result management.
-\item We introdice reversible relational operators and how they can be
-  used to create effective plans in membory constrained environments,
+\item We introduce reversible relational operators and how they can be
+  used to create effective plans in memory constrained environments,
   effectively unifying the query planning and intermediate result
   recycling mechanisms.
 \item We introduce a novel variant of a branch and bound algorithm
   used for planning relational queries.
-\item We introdicue Antisthenis, a novel approach to incremental
+\item We introduce Antisthenis, a novel approach to incremental
   computation used for the needs of query planning that aggressively
   takes advantage of the particular properties of the computations
-  involved in plan cost estimation and relation materializability.
+  involved in plan cost estimation and relation materialisability.
 \item We describe a code generation framework to support the operation
   of FluiDB.
 \item We provide experimental evaluation of how all these parts fit

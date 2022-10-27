@@ -109,7 +109,7 @@ the efficiency of the plan generated, usually in terms of time, but
 also in terms of space.
 
 Finding an optimal plan is in the general case NP-complete
-\cite{ullmanInformationIntegrationUsing1997}, but query optimizers can
+\cite{ullmanInformationIntegrationUsing1997}, but query optimisers can
 do a good job of finding good plans using heuristics. The selection
 and organization of these heuristics as well as query cost estimation
 are the main problems that make the design of a query optimizer nontrivial. In
@@ -146,7 +146,7 @@ comprised of the following components:
   engine to produce a result. The physical planner typically has at
   least some information about the underlying data that the plan will
   operate on like estimations about the statistics of the values or
-  the cardinalities of the relations.
+  the cardinality of the relations.
 \item The information about the data being manipulated by the plan is
   inferred by the \emph{cost estimator}. It uses a cost model to
   predict the cost of plans and the cardinality of relations by taking
@@ -167,14 +167,14 @@ the intermediate results evaluated rather than purely relying on
 estimations and predictions
 \cite{dingPlanStitchHarnessing2018,chaudhuriPayasyougoFrameworkQuery2008,wuSamplingbasedQueryReoptimization2016,herodotouXplusSqltuningawareQuery2010}. The
 degree to which these subsystems are separate is a major concern in
-the design space of query optimizers.
+the design space of query optimisers.
 
 Another important aspect to be considered, and which is indeed
 important in the design of FluiDB, is the number of queries considered
 at a time during optimization and the way in which they are
 considered. The optimizer usually considers one query at a time and
 maintains little or no state between executions. Although it has found
-little adoption in main stream databases, multiquery optimization has
+little adoption in main stream databases, multi-query optimization has
 been researched expensively
 \cite{michiardiCachebasedMultiqueryOptimization2021,wangMultiqueryOptimizationMapreduce2013,royEfficientExtensibleAlgorithms2000,rogersMultiqueryOptimization2017}. What
 is more common in recent years is recycling intermediate
@@ -240,7 +240,7 @@ approaches to this:
   \cite{raasveldtDuckdbEmbeddableAnalytical2019,kemperHyPerHybridOLTP2011}
 \end{itemize}
 
-An important optimizer, on which most modern optimizers are still
+An important optimizer, on which most modern optimisers are still
 being based, is the \emph{cascades optimizer}
 \cite{graefeCascadesFrameworkQuery1995}. In short, cascades keeps
 track of \emph{groups} of equivalent query expressions and uses those
@@ -251,7 +251,7 @@ global hash table (the "memo" structure) to match the best plan that
 corresponds to each group. These plans are stitched together to form larger
 plans until the plan for the required query is created in the memo structure.
 
-Many database systems use optimizers similar to cascades (like the
+Many database systems use optimisers similar to cascades (like the
 Microsoft SQL server, Postgres,
 MemSQL\cite{chenMemSQLQueryOptimizer2016}, and Greenplum -- now Orca
 \cite{solimanOrcaModularQuery2014a} to name a few). Notable among the
@@ -263,7 +263,7 @@ research databases \cite{nunesalonsoBuildingPolyglotData2020}.
 % \subsection{Cost estimation}
 
 Probably the hardest aspect of the planner design is the \emph{cost
-estimation algorithm}, which is required by the optimizers, especially
+estimation algorithm}, which is required by the optimisers, especially
 the physical planner.  As cost
 estimation, we generally refer to a number of different related
 procedures that are broadly the \emph{estimation of the cost} of an
@@ -451,7 +451,7 @@ state optimization \cite{theodoratosDataWarehouseConfiguration1997},
 and lattices to represent data cube operations (i.e. multiple
 aggregations over the same relation) \cite{ImplementingDataCubes}.
 
-A related problem is \emph{multiquery optimization (MQO)}
+A related problem is \emph{multi-query optimization (MQO)}
 \cite{theodoratosDataWarehouseConfiguration1997} that attempts to plan
 multiple queries simultaneously. An efficient solution using AND/OR
 DAGs was proposed by Roy in
@@ -502,8 +502,8 @@ chapter 5)
 
 \subsection{Intermediate result recycling}
 
-The fundametal problem being solved by FluiDB falls under the very
-general umbrella of \emph{optimizing multiple queries simulatenously}. This
+The fundamental problem being solved by FluiDB falls under the very
+general umbrella of \emph{optimizing multiple queries simultaneously}. This
 problem is central to database research and there is a very wide
 diversity of approaches to solving it. It is useful, however, to
 understand this less like a single problem more like a family of
@@ -513,7 +513,7 @@ that solve subsets of that problem exist in a space organized around
 two poles:
 
 \begin{itemize}
-\item The algorithm solves a \emph{set} of queries simulatenously
+\item The algorithm solves a \emph{set} of queries simultaneously
 \item The algorithm solves one query at a time from a \emph{stream} of queries.
 \end{itemize}
 
@@ -521,12 +521,12 @@ While many design decisions are informed by the space a piece of work
 occupies in relation to this dipole, virtually all approaches involve
 identification of common subexpressions or sub-plans that can be
 shared between different queries and avoiding duplicate
-evaulation. This is indeed the unifying element of the work in the
+evaluation. This is indeed the unifying element of the work in the
 field.
 
 The former problem has heavily researched for decades and is a major
  subfield in database research \cite{sellisMultipleQueryOptimization1987,royEfficientExtensibleAlgorithms2000,ComputingQueriesDerived}. It's
- focus is sligtly narrower as it focuses on identifying common
+ focus is slightly narrower as it focuses on identifying common
  subqueries in an unordered set of queries.
 
 The latter (amortized optimization of a \emph{stream} of queries) has also
@@ -562,7 +562,7 @@ between temporally overlapping query executions.
 DataPath \cite{arumugamDataPathSystemDatacentric2010} creates what they
 call a "data-centric approach" to query processing. It transposes the
 order in which a per-query system operates (what they call
-"computation-cetnric approach") where the system effectively iterates
+"computation-centric approach") where the system effectively iterates
 over the queries in an outer loop and each query iterates over the
 relevant data. Instead DataPath iterates over the data in an outer
 loop and an inner loop iterates over the queries looking for a query
@@ -574,7 +574,7 @@ SharedDB \cite{giannikisSharedDBKillingOne2012}, BatchDB
 \cite{makreshanskiMqjoinEfficientShared2016a} use a global query plan
 for grouped queries. Sloth \cite{cheungSlothBeingLazy2016} CrocodileDB
 \cite{shangCrocodileDBEfficientDatabase2020} exploit lazy or deferred
-execution to increaase the opportunitites for batching and therefore
+execution to increase the opportunities for batching and therefore
 sharing. This way of viewing query planning is conceptually much
 closer to FluiDB's approach. In fact the global query plan has many
 parallels to the QDAG that we will see in the next chapter. FluiDB,
@@ -588,7 +588,7 @@ A slightly more proactive approach is taken by database systems like
 MonetDB \cite{idreosMonetdbTwoDecades2012} and CoScan
 \cite{wangCoscanCooperativeScan2011} that try schedule queries so
 similar or overlapping queries are planned and executed
-simulatenously, allowing the system to more easily share computation.
+simultaneously, allowing the system to more easily share computation.
 
 A step closer to the aims of FluiDB is a parallel tradition roughly
 started in the 90s by DynaMat \cite{kotidisDynamatDynamicView1999} and
@@ -598,7 +598,7 @@ aiming to reuse them in future queries. These and even more recent
 work of view selection focuses on opportunistically reusing
 intermediate results that would be materialized
 \cite{ivanovaArchitectureRecyclingIntermediates2010,nagelRecyclingPipelinedQuery2013},
-taking advantage of tried-and-true optimization techques that are
+taking advantage of tried-and-true optimization techniques that are
 however geared towards query at a time processing.
 
 There have been attempts to unify the planner with the materialized
@@ -609,7 +609,7 @@ incorporates a fully specialized optimizer towards nor takes into
 account selected views and intermediate results memory requirements
 during planning.
 
-Notable in this field is aslo Nectar
+Notable in this field is also Nectar
 \cite{gundaNectarAutomaticManagement2010} which is not RDBMs. It
 automatically compresses rarely used data into programs that generate
 that data. Nectar focuses on sharing computation and data as much as
@@ -632,7 +632,7 @@ between branches (continuations) of the search space. The main problem
 being addressed by the literature is that some branches of the search
 can be large or infinite. The most popular approach for mitigating
 this, other than continuations, comes in the form of interleaving the
-exection of different branches via special operators
+execution of different branches via special operators
 \cite{kiselyovBacktrackingInterleavingTerminating2005}.
 
 Only recently \cite{kidneyAlgebrasWeightedSearch2021} has prioritized
@@ -652,17 +652,17 @@ simple memoization techniques
 \cite{pughIncrementalComputationFunction1989} have led the modern
 notion of self adjusting computation
 \cite{acarSelfadjustingComputation2005}. Self-adjusting computation
-usually models the computation as a graph of variables and paramenters
-and focuses on propagating changes of the paramenters to the variables
+usually models the computation as a graph of variables and parameters
+and focuses on propagating changes of the parameters to the variables
 in the graph.
 
 While there has been work on defining general frameworks for
 incrementalizing computation like
 \cite{hammerAdaptonComposableDemanddriven2014a} and
 \cite{andersonEfficientParallelSelfadjusting2021a}, most systems focus
-on incrementalizing spcific algorithms like
+on incrementalizing specific algorithms like
 trees\cite{acarDynamizingStaticAlgorithms2004}, kinetic data
-strucutres\cite{acarKineticAlgorithmsSelfadjusting2006}, convex hulls
+structures\cite{acarKineticAlgorithmsSelfadjusting2006}, convex hulls
 \cite{acarExperimentalAnalysisSelfadjusting2009}, Huffman
 coding\cite{acarTraceableDataTypes2010}, relational databases
 \cite{hornIncrementalRelationalLenses2018} and Bayesian inference
