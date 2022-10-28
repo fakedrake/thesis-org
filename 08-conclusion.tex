@@ -7,13 +7,13 @@ now that we are happy?}
 \end{summary}
 
 
-In this thesis we coverd the important and interesting aspects of
+In this thesis we covered the important and interesting aspects of
 FluiDB. Implementing the system itself involved much work that is not
 covered in this thesis to avoid flooding the reader with details that
 might remove focus from the important aspects of the system. To name a
-few we implemented a pretty printing library, a query decorellation
+few we implemented a pretty printing library, a query decorrelation
 algorithm, a set of tools for debugging and tracing backtracking
-algoirhtms, etc.
+algorithms, etc.
 
 In the introduction we discussed some examples where data layout can
 radically adapt to the workload by making use of reversible operations
@@ -30,16 +30,16 @@ semantics of reversible operations and how they, along with possible
 intermediate results for each query form the QDAG. It covers topics
 that relate to the construction of the QDAG, the use of the QDAG for
 enumerating plans, higher levels of organization of the QDAG n-nodes
-into clusters and how those cluseters are used by FluiDB to infer
+into clusters and how those clusters are used by FluiDB to infer
 properties of intermediate query results like cardinality and relation
 extent using propagators.
 
-Chpater \ref{chapter:physical_planning} on physical planning starts
+Chapter \ref{chapter:physical_planning} on physical planning starts
 off by introducing a novel framework for implementing search
 algorithms, the \hask{HCntT} monad transformer. Computation expressed
 in terms of \hask{HCntT} can dynamically switch between branches of
 the backtracking algorithm essentially implementing a weighted
-search. The main novelty lies in the implementatiuon of \hask{once}
+search. The main novelty lies in the implementation of \hask{once}
 and \hask{fallback} operations that, to our knowledge, are not
 supported by any similar weighted search framework.
 
@@ -51,10 +51,10 @@ runs that produce sequences of table deletions when the planner
 detects that the storage budget would be exceeded.
 
 The decisions made by the planner are based on computations that
-depend on the inventory of materialized relationions, namely
+depend on the inventory of materialized relations, namely
 variations of cost estimation of intermediate result and intermediate
 result materializability. It makes sense to implement computations in
-terms of an intcremental computation framework as there are major
+terms of an incremental computation framework as there are major
 opportunities for sharing between evaluations. Furthermore, the
 performance of these computations is sensitive to the order of
 evaluation due to absorbing elements and \(\min\) operations. To solve
@@ -66,7 +66,7 @@ We wrap up the technical description of FluiDB with chapter
 transpiles physical plans into C++ and what algorithms are used to
 implement each operation and their reverse.
 
-Finally, we present some exerimental results to demonstrate the
+Finally, we present some experimental results to demonstrate the
 performance characteristics of FluiDB and any system that might
 implement similar concepts to it. Particularly, we run the SSB TPC-H
 benchmark and show that FluiDB can successfully outperform a similar
@@ -74,7 +74,7 @@ system that only does per-query optimization in amortized cost and
 even in most per-query cases. We also demonstrate the expected result
 that FluiDB's repertoire of heuristics may cause individual queries
 planned within the context of a workload to be be less performant than
-the same query planned in isolation. We furthed demonstrate how FluiDB
+the same query planned in isolation. We further demonstrate how FluiDB
 usually succeeds at making better use of larger storage budgets but
 occasionally, like every heuristic based system, will make decisions
 that hurt performance.

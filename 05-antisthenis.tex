@@ -8,8 +8,8 @@
 \item Antisthenis is a framework for building systems for
   \emph{incremental} evaluation of algebraic expressions using
   heuristics to optimize the \emph{order} in which subexpressions are
-  evaluated and to calculate some classes of \emph{self referrential}
-  computations.
+  evaluated and to calculate some classes of \emph{self referential}
+  computationns.
 \item \emph{Mealy arrows} are a construct to implement adaptable
   computations that can can produce a value and a new, semantically
   equivalent computation. Each iteration adapts to the previous
@@ -71,7 +71,7 @@ All that matters to Antisthenis is the computation at hand.
 
 \begin{corrected}{Chapter contributions}
   This chapter's contribution is the introduction of a highly
-  specialized inremental computation system that combines evaluation
+  specialized incremental computation system that combines evaluation
   strategy with the incremental computation algorithm to handle
   recursive functions composed of AND/OR boolean operator as well as
   sum/min operators in order to minimize the number of operations
@@ -88,8 +88,8 @@ evaluated can be important not only for the performance of the
 expression evaluation but, in the context of infinite expressions, for
 the very termination of the evaluation itself.
 
-Expressions are typically modelled as abstract syntax trees or
-computation graphs (DAGs), and evaluation is commonly modelled as a
+Expressions are typically modeled as abstract syntax trees or
+computation graphs (DAGs), and evaluation is commonly modeled as a
 reduction of that tree or DAG. Depending on the evaluation strategy
 each operand is either fully or partially evaluated. Typically, the
 strategy for evaluating a subexpression operand , however, is
@@ -135,7 +135,7 @@ Which can be represented as a dag in figure
 \centering
 \includegraphics[width=.5\textwidth]{./imgs/example_antisthenis_dag.pdf}
 \caption{\label{fig:example_antisthenis_dag}A computation
-  DAG. Circular nodes represent operations adn square nodes represent
+  DAG. Circular nodes represent operations and square nodes represent
   parameters that are subject to change.}
 \end{figure}
 
@@ -143,10 +143,10 @@ Where \(A\), \(B\), \(C\), and \(D\) are expression nodes in the DAG
 and \(a\), \(b\), and \(c\) are parameters that change over time. A
 non-incremental evaluation system would evaluate all four nodes every
 time a value were requested, regardless of whether and which
-parameters have changed. Incremental evalutaion systems keep track of
+parameters have changed. Incremental evaluation systems keep track of
 which variables change and only re-evaluates the nodes of the DAG that
 have been updated. In our example, if only the parameter \(b\) has been
-updated since the last time \(A\) was evaluated, an evalutation of
+updated since the last time \(A\) was evaluated, an evaluation of
 \(A\) would require only \(A\) and \(B\) to be re-evaluated.
 
 Incremental evaluation systems employ a wide range of tricks from
@@ -159,7 +159,7 @@ more explicitly breaking the computation into reusable parts.
 
 To our knowledge, none of the existing approaches to incremental
 computation take into account the presence of either absorbing
-elements or non-compuatable subtrees (i.e., recursive values) in their
+elements or non-computable subtrees (i.e., recursive values) in their
 scheduling the evaluation order. Scheduling is either done naively or
 left up to the user. However, it is a hard requirement of the FluiDB
 query planner for the incremental computing framework to automatically
@@ -243,7 +243,7 @@ validity of its value while \(C\) should depend only on \(c_1\) and
 \section{Background}
 
 In this section we describe some concepts used to construct the
-Antisthenis processese. Here we assume some familiarity with the
+Antisthenis processes. Here we assume some familiarity with the
 common building blocks of effectful computation in Haskell: functors,
 applicatives, and monads. They are described in some detail in
 appendix \ref{chapter:appendix2}.
@@ -367,7 +367,7 @@ assocsum (Right z) = Right (Right z)
 dimap id id ≡ id
 dimap (f . g) (h . i) ≡ dimap g h . dimap f i
 \end{minted}
-  \caption{\label{lst:arrow_laws}Laws for the typcalsses related to
+  \caption{\label{lst:arrow_laws}Laws for the typeclasses related to
     arrows.}
 \end{code}
 
@@ -420,7 +420,7 @@ value of type \hask{s}.
 The \hask{StateArrow} is not unique in its equivalence to a Kleisli
 arrow. This is a property that a couple of useful arrows have and that
 we will be exploiting in the following sections. Below is the
-interface we provide to describe the Kleislifieable arrow (named
+interface we provide to describe the Kleislifiable arrow (named
 \hask{ArrowFunctor} below) and a few examples
 
 \begin{haskellcode}
@@ -850,7 +850,7 @@ to the writer semantics, the coepochs of evaluated subproecesses are
 concatenated to produce the coepoch of the parent process. A special
 case for this are the commutative operations that involve absorbing
 elements (\(\land\), \(\lor\), and \(\times\)), where only the coepoch
-of the subprocess that yields an absoring element is returned. In
+of the subprocess that yields an absorbing element is returned. In
 short, the coepoch of a subprocess is included in all parent processes
 that are not constant with respect to the value of that subprocess.
 
@@ -899,7 +899,7 @@ combEpochCoepoch :: ZEpoch w -> ZCoEpoch w -> Maybe (ZEpoch w)
 \subsection{Antisthenis caps and bounds}
 \label{sec:caps_and_bounds}
 
-In section \ref{sec:epochs_coepochs} regarding epochs and copeochs we
+In section \ref{sec:epochs_coepochs} regarding epochs and coepochs we
 described how Antisthenis deals with the validity of values returned
 by a process.  In this section we will focus on how the children
 processes avoid falling into avoidable computational rabbit holes
@@ -959,7 +959,7 @@ operator defines a function that ``localizes'' the entire configuration.
 
 \begin{haskellcode}
 data MayReset a = DontReset a | ShouldReset
-zLocalizeConf :: ZCoEpoch w -> Conf w -> Zipper w p -> MayReset (Conf w)
+zLocalizeConf :: ZCoEpoch w -> Cong w -> Zipper w p -> MayReset (Conf w)
 \end{haskellcode}
 
 The \hask{zLocalizeConf} function accepts a coepoch, the configuration
@@ -987,7 +987,7 @@ zLocalizeConf coepoch conf z =
     newCap = case zRes z of
       SumPartErr _ -> error
         $ "The partial sum is an error: this thunk "
-        ++ "should never be reacahble beacuse "
+        ++ "should never be reacahble because "
         ++ "no subprocesses should be called."
       SumPartInit -> confCap conf -- No subprocesses have been evaluated.
       SumPart partRes -> case confCap conf of
@@ -995,7 +995,7 @@ zLocalizeConf coepoch conf z =
         -- by the sum so far so that the local cap ensures that the
         -- cursor process, when ran, does not cause the overall
         -- bound to exceed the global cap. This may generate weird
-        -- caps like negative values. That is ok as it should be
+        -- caps like negative values. That is OK as it should be
         -- handled by the evolutionControl function. Note again that
         -- zRes does not include the value under the cursor.
         CapVal cap -> CapVal $ subCap cap partRes
@@ -1066,7 +1066,7 @@ the state of the node (see figure \ref{fig:zipper}).
 \item A \emph{partial value} to which values can be inserted or
   removed (for example the sum accumulated up to that point) which
   represents the progress of the process so far. As values, concrete
-  or partialm are extracted from the subprocesses the partial value is
+  or partial are extracted from the subprocesses the partial value is
   updated. The partial value does \emph{not} include the value stored
   in the cursor.
 \end{itemize}
@@ -1116,7 +1116,7 @@ the state of the node (see figure \ref{fig:zipper}).
 
 During computation, the subprocesses owned by the parent process are
 evaluated, and their iterations are then moved from the \emph{initial}
-process set to the \emph{coiteration} process nset, possibly with an
+process set to the \emph{coiteration} process set, possibly with an
 intermediate stop in the \emph{iterations} set according to the values
 and strategies of the operator implementation which is further
 elaborated in section \ref{sec:antisthenis_ops} on Antisthenis
@@ -1208,7 +1208,7 @@ evaluating them.
 
 A process is internally represented as a Mealy arrow (introduced in
 section \ref{sec:mealy_arrows}) describing the evolution of a
-\hask{ZProc} which is transformed into the Antistehnis process
+\hask{ZProc} which is transformed into the Antisthenis process
 described in section \ref{sec:antisthenis_processes} by following the
 strategy in which the \hask{Zipper} is meant to evolve. An operator is
 allowed to follow a strategy defined specifically its
@@ -1243,8 +1243,8 @@ which the zipper can be evolved. Its definition is provided in listing
 \ref{lst:cmds_def}. The point of \hask{Cmds} is to separate the logic
 of \emph{how} each possible zipper transition is carried out which is
 largely operator agnostic, from the logic of \emph{which} transition
-should be carried out which is higly operator dependent.  \hask{ZProc}
-is therefore a process that simulataneously encapsulates all possible
+should be carried out which is highly operator dependent.  \hask{ZProc}
+is therefore a process that simultaneously encapsulates all possible
 evolution paths for the zipper.  The command constructors reflect the
 different evolution steps that can be taken at each time:
 
@@ -1274,7 +1274,7 @@ data ItInit r f a
                   -- reset.
 \end{haskellcode}
   \caption{\label{lst:cmds_def}Definition of the commands functor that
-    provides different branches of evolutution for zipper.}
+    provides different branches of evolution for zipper.}
 \end{code}
 
 \hask{ZProc} internally takes care of the logic related to pushing the
@@ -1374,7 +1374,7 @@ An abridged example is presented in figure \ref{fig:cmds_tree}.
     zipper. Nodes in this tree that have two children correspond to
     the \hask{ItInit} constructor, nodes with one node correspond to
     the \hask{CmdIt} or \hask{CmdInit} constructor depending on which
-    process set the process in the nex cursor is drawn from. When a
+    process set the process in the next cursor is drawn from. When a
     concrete value is reached or the cap is exceeded the process stops
     and the free monad that wraps \hask{Cmds} takes the value
     \hask{Pure}. A tree like this is reified by the \hask{Free Cmds}
@@ -1486,7 +1486,7 @@ mkProc
   :: (Monad m,ZipperParams w,Eq (ZCoEpoch w)) => [ArrProc w m] -> ArrProc w m
 \end{haskellcode}
   \caption{\label{lst:mkproc}The type \hask{w} fully defines the
-    operator so combining subprocesses into a process is unumbiguous.}
+    operator so combining subprocesses into a process is unambiguous.}
 \end{code}
 
 \subsubsection{Compatibility  between heterogeneous processes}
@@ -1738,15 +1738,15 @@ try to greedily exploit the smaller parts of the tree.
 \section{Node machines}
 \label{sec:antisthenis_machines}
 
-A referrable machine, or node machine, or simply machine is, in the
+A referable machine, or node machine, or simply machine is, in the
 context of Antisthenis, a process attached to a name or node. That can
 be a subprocess to more than one other processes. In FluiDB a machine
 name corresponds to a QDAG node since the Antisthenis infrastructure
 is utilized to provide incremental computation of properties on nodes
 (materializability, cost, stochastic cost). The term node is used in
-refernce to the nodes of a computation DAG or graph. In this section
+reference to the nodes of a computation DAG or graph. In this section
 we look into the the layer of Antisthenis that takes into account the
-dynamics of referrable machines.
+dynamics of referable machines.
 
 \subsection{Antisthenis machine tape}
 
@@ -1848,7 +1848,7 @@ same \(\bot\) result that indicates that the value is non-computable
 and sets to the coepoch that it is itself not computable. A machine
 named \(A\) while being computed is replaced in the tape with a
 cyclical machine that returns \(\bot\) predicated on \(A\) being
-uncomputable, denoted \(\bot_A\). This coepoch poperty is propagated
+uncomputable, denoted \(\bot_A\). This coepoch property is propagated
 to machines that call the cyclical machines, effective making their
 value also depend on \(A\) being uncomputable.
 
@@ -2018,7 +2018,7 @@ comp[#2] \!: \\
     as the copredicate. This causes the value of \(C\) as \(\bot_A\)
     to become invalid.}
   \end{subfigure}
-  \caption{\label{fig:correct} First \(A\) is computaed in figure
+  \caption{\label{fig:correct} First \(A\) is computed in figure
     \ref{fig:recur_package} and Antisthenis is immediately happy with
     the unpredicated result it emits. Then \(D\) is requested and that
     is done in two steps. First (figure \ref{fig:compdnaive}) it comes
@@ -2044,7 +2044,7 @@ necessary, however, that \(E[\bot]\) and therefore \(A\) will
 \emph{iteslf} evaluate to \(\bot\). We do however censor \(A\) which
 is effectively us saying ``regardless of whether we actually used the
 cyclical machine assumption that \(A = \bot\), the value we just
-retrieved is not beholdent on that assumption''. How can we trust that
+retrieved is not beholden on that assumption''. How can we trust that
 the value is actually correct even though it is based on a false
 assumption? In general, for censorship to be valid we \emph{require}
 that:
@@ -2105,7 +2105,7 @@ Where \(b = \min(b_i, \ldots, b_{k-1})\). Similarly to above, since
   \]
 
 where \(K = \min((a_k-1) A + b_k, \ldots) \ge 0\). Putting it all
-togehter we get
+together we get
 
 \[
   E[A] = \min(b, A + K) \Rightarrow E[\bot] = b
@@ -2144,7 +2144,7 @@ the cost of which is being estimated, but also all the decisions that
 the garbage collector will make in that time. After FluiDB's budget is
 exhausted for the first time, for every page-write a page needs
 to be garbage collected. We considered a couple of options for
-stochastically modelling the behavior of the GC like assuming that it
+stochastically modeling the behavior of the GC like assuming that it
 chooses random pages or random tables, but we could find none that was
 useful and computationally viable.
 
@@ -2163,7 +2163,7 @@ refer to this value as \(\kappa\). In short:
 \item When a materialized n-node is encountered the first step is to
   compute the stochastic cost as if it were not materialized. The
   derived cost, be it a concrete result or a bound, and \(\kappa\) are
-  scaled down by a constant factorr \(\lambda\) (in the default
+  scaled down by a constant factor \(\lambda\) (in the default
   configuration \(\lambda = 0.5\)).  \(r = \lambda \times r_{orig}\).
 \item When calculating the stochastic cost of a materialized node, the
   cap is increased to reflect the scaling that takes place
@@ -2240,7 +2240,7 @@ There are two major shortcomings of Antisthenis:
 \begin{itemize}
 \item Extending it with new operators, and even using the existing operators,
 involves a lot of boilerplate code. This is an immediate effect of the
-current version of Antishtenis being highly specific to the FluiDB
+current version of Antisthenis being highly specific to the FluiDB
 planer.
 \item Our current implementation relies heavily on the higher order
 functional capabilities of Haskell that are efficient for what they
@@ -2252,7 +2252,7 @@ Both of these could be mitigated in a future version of Antisthenis
 that would be detached from FluiDB and that would replace the
 Antisthenis process with a more ``traditional'' data structure.
 
-Further work could also be done to parallelize Antisthenis. Some
+Further work could also be done to parallelise Antisthenis. Some
 operations like \hask{min} rely on the operands being evaluated
 serially to take advantage of early stopping but addition is much more
 flexible with the order of evaluation. It is clear that parallelism

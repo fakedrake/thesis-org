@@ -182,7 +182,7 @@ reverse trigger of a join as it was deleted during the evaluation of
 query 6. Mysteriously, during the strict-budget planning the
 \(\mathit{lineorder}\) relation is readily available during the
 planning of query 7! The key lies slightly earlier in the workload
-(see listing \ref{fig:reverse_operations}).
+(see listing \ref{fig:reverse_operations_ev}).
 
 FluiDB materializes in query 4 the join
 
@@ -203,7 +203,7 @@ On the other hand, with laxer budgetary constraints, no garbage
 collection is triggered during query 4. The next garbage collection is
 triggered during query 6, at a moment when \(\mathit{lineorder}\) is
 deletable, unprotected, and a prime candidate for deletion based on
-the GC heuristics. nnAlas, when query 7 requires \(\mathit{lineorder}\)
+the GC heuristics. Alas, when query 7 requires \(\mathit{lineorder}\)
 for its plan, FluiDB needs to reconstruct it in the case of lax
 budgetary constraints but not in the case of strict constraints.
 
@@ -263,7 +263,7 @@ Query |\(s \gamma \pi \sigma (\mathit{customer} \Join \mathit{date} \Join \mathi
 }
 
 \end{minted}
-  \caption{\label{fig:reverse_operations}Abbreviated version of the
+  \caption{\label{fig:reverse_operations_ev}Abbreviated version of the
     plans of queries 4 to 7 of SSB TPC-H. This demonstrates how an
     unfortunately timed GC can cause cause FluiDB to make some bad decisions}
 
@@ -298,7 +298,7 @@ heuristics for the GC should avoid this problem in most cases.
   often makes the difference between FluiDB being able to successfully
   run a query and throwing OOM, and while we have put a lot of care in
   tuning it to make good decisions, it can have detrimental effects to
-  the performance of the sustem as a whole. We can't get away from the
+  the performance of the system as a whole. We can't get away from the
   fact that the less the GC is triggered, the less likely it is to
   delete a query useful in the future.
 
@@ -307,7 +307,7 @@ heuristics for the GC should avoid this problem in most cases.
   the GC when it runs out of memory, and the GC itself goes to great
   lengths to delete as few tables as possible. As demonstrated in
   figure \ref{fig:gc_enemy}, however, the harsh the memory constraints
-  will casue the GC not only to run more often it will also be forced
+  will cause the GC not only to run more often it will also be forced
   to evict relations that are likely to be necessary for future
   queries.
 
@@ -322,11 +322,11 @@ heuristics for the GC should avoid this problem in most cases.
 \end{corrected}
 
 
-\begin{corrected}{Best/worst scenaria}
-  \section{Best/worst case scenaria for FluiDB performance}
+\begin{corrected}{Best/worst scenarios}
+  \section{Best/worst case scenarios for FluiDB performance}
 
   The actual best case scenario for FluiDB is a workload consisting of
-  a single query being executed repetedly. FluiDB will just repeatedly
+  a single query being executed repeatedly. FluiDB will just repeatedly
   return a reference to the table created at the first execution. A
   realistic scenario that is quite good for FluiDB is the presented
   star schema which is the SSB-TPC-H where the number of the possible
@@ -336,10 +336,10 @@ heuristics for the GC should avoid this problem in most cases.
 
   The worst case scenario in the absence of memory constraints is a
   workload that has minimal reuse, the queries that reuse are very far
-  apart and thereofre no sharing can be exploited. This extreme case
-  can be simularted by repeating the schema such that a workload of
+  apart and therefore no sharing can be exploited. This extreme case
+  can be simulated by repeating the schema such that a workload of
   \(N\) queries we would have a repeated \(N\) times TPC-H-SSB schema
-  amouting to \(5 \times N\) tables:
+  amounting to \(5 \times N\) tables:
 
 
   \begin{align*}
@@ -376,12 +376,12 @@ heuristics for the GC should avoid this problem in most cases.
   terms this kind of form oscillation that is the worst case workload
   for FluiDB means that every operator in the plan is, not only used
   only once, but needs to be undone. This renders the worst case cost of
-  each operator to be its cost + the cost of it's recerse.
+  each operator to be its cost + the cost of it's reverse.
 
   It is hard to compare this case with other databases or even with
   non-GC FluiDB operation because most database systems will fail with
-  OOM if their budget can't accomodate all the primary, and every stage
-  of intermediate and final relations for the particuar workload. While
+  OOM if their budget can't accommodate all the primary, and every stage
+  of intermediate and final relations for the particular workload. While
   this is not a great situation for FluiDB, then, it is in fact much
   better than a failure to resolve the query.
 
@@ -394,7 +394,7 @@ heuristics for the GC should avoid this problem in most cases.
       need to be reconstructed. The general shape of the queries is
       \(A \Join B_0 \Join C_0\) and \(A \Join B_1 \Join C_1\) and the
       budget is small enough that it can't fit the final result, the
-      intermediate result and the primary tables simulataneously. The GC
+      intermediate result and the primary tables simultaneously. The GC
       is therefore required to delete the primary tables forcing their
       reconstruction the next time it is required.}
   \end{figure}
@@ -404,7 +404,7 @@ heuristics for the GC should avoid this problem in most cases.
 \begin{corrected}{Overheads}
   The compilation overheads range between a staggering 9 and 11 secs
   per query. While it is not ideal, there are things that can be done
-  to mitigate it like precompiling the headers (eg with the
+  to mitigate it like prerecompiling the headers (age with the
   \code{-fmodule-header} flag) or changing the granularity of the code
   generation to generate individual operators, which would allow both
   caching of compiled units as well as parallel

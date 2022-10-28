@@ -30,7 +30,7 @@ collection that generates plan fragments that allow the plan to free
 up space in the underlying storage. Finally, we talk about the cost
 model that guides the plan search process.
 
-\begin{corrected}{Chapter contribition}
+\begin{corrected}{Chapter contribution}
   This chapter describes both an abstract logical framework and its
   functional programming underpinnings, as well as its use for query
   planning in FluiDB. The non-FluiDB-specific contributions of this
@@ -38,7 +38,7 @@ model that guides the plan search process.
 
   \begin{itemize}
   \item An overview of functional abstractions for backtracking
-    alogirithms.
+    algorithms.
   \item A monadic framework for implementing best-first branch and
     bound algorithms that support cut and either cut and either
     operators implemented for best-first branch.
@@ -177,7 +177,7 @@ values passed to \hask{halt} in that branch up to that point.
       return i <|> go (i+1)
 
   -- | Non-deterministically choose three numbers and only keep the
-  -- branches that satisfy a + b - c == 10. Avoid diverging by prefering
+  -- branches that satisfy a + b - c == 10. Avoid diverging by preferring
   -- branches for which the sum of the numbers is minimum.
   test2 :: IO [(Int,Int,Int)]
   test2 = takeListT 5 $ dissolve @(CHeap (NonNeg Int)) $ once $ do
@@ -307,7 +307,7 @@ use the rest in a different computation.
 \begin{haskellcode}
 dissolve :: (IsHeap h,Monad m) => HCntT h r m r -> ListT m r
 \end{haskellcode}
-  \caption{\label{lst:dissolve_func}Disolution is the process of
+  \caption{\label{lst:dissolve_func}Dissolution is the process of
     turning an \hask{HCntT} computation into a \hask{ListT}.}
 \end{code}
 
@@ -485,7 +485,7 @@ marker is uniquely identifiable, so each valid entry in the lookup
 table references the lowest priority one that corresponds
 to it. When a marker is scheduled, it looks up the fallback branch
 entry in the table and checks if the entry also refers to that
-marker. There are 3 possible scenaria that may play out at this point:
+marker. There are 3 possible scenarios that may play out at this point:
 
 \begin{itemize}
 \item The fallback entry in the table has been invalidated by a branch
@@ -695,10 +695,10 @@ considers a different set of materialized n-nodes.
 
 
 
-The main loop of each branch is a recursive process of asseerting that
+The main loop of each branch is a recursive process of asserting that
 n-nodes are materialized. If the n-node is already materialized the
 assertion succeeds, if not the planner attempts to trigger or reverse-trigger
-a neighbouring t-node that would lead to the n-node being
+a neighboring t-node that would lead to the n-node being
 materialized, asserting first that the input n-nodes of that transition
 are materialized. In practice, due to intermediate n-nodes being
 auxiliary and not corresponding to real n-nodes (see section
@@ -771,7 +771,7 @@ refining the possible states of the n-nodes (listing
 to change their materialization status. In contrast \hask{Concrete}
 n-nodes have their state fixed with very few exceptions. Then, when an
 n-node is asserted to be materialized, its status is first checked and
-following scenaria are possible:
+following scenarios are possible:
 
 \begin{itemize}
 \item The n-node's status found to be \hask{Concrete} and \hask{NoMat}
@@ -796,7 +796,7 @@ data NodeState =
   -- lexical scope.
   Concrete IsMat
   -- Initial states are subject to change when encountered as a
-  -- neighbour or by the GC.
+  -- neighbor or by the GC.
   | Initial IsMat
 \end{haskellcode}
   \caption{\label{lst:ismat_def}The different states that an n-node is
@@ -828,7 +828,7 @@ consideration will be triggerable.
 \label{sec:gc}
 
 One of the fundamental design decisions of FluiDB is that she is
-commited to materializing all intermediate n-nodes, a la MonetDB \cite{monetdb}, and keeping them
+committed to materializing all intermediate n-nodes, a la MonetDB \cite{idreosMonetdbTwoDecades2012}r, and keeping them
 around for as long as possible. On the one hand, the plan selected is
 crafted so that the intermediate query results are maximally useful for the
 overall workload, on the other, when the available storage runs out,
@@ -1044,7 +1044,7 @@ of the frontier using the following formula:
 \end{align*}
 
 Where the cost \(c(n)\) of n-node \(n\) is \(c_{mat}(n)\) if the n-node
-is materialized and \(c_{nomat}(n)\) otherwise. In plain english the
+is materialized and \(c_{nomat}(n)\) otherwise. In plain English the
 cost is recursively estimated as the cheapest combination \hask{MataOp}
 plus the cost of materializing the input n-nodes.
 
@@ -1089,7 +1089,7 @@ actual plan the cost of which is being estimated, but also all the
 decisions that the garbage collector will make in that time. After
 FluiDB's budget is exhausted for the first time, for every page write
 a page needs to be garbage collected. We considered a couple of
-options for stochastically modelling the behavior of the GC like
+options for stochastically modeling the behavior of the GC like
 assuming that it chooses random pages or random tables to delete, but
 we could find none that was both a mathematically justifiable approximation and
 computationally viable.

@@ -40,7 +40,7 @@ generation, the form of data the generated code manipulates and the
 implementing operators, utility functions and types.
 
 \begin{corrected}{Contributions}
-  This chapter's contribution to the state of thre art revolves around
+  This chapter's contribution to the state of the art revolves around
   an efficient approach to generating efficient query specific C++
   code as well as describing the underlying data structures and
   algorithms that FluiDB to leverage compiler technologies.
@@ -331,7 +331,7 @@ inline void eachRecord(const std::string& inpFile,Fn f) {
 \end{code}
 
 As alluded to in the previous section, both the \cpp{Writer} and \cpp{Reader}
-use \cpp{reinterpret_cast} to "serialize" and "deserialize" the data
+use \cpp{reinterpret_cast} to "serialize" and "deserialise" the data
 respectively.
 
 \subsection{C++ row iterators}
@@ -583,7 +583,7 @@ class Transform {
 \subsubsection{Operators}
 
 Operators are not generated, but they are parameterized by all the
-kinds of gernerated code we mentioned. They are clases that are
+kinds of gernerated code we mentioned. They are classes that are
 constructed using maybe-filenames, record transformers, record types,
 and predicates. Operators must implement the \cpp{run()} method which actually
 runs the internal code. For demonstration an abbreviated
@@ -692,7 +692,7 @@ either a partition or a selection depending on which of the outputs it
 is materializing. In its backward variety it is essentially a union
 \(A \equiv \sigma_p A \cup \sigma_{\neg p} A\). As we discussed
 already (listing \ref{lst:sel_function_cpp}) the FCL library expects
-only a predicate class as a template parameter and three filnames as
+only a predicate class as a template parameter and three filenames as
 its arguments.
 
 It is important to remind the reader that no order is expected to be
@@ -730,7 +730,7 @@ the projection augmentation phase that happens immediately after
 parsing. Therefore, we have all projections carrying information about the
 complement at the level of the RA operator.
 
-In particular, this process is combined with remapping of uniuque
+In particular, this process is combined with remapping of unique
 subtuples into the projection. For example, during the unique column
 exposure process the query \sql{select p_color from part} is found not
 to be valid because \sql{p_color} is not unique for each row. For that
@@ -781,7 +781,7 @@ We distinguish between two kinds of join operators: the equijoin and
 the general \(\theta\)-join. The former is specific to cases where
 subtuples from each table are compared and the implementation is
 simply a merge join, while the latter is used for general predicates
-and is essentially a piplelined \(\sigma(A \times B)\). The important
+and is essentially a pipelined \(\sigma(A \times B)\). The important
 detail worth noting about join algorithm implementations in FluiDB is
 that they must be able to produce antijoin relations \(A \lnsemi B\),
 \(A \rnsemi B\) simultaneously with the join relation \(A \Join B\).
