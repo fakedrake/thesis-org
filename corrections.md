@@ -55,7 +55,7 @@ addition, the thesis needs to improve in three main points:
     represent a small percentage of overall query times.
 
     *Discussion regarding the overheads was added to the evaluation
-    chapter (pdf page 189+24)*
+    chapter (pdf page 213)*
 
 
   - A characterization of the best- and worst-case scenarios for the
@@ -64,7 +64,7 @@ addition, the thesis needs to improve in three main points:
     workload.
 
     *A section discussing of best and worst case scenario was added
-    in the evaluation chapter (pdf page 187 + 24)*
+    in the evaluation chapter (pdf page 211)*
 
   - A sensitivity analysis of the impact of the memory budget –
     especially with respect to the role of the garbage collector (GC)
@@ -72,14 +72,14 @@ addition, the thesis needs to improve in three main points:
     available and no GC is needed. This will help bring to the fore
     and crystalize the benefits of the proposed system.
 
-    *Highlighed in the text in pdf page 185 + 24.*
+    *Highlighed in the text in pdf page 209.*
 
   - A better description of the experimental setup, including a better
     justification for the various sizes used and a description of the
     used hardware
 
     *The experimental setup is now discussed in the evaluation
-    section in pdf page 180 + 24.*
+    section in pdf page 204.*
 
 
 Some individual chapters, such as chapter 5, would benefit from
