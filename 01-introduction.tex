@@ -394,7 +394,6 @@ particularly useful in contexts where (fast) memory is scarce compared
 to the data, particularly in-memory databases. In that vain we lean
 heavily on executing plans by transpiling the plan to C++ code.
 
-\begin{corrected}{Architecture}
 
   The overall system is comprised of three internal their
   interlocation being described in diagram \ref{fig:architecture}. An
@@ -445,12 +444,32 @@ heavily on executing plans by transpiling the plan to C++ code.
   \caption{\label{fig:architecture}The system architecture}
 \end{figure}
 
-\end{corrected}
-
 \begin{corrected}{Thesis contributions}
-  The contributions of this work are summarized by the following
-  points:
 
+In this thesis we highlight the following contributions:
+
+\begin{itemize}
+\item We introduce the concept of reversible relational operators. FluiDB
+  is built around leveraging this idea to adapt the layout of
+  primary data to the workload. This allows FluiDB to efficiently
+  answer complex queries and share computation between different
+  queries with minimal memory footprint.
+\item We present a monadic framework for branch and bound search. While
+  branch and bound is an algorithm common in rewrite systems it has
+  not been implemented based on a monad. This approach affords
+  flexibility and composability to easily implement and tweak complex
+  heuristics and search space pruning techniques.
+\item We introduce an incremental computation system that focuses on
+  incrementally computing the cost estimation of logical plans for
+  relational queries. There is little work on incremental cost
+  estimation functions and none that applies to either recursive
+  (non-DAG) operator graphs or that takes into account materialized
+  intermediate results. To make FluiDB's optimization tractable we
+  introduce a novel, highly specialized, incremental computation
+  framework we call Antisthenis.
+\end{itemize}
+
+  \begin{comment}
 \begin{itemize}
 \item We provide an overview of the literature regarding intermediate
   result recycling.
@@ -472,6 +491,7 @@ heavily on executing plans by transpiling the plan to C++ code.
   together to compose FluiDB, particularly in the context of a star
   schema based benchmark.
 \end{itemize}
+\end{comment}
 \end{corrected}
 
 This thesis describes in detail how we implemented FluiDB, a system

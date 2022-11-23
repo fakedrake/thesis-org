@@ -70,13 +70,20 @@ All that matters to Antisthenis is the computation at hand.
 
 
 \begin{corrected}{Chapter contributions}
-  This chapter's contribution is the introduction of a highly
-  specialized incremental computation system that combines evaluation
-  strategy with the incremental computation algorithm to handle
-  recursive functions composed of AND/OR boolean operator as well as
-  sum/min operators in order to minimize the number of operations
-  carried out in the initial as well as the subsequent evaluations of
-  said functions.
+Incremental computation has traditionally been dealing with the tradeoff
+between incrementalizing general algorithms [hammer] but being
+oblivious to particular properties of the functions that comprise the
+computation, and creating highly effective techniques for
+incrementalizing an algorithm but paying the cost at
+transferability. Antisthenis is positioned firmly on the latter side
+of this spectrum aiming to incrementalize the computation of
+logical plan cost estimation under changing materialized
+views. Antisthenis' novelty lies in its ability to take into account
+the particular properties of the operations involved to efficiently
+and incrementally compute expressions that may be self
+referential. This problem has not been directly studied to our
+knowledge but the need for a good solution to it is central to
+FluiDB's operation.
 \end{corrected}
 
 

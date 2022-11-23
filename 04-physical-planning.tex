@@ -31,18 +31,15 @@ up space in the underlying storage. Finally, we talk about the cost
 model that guides the plan search process.
 
 \begin{corrected}{Chapter contribution}
-  This chapter describes both an abstract logical framework and its
-  functional programming underpinnings, as well as its use for query
-  planning in FluiDB. The non-FluiDB-specific contributions of this
-  chapter are the following:
-
-  \begin{itemize}
-  \item An overview of functional abstractions for backtracking
-    algorithms.
-  \item A monadic framework for implementing best-first branch and
-    bound algorithms that support cut and either cut and either
-    operators implemented for best-first branch.
-  \end{itemize}
+  In this chapter, we introduce \hask{HCntT}, a new monad for
+  implementing branch and bound search. While abstracting search
+  algorithms using monads has many benefits like composability and low
+  boilerplate allowing the implementation of complex heuristics with
+  low engineering effort. As we discussed there has been little work
+  towards encapsulating best-first traversal in a monad. The
+  \hask{HCntT} monad transformer fills this gap by combining
+  \hask{MonadPlus} with soft-cut and the \hask{halt} operation that
+  will describe in section \ref{sec:cntt_monad}.
 \end{corrected}
 
 \section{HCntT logic monad}
