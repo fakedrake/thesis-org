@@ -449,16 +449,19 @@ heavily on executing plans by transpiling the plan to C++ code.
 In this thesis we highlight the following contributions:
 
 \begin{itemize}
-\item We introduce the concept of reversible relational operators. FluiDB
-  is built around leveraging this idea to adapt the layout of
-  primary data to the workload. This allows FluiDB to efficiently
-  answer complex queries and share computation between different
-  queries with minimal memory footprint.
-\item We present a monadic framework for branch and bound search. While
-  branch and bound is an algorithm common in rewrite systems it has
-  not been implemented based on a monad. This approach affords
-  flexibility and composability to easily implement and tweak complex
-  heuristics and search space pruning techniques.
+\item We introduce the concept of reversible relational
+  operators. FluiDB is built around leveraging this idea to adapt the
+  layout of primary data to the workload. This allows FluiDB to
+  efficiently answer complex queries and share computation between
+  different queries with minimal memory footprint. It is discussed in
+  detail in chapter \ref{chapter:fluidb_logical_planning}.
+\item We present a monadic framework for branch and bound
+  search. While branch and bound is an algorithm common in rewrite
+  systems it has not been implemented based on a monad. This approach
+  affords flexibility and composability to easily implement and tweak
+  complex heuristics and search space pruning techniques. The
+  \hask{HCntT} monad transformer that captures this is discuessed in
+  chapter~\ref{chapter:physical_planning}.
 \item We introduce an incremental computation system that focuses on
   incrementally computing the cost estimation of logical plans for
   relational queries. There is little work on incremental cost
@@ -466,7 +469,8 @@ In this thesis we highlight the following contributions:
   (non-DAG) operator graphs or that takes into account materialized
   intermediate results. To make FluiDB's optimization tractable we
   introduce a novel, highly specialized, incremental computation
-  framework we call Antisthenis.
+  framework we call Antisthenis. Antisthenis is discussed in detail in
+  chapter \ref{chapter:antisthenis}.
 \end{itemize}
 
   \begin{comment}
